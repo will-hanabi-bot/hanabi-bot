@@ -50,7 +50,23 @@ export const VARIANTS = /** @type {Record<string, Variant>} */ ({
 	WHITE: { id: 22,  name: 'White (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'White'] },
 	BROWN: { id : 70,  name: "Brown (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Brown"] },
 	PINK: { id: 107, name: 'Pink (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Pink'] },
-	PRISM: { id: 1465, name: 'Prism (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Prism'] }
+	PRISM: { id: 1465, name: 'Prism (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Prism'] },
+	DECEPTIVE_1S: {
+						"id": 1672,
+						"name": "Deceptive-Ones (5 Suits)",
+						"suits": ["Red", "Yellow", "Green", "Blue", "Purple"],
+						"specialRank": 1,
+						"specialRankDeceptive": true,
+						"clueRanks": [2, 3, 4, 5]
+				},
+	PINK_1S: {
+		"id": 327,
+		"name": "Pink-Ones (5 Suits)",
+		"suits": ["Red", "Yellow", "Green", "Blue", "Purple"],
+		"specialRank": 1,
+		"specialRankAllClueRanks": true,
+		"clueRanks": [2, 3, 4, 5]
+  }
 });
 
 const DEFAULT_LEVEL = parseInt(process.env['HANABI_LEVEL'] ?? '1');
