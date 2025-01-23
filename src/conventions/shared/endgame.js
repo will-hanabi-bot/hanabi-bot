@@ -130,9 +130,10 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 
 	const sum_prob = arrangements.reduce((a, c) => a.plus(c.prob), new Fraction(0, 1));
 
-	logger.info('arrangements', arrangements.map(({ ids, prob }) => ({
+	logger.info('arrangements', arrangements.map(({ ids, prob, new_remaining }) => ({
 		ids: ids.map(logCard).join(),
-		prob: prob.divide(sum_prob).toString
+		prob: prob.divide(sum_prob).toString,
+		remaining: JSON.stringify(new_remaining)
 	})));
 
 	const arranged_games = arrangements.length === 0 ? [{ hypo_game: game, prob: 1, remaining: [] }] : arrangements.map(({ ids, prob, new_remaining }) => {
@@ -428,6 +429,10 @@ function optimize({ undrawn, drawn }, actions, playerTurn, find_clues, find_disc
 
 		for (const { hypo_game, prob, remaining } of hypo_games) {
 			const new_game = advance_game(hypo_game, playerTurn, action);
+
+			// Some critical was lost
+			if (new_game.state.maxScore < hypo_game.state.maxScore)
+				continue;
 
 			if (action.type === ACTION.PLAY || action.type === ACTION.DISCARD)
 				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')} drawing ${logCard(new_game.state.deck[new_game.state.cardOrder])} after ${logObjectiveAction(new_game.state, action)} ${new_game.state.hands[playerTurn].map(o => logCard(new_game.state.deck[o]))} ${new_game.state.cardsLeft} ${new_game.state.endgameTurns} {`);

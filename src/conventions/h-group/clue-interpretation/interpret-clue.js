@@ -56,7 +56,7 @@ function apply_good_touch(game, action, oldThoughts) {
 			// Check if a layered finesse was revealed on us
 			if (card.finessed && oldThoughts[order].inferred.length >= 1 && card.inferred.length === 0) {
 				// TODO: Possibly try rewinding older reasoning until rewind works?
-				const action_index = card.reasoning.at(list.includes(order) ? -2 : -1);
+				const action_index = card.reasoning_turn.at(list.includes(order) ? -2 : -1);
 				const new_game = game.rewind(action_index, [{ type: 'finesse', list, clue: action.clue }]) ??
 					game.rewind(action_index, [{ type: 'ignore', order, conn_index: 0 }]);		// Rewinding the layered finesse doesn't work, just ignore us then.
 
@@ -156,7 +156,7 @@ function resolve_clue(game, old_game, action, focusResult, inf_possibilities, fo
 				inference,
 				giver,
 				target,
-				action_index: state.actionList.length - 1,
+				action_index: state.turn_count,
 				turn: state.turn_count,
 				symmetric: !matches
 			});
@@ -359,7 +359,7 @@ export function interpret_clue(game, action) {
 			const rewind_identity = common.thoughts[rewind_order]?.identity();
 
 			if (rewind_identity !== undefined && !common.thoughts[rewind_order].rewinded && wc_target === state.ourPlayerIndex && state.ourHand.includes(rewind_order)) {
-				const new_game = game.rewind(state.deck[rewind_order].drawn_index, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
+				const new_game = game.rewind(state.deck[rewind_order].drawn_index + 1, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
 				if (new_game) {
 					Object.assign(game, new_game);
 					return;
@@ -399,7 +399,7 @@ export function interpret_clue(game, action) {
 
 		// There is a waiting connection that depends on this card
 		if (common.thoughts[focus].possible.length === 1 && common.dependentConnections(focus).length > 0) {
-			const new_game = game.rewind(state.deck[focus].drawn_index, [{ type: 'identify', order: focus, playerIndex: target, identities: [common.thoughts[focus].possible.array[0].raw()] }]);
+			const new_game = game.rewind(state.deck[focus].drawn_index + 1, [{ type: 'identify', order: focus, playerIndex: target, identities: [common.thoughts[focus].possible.array[0].raw()] }]);
 			if (new_game) {
 				new_game.updateNotes();
 				Object.assign(game, new_game);
@@ -457,7 +457,7 @@ export function interpret_clue(game, action) {
 		const rewind_identity = common.thoughts[rewind_order]?.identity();
 
 		if (rewind_identity !== undefined && !common.thoughts[rewind_order].rewinded && wc_target === state.ourPlayerIndex && state.ourHand.includes(rewind_order)) {
-			const new_game = game.rewind(state.deck[rewind_order].drawn_index, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
+			const new_game = game.rewind(state.deck[rewind_order].drawn_index + 1, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
 			if (new_game) {
 				new_game.updateNotes();
 				Object.assign(game, new_game);
@@ -755,8 +755,7 @@ export function interpret_clue(game, action) {
 			game.interpretMove(CLUE_INTERP.NONE);
 		}
 		else {
-			common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].possible; });
-			logger.info('selecting inferences', finalized_connections.map(conns => logCard(conns)));
+			logger.info('selecting inferences', finalized_connections.map(logCard));
 
 			resolve_clue(game, old_game, action, focusResult, finalized_connections, focused_card);
 		}

@@ -261,14 +261,20 @@ describe('bluff clues', () => {
 			starting: PLAYER.BOB
 		});
 		takeTurn(game, 'Bob clues red to Alice (slot 4)');
+
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r1', 'r2']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+
 		takeTurn(game, 'Cathy plays p1', 'p2');
+
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r2']);
+
 		takeTurn(game, 'Alice discards g4 (slot 5)');
 		takeTurn(game, 'Bob clues red to Alice (slots 1,5)');
+
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'r3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+
 		takeTurn(game, 'Cathy plays p2', 'p3');
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);

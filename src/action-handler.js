@@ -24,7 +24,14 @@ import { produce } from './StateProxy.js';
  */
 export function handle_action(action) {
 	const { state } = this;
-	state.actionList.push(action);
+
+	if (state.turn_count === 0 && action.type !== 'draw')
+		state.turn_count = 1;
+
+	if (state.actionList[state.turn_count] === undefined)
+		state.actionList[state.turn_count] = [];
+
+	state.actionList[state.turn_count].push(action);
 
 	if (action.type === 'clue' && action.giver === state.ourPlayerIndex)
 		this.handHistory[state.turn_count] = Utils.objClone(state.ourHand);

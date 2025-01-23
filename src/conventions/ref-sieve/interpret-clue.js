@@ -159,7 +159,7 @@ function target_play(game, action, target) {
 	logger.info(`focus possibilities [${possibilities.map(logCard).join()}]`);
 
 	const target_id = common.thoughts[target].identity() ?? state.deck[target].identity();
-	const action_index = state.actionList.length;
+	const action_index = state.turn_count;
 
 	if (target_id !== undefined && !focus_poss.some(i => target_id.matches(i))) {
 		if (giver === state.ourPlayerIndex)

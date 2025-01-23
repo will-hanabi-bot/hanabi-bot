@@ -83,7 +83,7 @@ export function interpret_discard(game, action) {
 		logger.info('all inferences', thoughts.inferred.map(logCard));
 
 		const action_index = thoughts.drawn_index;
-		const new_game = game.rewind(action_index, [{ type: 'identify', order, playerIndex, identities: [identity] }], thoughts.finessed);
+		const new_game = game.rewind(action_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }], thoughts.finessed);
 		if (new_game) {
 			new_game.updateNotes();
 			Object.assign(game, new_game);

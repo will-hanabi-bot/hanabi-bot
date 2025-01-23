@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import * as ExAsserts from '../../extra-asserts.js';
 
-import { PLAYER, VARIANTS, setup, takeTurn } from '../../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../../test-utils.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
@@ -472,5 +472,36 @@ describe('pink fixes', () => {
 		// Slot 5 should be known trash.
 		const trash = game.common.thinksTrash(game.state, PLAYER.ALICE);
 		assert.ok(trash.some(o => o === game.state.hands[PLAYER.ALICE][4]));
+	});
+
+	it(`doesn't interpret a pink fix after a prompt`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r3', 'y3', 'r4', 'y4', 'i2'],
+			['g4', 'i4', 'g3', 'b3', 'b4']
+		], {
+			level: { min: 3 },
+			clue_tokens: 7,
+			starting: PLAYER.BOB,
+			variant: VARIANTS.PINK,
+			init: (game) => {
+				// Alice's slot 1 is known b1.
+				preClue(game, game.state.hands[PLAYER.ALICE][0], [{ type: CLUE.COLOUR, value: COLOUR.BLUE, giver: PLAYER.CATHY }]);
+
+				// Bob's slot 5 is clued with pink.
+				preClue(game, game.state.hands[PLAYER.BOB][4], [{ type: CLUE.COLOUR, value: 4, giver: PLAYER.ALICE }]);
+			}
+		});
+
+		takeTurn(game, 'Bob clues 5 to Alice (slots 4,5)');
+		takeTurn(game, 'Cathy clues 2 to Bob');					// prompt Alice's slot 4 as i1
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1']);
+
+		takeTurn(game, 'Alice plays b1 (slot 1)');				// Alice draws a new 5
+		takeTurn(game, 'Bob clues 5 to Alice (slots 1,4,5)');	// 5 Stall (not a pink fix)
+
+		// Slot 4 should still be i1.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1']);
 	});
 });

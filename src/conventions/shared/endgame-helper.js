@@ -125,7 +125,8 @@ export function trivially_winnable(game, playerTurn) {
 	if (state.endgameTurns !== -1 && state.maxScore - state.score <= state.endgameTurns) {
 		const play_stacks = state.play_stacks.slice();
 
-		let action;
+		/** @type {ModPerformAction} */
+		let action = { type: ACTION.DISCARD, target: state.hands[playerTurn].at(-1), playerIndex: playerTurn };
 
 		for (let i = 0; i < state.endgameTurns; i++) {
 			const playerIndex = (playerTurn + i) % state.numPlayers;
@@ -292,7 +293,7 @@ function advance_state(state, action) {
 
 		if (state.deck[newCardOrder] === undefined) {
 			new_state.deck = new_state.deck.slice();
-			new_state.deck[newCardOrder] = Object.freeze(new ActualCard(-1, -1, newCardOrder, state.actionList.length));
+			new_state.deck[newCardOrder] = Object.freeze(new ActualCard(-1, -1, newCardOrder, state.turn_count));
 		}
 	};
 

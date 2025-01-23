@@ -254,11 +254,10 @@ export class Game {
 	 * Rewinds the state to a particular action index, inserts the rewind actions just before it and then replays all future moves.
 	 * @param {number} action_index
 	 * @param {Action[]} rewind_actions	The rewind action to insert before the target action
-	 * @param {boolean} [mistake] 		Whether the target action was a mistake
 	 * @returns {this | undefined}
 	 */
-	rewind(action_index, rewind_actions, mistake = false) {
-		const actionList = this.state.actionList.map(Utils.cleanAction);
+	rewind(action_index, rewind_actions) {
+		const actionList = this.state.actionList.map(list => list.map(Utils.cleanAction));
 
 		this.rewinds++;
 		if (this.rewinds > 100)
@@ -273,34 +272,24 @@ export class Game {
 		}
 		this.rewindDepth++;
 
-		const pivotal_action = /** @type {ClueAction} */ (actionList[action_index]);
+		const pivotal_action = /** @type {ClueAction} */ (actionList[action_index].find(a => ['play', 'clue', 'discard'].includes(a.type)));
 
-		logger.highlight('cyan', `Rewinding to insert ${rewind_actions.map(a => JSON.stringify(a))}`);
+		logger.highlight('cyan', `Rewinding to insert ${rewind_actions.map(a => JSON.stringify(a))} on turn ${action_index}`);
 
-		let offset = 0;
-		let action = actionList[action_index];
-
-		while (action.type === 'ignore' || action.type === 'finesse' || action.type === 'identify' || offset === 0) {
-			const double_rewinded = rewind_actions.find(a => Utils.objEquals(action, a));
-
-			if (double_rewinded) {
-				logger.error(`Attempted to rewind ${JSON.stringify(double_rewinded)} that was already rewinded!`);
-				return;
-			}
-
-			offset++;
-			action = actionList[action_index - offset];
+		if (actionList[action_index].some(action => rewind_actions.some(a => Utils.objEquals(action, a)))) {
+			logger.error(`Attempted to rewind ${rewind_actions.map(a => JSON.stringify(a))} that was already rewinded!`);
+			return;
 		}
 
 		if (pivotal_action.type === 'clue')
-			pivotal_action.mistake = mistake || this.rewindDepth > 1;
+			pivotal_action.mistake = this.rewindDepth > 1;
 
 		logger.highlight('green', '------- STARTING REWIND -------');
 
 		const newGame = this.createBlank();
 		newGame.catchup = true;
 		newGame.notes = [];
-		const history = actionList.slice(0, action_index);
+		const history = actionList.slice(0, action_index).flat();
 
 		const old_global_game = Utils.globals.game;
 		Utils.globalModify({ game: newGame });
@@ -323,7 +312,7 @@ export class Game {
 
 			const hypoGame = newGame.minimalCopy();
 
-			newGame.state.hands[this.state.ourPlayerIndex] = this.handHistory[newGame.state.turn_count];
+			newGame.state.hands[this.state.ourPlayerIndex] = this.handHistory[Math.max(1, newGame.state.turn_count)];
 
 			newGame.handle_action(action);
 
@@ -369,10 +358,8 @@ export class Game {
 			}
 		}
 
-		after_action(pivotal_action);
-
 		// Redo all the following actions
-		const future = actionList.slice(action_index + 1, -1);
+		const future = actionList.slice(action_index, -1).flat();
 		for (const action of future) {
 			after_action(action);
 
@@ -383,7 +370,8 @@ export class Game {
 		logger.highlight('green', '------- REWIND COMPLETE -------');
 
 		newGame.catchup = this.catchup;
-		after_action(actionList.at(-1));
+		for (const action of actionList.at(-1))
+			after_action(action);
 
 		for (const [order, noteObj] of this.notes.entries())
 			newGame.notes[order] = noteObj;
@@ -408,32 +396,34 @@ export class Game {
 		Utils.globalModify({ game: new_game });
 
 		// Remove special actions from the action list (they will be added back in when rewinding)
-		const actionList = this.state.actionList.filter(action => !['identify', 'ignore', 'finesse'].includes(action.type)).map(Utils.cleanAction);
+		const actionList = this.state.actionList.map(list => list.filter(action => !['identify', 'ignore', 'finesse'].includes(action.type)).map(Utils.cleanAction));
+		const actions = actionList.flat();
 
 		let action_index = 0;
 
 		// Going first
 		if (turn === 1 && new_game.state.ourPlayerIndex === 0) {
-			let action = actionList[action_index];
+			let action = actions[action_index];
 
 			while(action.type === 'draw') {
 				new_game.handle_action(action);
 				action_index++;
-				action = actionList[action_index];
+				action = actions[action_index];
 			}
 		}
 		else {
 			// Don't log history
 			logger.wrapLevel(logger.LEVELS.ERROR, () => {
 				while (new_game.state.turn_count < turn - 1) {
-					new_game.handle_action(actionList[action_index]);
+					new_game.handle_action(actions[action_index]);
 					action_index++;
+
 				}
 			});
 
 			// Log the previous turn and the 'turn' action leading to the desired turn
-			while (new_game.state.turn_count < turn && actionList[action_index] !== undefined) {
-				new_game.handle_action(actionList[action_index]);
+			while (new_game.state.turn_count < turn && actions[action_index] !== undefined) {
+				new_game.handle_action(actions[action_index]);
 				action_index++;
 			}
 		}
@@ -520,7 +510,7 @@ export class Game {
 
 				if (hypo_game.state.cardsLeft > 0) {
 					const order = hypo_game.state.cardOrder + 1;
-					const { suitIndex, rank } = hypo_game.state.deck[order] ?? Object.freeze(new ActualCard(-1, -1, order, hypo_game.state.actionList.length));
+					const { suitIndex, rank } = hypo_game.state.deck[order] ?? Object.freeze(new ActualCard(-1, -1, order, hypo_game.state.turn_count));
 					hypo_game.handle_action({ type: 'draw', playerIndex: action.playerIndex, order, suitIndex, rank });
 				}
 			}

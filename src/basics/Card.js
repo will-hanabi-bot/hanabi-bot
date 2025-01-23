@@ -171,7 +171,6 @@ export class Card extends ActualCard {
 	firstTouch;
 
 	finesse_index = -1;	// Action index of when the card was finessed
-	reasoning = /** @type {number[]} */ ([]);		// The action indexes of when the card's possibilities/inferences were updated
 	reasoning_turn = /** @type {number[]} */ ([]);	// The game turns of when the card's possibilities/inferences were updated
 	rewinded = false;								// Whether the card has ever been rewinded
 

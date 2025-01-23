@@ -174,7 +174,7 @@ export function update_turn(game, action) {
 		common.updateThoughts(order, update_card(order, inferences));
 	}
 
-	let min_drawn_index = state.actionList.length;
+	let min_drawn_index = state.turn_count;
 
 	// Rewind any confirmed finesse connections we have now
 	/** @type {IdentifyAction[]} */
@@ -197,7 +197,7 @@ export function update_turn(game, action) {
 	}, []);
 
 	if (rewind_actions.length > 0) {
-		const new_game = game.rewind(min_drawn_index, rewind_actions);
+		const new_game = game.rewind(min_drawn_index + 1, rewind_actions);
 		if (new_game) {
 			new_game.updateNotes();
 			Object.assign(game, new_game);

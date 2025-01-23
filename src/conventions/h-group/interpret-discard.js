@@ -203,7 +203,7 @@ export function interpret_discard(game, action) {
 		logger.info('all inferences', thoughts.inferred.map(logCard));
 
 		const action_index = state.deck[order].drawn_index;
-		const new_game = game.rewind(action_index, [{ type: 'identify', order, playerIndex, identities: [{ suitIndex, rank }] }], thoughts.finessed);
+		const new_game = game.rewind(action_index + 1, [{ type: 'identify', order, playerIndex, identities: [{ suitIndex, rank }] }]);
 		if (new_game) {
 			new_game.updateNotes();
 			Object.assign(game, new_game);
@@ -326,7 +326,7 @@ export function interpret_discard(game, action) {
 				turn: state.turn_count,
 				focus: connections.at(-1).order,
 				inference: actual_card.raw(),
-				action_index: state.actionList.length - 1
+				action_index: state.turn_count
 			});
 
 			resolve_discard(game, action, failed ? DISCARD_INTERP.POS_MISPLAY : DISCARD_INTERP.POS_DISCARD);

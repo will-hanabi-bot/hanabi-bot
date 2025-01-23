@@ -28,7 +28,7 @@ describe('ambiguous clues', () => {
 
 		// Alice's slot 2 should be [g1,g2].
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['g1', 'g2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].reasoning.length, 1);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].reasoning_turn.length, 1);
 
 		takeTurn(game, 'Cathy discards p3', 'r1');
 

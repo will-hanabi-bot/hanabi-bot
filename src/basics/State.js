@@ -21,7 +21,7 @@ import * as Utils from '../tools/util.js';
  */
 
 export class State {
-	turn_count = 1;
+	turn_count = 0;
 	clue_tokens = 8;
 	strikes = 0;
 	early_game = true;
@@ -34,7 +34,7 @@ export class State {
 	hands = /** @type {number[][]} */ ([]);
 	deck = /** @type {ActualCard[]} */ ([]);
 
-	actionList = /** @type {Action[]} */ ([]);
+	actionList = /** @type {Action[][]} */ ([]);
 
 	play_stacks = /** @type {number[]} */ ([]);
 	discard_stacks = /** @type {number[][]} */ ([]);

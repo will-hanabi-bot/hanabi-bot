@@ -102,7 +102,7 @@ export function generate_symmetric_connections(state, sym_possibilities, existin
 			inference: { suitIndex, rank },
 			giver,
 			target,
-			action_index: state.actionList.length - 1,
+			action_index: state.turn_count,
 			turn: state.turn_count,
 			symmetric: true
 		});
@@ -211,7 +211,7 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
  * 
  * Impure! (modifies common and game.finesses_while_finessed)
  * @param {Game} game
- * @param {FocusPossibility[]} inf_possibilities
+ * @param {Omit<FocusPossibility, 'interp'>[]} inf_possibilities
  * @param {ClueAction} action
  * @param {ActualCard} focused_card
  */
@@ -281,13 +281,13 @@ export function assign_all_connections(game, inf_possibilities, action, focused_
 					draft.finessed = true;
 					draft.bluffed ||= bluff;
 					draft.possibly_bluffed ||= possibly_bluff;
-					draft.finesse_index = state.actionList.length;
+					draft.finesse_index = state.turn_count;
 					draft.hidden = hidden;
 					draft.certain_finessed ||= certain;
 				}
 
 				if (connections.some(conn => conn.type === 'finesse'))
-					draft.finesse_index = draft.finesse_index === -1 ? state.actionList.length : draft.finesse_index;
+					draft.finesse_index = draft.finesse_index === -1 ? state.turn_count : draft.finesse_index;
 
 				draft.inferred = new_inferred;
 				if (!bluff && !hidden)
@@ -330,10 +330,8 @@ export function assign_all_connections(game, inf_possibilities, action, focused_
 				// Updating notes not on our turn
 				// There might be multiple possible inferences on the same card from a self component
 				// TODO: Examine why this originally had self only?
-				if (draft.old_inferred.length > draft.inferred.length && draft.reasoning.at(-1) !== state.actionList.length - 1) {
-					draft.reasoning.push(state.actionList.length - 1);
+				if (draft.old_inferred.length > draft.inferred.length && draft.reasoning_turn.at(-1) !== state.turn_count)
 					draft.reasoning_turn.push(state.turn_count);
-				}
 			});
 
 			if (type === 'finesse' && state.hands[giver].some(o => common.thoughts[o].finessed))

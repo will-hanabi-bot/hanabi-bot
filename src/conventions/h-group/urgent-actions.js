@@ -143,6 +143,11 @@ export function early_game_clue(game, giver, exceptTarget = -1) {
 		return false;
 
 	const { state } = game;
+	const hypo_game = produce(game, (draft) => {
+		draft.state.screamed_at = false;
+		draft.state.generated = false;
+	});
+
 	/**
 	 * @param {Game} _game
 	 * @param {Clue} _clue
@@ -150,7 +155,7 @@ export function early_game_clue(game, giver, exceptTarget = -1) {
 	 */
 	const satisfied = (_game, _clue, { interp }) => interp === CLUE_INTERP.STALL_5 && game.level >= 2 && !game.stalled_5;
 
-	const result = find_expected_clue(game, giver, satisfied, (clue) => clue.target === exceptTarget).next();
+	const result = find_expected_clue(hypo_game, giver, satisfied, (clue) => clue.target === exceptTarget).next();
 
 	if (result.done === false) {
 		const { clue } = result.value;
@@ -203,12 +208,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 	for (let i = 1; i < state.numPlayers; i++) {
 		const target = (state.ourPlayerIndex + i) % state.numPlayers;
 
-		const newGame = produce(game, (draft) => {
-			draft.state.screamed_at = false;
-			draft.state.generated = false;
-		});
-
-		const early_expected_clue = state.early_game && early_game_clue(newGame, target);
+		const early_expected_clue = state.early_game && early_game_clue(game, target);
 		const potential_cluers = playersBetween(state.numPlayers, state.ourPlayerIndex, target).filter(i =>
 			i !== target && !state.hands[i].some(o => common.thoughts[o].finessed && state.isPlayable(state.deck[o]))).length;
 

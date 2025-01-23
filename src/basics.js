@@ -56,10 +56,8 @@ export function onClue(game, action) {
 				draft.possible = possible[operation](new_possible);
 				draft.inferred = new_inferred;
 
-				if (list.includes(order) && new_inferred.length < inferred.length) {
-					draft.reasoning.push(state.actionList.length - 1);
+				if (list.includes(order) && new_inferred.length < inferred.length)
 					draft.reasoning_turn.push(state.turn_count);
-				}
 			});
 		}
 	}
@@ -128,7 +126,7 @@ export function onDraw(game, action) {
 	const { order, playerIndex, suitIndex, rank } = action;
 
 	state.hands[playerIndex].unshift(order);
-	state.deck[order] = Object.freeze(new ActualCard(suitIndex, rank, order, state.actionList.length));
+	state.deck[order] = Object.freeze(new ActualCard(suitIndex, rank, order, state.turn_count));
 
 	for (let i = 0; i < state.numPlayers; i++) {
 		const player = game.players[i];
@@ -139,10 +137,10 @@ export function onDraw(game, action) {
 			player.all_possible,
 			player.all_possible,
 			order,
-			state.actionList.length));
+			state.turn_count));
 	}
 
-	game.common.thoughts[order] = Object.freeze(new Card(-1, -1, game.common.all_possible, game.common.all_possible, order, state.actionList.length));
+	game.common.thoughts[order] = Object.freeze(new Card(-1, -1, game.common.all_possible, game.common.all_possible, order, state.turn_count));
 
 	for (const player of game.allPlayers) {
 		player.card_elim(state);

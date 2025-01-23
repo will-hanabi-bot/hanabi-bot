@@ -272,6 +272,7 @@ describe('play clue', () => {
 			['y5', 'p1', 'y3', 'r1', 'r3']
 		], {
 			level: { min: 1 },
+			clue_tokens: 7,
 			play_stacks: [1, 0, 0, 0, 0]
 		});
 

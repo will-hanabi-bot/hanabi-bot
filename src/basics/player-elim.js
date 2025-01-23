@@ -350,7 +350,7 @@ export function good_touch_elim(state, only_self = false) {
 					continue;
 
 				// TODO: Temporary stop-gap so that Bob still plays into it. Bob should actually clue instead.
-				if (old_card.finessed && [0, 1].some(i => old_card.finesse_index === state.actionList.length - i)) {
+				if (old_card.finessed && [0, 1].some(i => old_card.finesse_index === state.turn_count - i)) {
 					logger.warn(`tried to gt eliminate ${id_hash} from recently finessed card (player ${this.playerIndex}, order ${order})!`);
 					this.updateThoughts(order, (draft) => { draft.certain_finessed = true; });
 					elim_candidates.splice(elim_candidates.findIndex(c => c.order === order), 1);
@@ -462,10 +462,17 @@ export function reset_card(order) {
 		draft.reset = true;
 		draft.known = false;
 
+		const broke_info_lock = info_lock !== undefined && info_lock.intersect(possible).length === 0;
+
+		if (broke_info_lock) {
+			logger.warn(`broke info lock on ${order}, no intersection between locked ${info_lock.map(logCard)} and possible ${possible.map(logCard)}`);
+			draft.info_lock = undefined;
+		}
+
 		if (draft.finessed) {
 			draft.finessed = false;
 			draft.hidden = false;
-			if (info_lock) {
+			if (!broke_info_lock && info_lock) {
 				draft.inferred = info_lock;
 			}
 			else if (draft.old_inferred !== undefined) {
@@ -477,7 +484,7 @@ export function reset_card(order) {
 			}
 		}
 		else {
-			draft.inferred = info_lock ?? possible;
+			draft.inferred = (!broke_info_lock && info_lock) || possible;
 		}
 	});
 }

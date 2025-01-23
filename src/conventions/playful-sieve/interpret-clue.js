@@ -125,7 +125,7 @@ export function interpret_clue(game, action) {
 		const last_action = game.last_actions[giver];
 
 		// Revoke finesse if newly clued after a possibly matching play
-		if (oldCommon.thoughts[order].finessed && card.newly_clued && last_action.type === 'play') {
+		if (oldCommon.thoughts[order].finessed && card.newly_clued && last_action?.type === 'play') {
 			const identity = state.deck[last_action.order];
 
 			logger.warn('revoking finesse?', card.possible.map(logCard), logCard(identity));
@@ -234,7 +234,7 @@ export function interpret_clue(game, action) {
 									turn: state.turn_count,
 									focus: state.hands[target][target_index],
 									inference: { suitIndex: inf.suitIndex, rank: inf.rank + 1 },
-									action_index: state.actionList.length
+									action_index: state.turn_count
 								});
 							}
 						}

@@ -128,7 +128,7 @@ export function* find_expected_clue(game, giver, satisfied, excludeClue) {
 	const options = { giver, hypothetical: true, noFix: true, noRecurse: true };
 
 	for (let target = 0; target < state.numPlayers; target++) {
-		if (target === giver)
+		if (target === giver || target === state.ourPlayerIndex)
 			continue;
 
 		for (const clue of state.allValidClues(target)) {
@@ -223,7 +223,7 @@ export function get_clue_interp(game, clue, giver, options) {
 
 	switch (interp) {
 		case CLUE_INTERP.CM_5: {
-			const chopIndex = hypo_game.common.chopIndex(hand);
+			const chopIndex = game.common.chopIndex(hand);
 			const oldest_5 = hand.findLast((o, i) => ((card = hypo_game.state.deck[o]) =>
 				i <= chopIndex && card.newly_clued && card.clues.some(clue => clue.type === CLUE.RANK && clue.value === 5))());
 

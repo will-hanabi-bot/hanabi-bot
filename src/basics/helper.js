@@ -1,6 +1,7 @@
 import { CLUE } from '../constants.js';
 import { variantRegexes } from '../variants.js';
 import { visibleFind } from './hanabi-util.js';
+import { unknown_1 } from '../conventions/h-group/hanabi-logic.js';
 
 import logger from '../tools/logger.js';
 import { logCard } from '../tools/log.js';
@@ -62,7 +63,8 @@ export function checkFix(game, oldThoughts, clueAction) {
 		const clued_reset = (oldThoughts[order].inferred.length > 0 && common.thoughts[order].inferred.length === 0) ||
 			(list.includes(order) && state.includesVariant(variantRegexes.pinkish) &&
 				!oldThoughts[order].focused &&		// Do not allow pink fix on focused cards
-				oldThoughts[order].inferred.every(i => i.rank === 1) && clue.type === CLUE.RANK && clue.value !== 1);
+				unknown_1(oldThoughts[order]) &&
+				clue.type === CLUE.RANK && clue.value !== 1);
 
 		if (clued_reset) {
 			common.thoughts = common.thoughts.with(order, common.reset_card(order));
@@ -84,7 +86,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 		// There is a waiting connection that depends on this card
 		if (reset_order !== undefined) {
 			const reset_card = common.thoughts[reset_order];
-			const new_game = game.rewind(reset_card.drawn_index, [{
+			const new_game = game.rewind(reset_card.drawn_index + 1, [{
 				type: 'identify',
 				order: reset_order,
 				playerIndex: state.hands.findIndex(hand => hand.includes(reset_order)),
@@ -223,7 +225,7 @@ export function distribution_clue(game, action, focus) {
 		if (state.isBasicTrash(p))
 			continue;
 
-		const duplicated = state.hands.some((hand, i) => i !== target && hand.some(o => me.thoughts[o].matches(p), { infer: true }));
+		const duplicated = state.hands.some((hand, i) => i !== target && hand.some(o => common.thoughts[o].touched && me.thoughts[o].matches(p), { infer: true }));
 
 		if (duplicated)
 			possibly_useful = true;

@@ -214,6 +214,7 @@ export function setup(GameClass, hands, test_options = {}) {
 
 	team_elim(game);
 
+	game.state.turn_count = 1;
 	return game;
 }
 

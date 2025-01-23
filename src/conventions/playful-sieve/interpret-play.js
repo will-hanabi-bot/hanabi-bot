@@ -34,7 +34,7 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
 	const playables = common.thinksPlayables(state, unlocked_player);
 
 	// Sorted from oldest to newest
-	const playables_sorted = playables.sort((a, b) => common.thoughts[a].reasoning.at(-1) - common.thoughts[b].reasoning.at(-1));
+	const playables_sorted = playables.sort((a, b) => common.thoughts[a].reasoning_turn.at(-1) - common.thoughts[b].reasoning_turn.at(-1));
 
 	// Playing oldest (or only) playable, not guaranteed unlock
 	if (common.thinksTrash(state, unlocked_player).length + state.hands[unlocked_player].filter(o => common.thoughts[o].called_to_discard).length === 0 &&
@@ -97,7 +97,7 @@ export function interpret_play(game, action) {
 	if (playerIndex === state.ourPlayerIndex) {
 		if ((card.inferred.length !== 1 || !card.inferred.array[0].matches(identity)) && !card.rewinded) {
 			// If the rewind succeeds, it will redo this action, so no need to complete the rest of the function
-			const new_game = game.rewind(card.drawn_index, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
+			const new_game = game.rewind(card.drawn_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
 			if (new_game) {
 				new_game.updateNotes();
 				Object.assign(game, new_game);
