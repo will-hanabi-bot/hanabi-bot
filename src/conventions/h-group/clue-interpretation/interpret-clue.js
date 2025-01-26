@@ -649,7 +649,8 @@ export function interpret_clue(game, action) {
 
 		// We are the clue target, so we need to consider all the (sensible) possibilities of the card
 		if (target === state.ourPlayerIndex) {
-			all_connections = all_connections.concat(focus_possible.filter(fp => !isTrash(state, game.players[giver], fp, focus, { infer: true, ignoreCM: true })));
+			all_connections = all_connections.concat(focus_possible.filter(fp =>
+				!isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true })));
 
 			for (const id of common.thoughts[focus].inferred) {
 				if (isTrash(state, game.players[giver], id, focus, { infer: true, ignoreCM: true }) ||

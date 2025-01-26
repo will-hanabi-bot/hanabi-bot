@@ -295,6 +295,21 @@ export function good_touch_elim(state, only_self = false) {
 	for (const order of state.hands.flat())
 		identities = identities.union(this.thoughts[order].inferred);
 
+	const trash_ids = identities.filter(i => state.isBasicTrash(i));
+
+	// Remove all trash identities
+	for (const { order, cm } of elim_candidates) {
+		this.updateThoughts(order, (draft) => { draft.inferred = this.thoughts[order].inferred.subtract(trash_ids); });
+		const new_card = this.thoughts[order];
+
+		if (!cm && new_card.inferred.length === 0 && !new_card.reset) {
+			this.thoughts[order] = this.reset_card(order);
+			resets.add(order);
+		}
+	}
+
+	identities = identities.subtract(trash_ids);
+
 	const basic_elim = () => {
 		let changed = false;
 		const curr_identities = identities.array;
@@ -305,14 +320,14 @@ export function good_touch_elim(state, only_self = false) {
 			const id_hash = logCard(identity);
 			const soft_matches = match_map.get(id_hash);
 
-			if (soft_matches === undefined && !state.isBasicTrash(identity))
+			if (soft_matches === undefined)
 				continue;
 
 			const hard_matches = hard_match_map.get(logCard(identity));
 			const matches = hard_matches ?? soft_matches ?? new Set();
 			const matches_arr = Array.from(matches);
 
-			const bad_elim = !state.isBasicTrash(identity) && matches_arr.length > 0 && matches_arr.every(order =>
+			const bad_elim = matches_arr.length > 0 && matches_arr.every(order =>
 				(state.deck[order].identity() !== undefined && !state.deck[order].matches(identity)) ||		// Card is visible and doesn't match
 				(state.baseCount(identity) + state.hands.flat().filter(o => state.deck[o].matches(identity) && o !== order).length === cardCount(state.variant, identity)));	// Card cannot match
 
@@ -322,7 +337,7 @@ export function good_touch_elim(state, only_self = false) {
 			for (const { order, playerIndex, cm } of elim_candidates) {
 				const old_card = this.thoughts[order];
 
-				if ((!state.isBasicTrash(identity) && matches.has(order)) || old_card.inferred.length === 0 || !old_card.inferred.has(identity))
+				if (matches.has(order) || old_card.inferred.length === 0 || !old_card.inferred.has(identity))
 					continue;
 
 				const visible_elim = state.hands.some(hand => hand.some(o => matches.has(o) && state.deck[o].matches(identity, { assume: true }))) &&
@@ -382,10 +397,12 @@ export function good_touch_elim(state, only_self = false) {
 						curr_identities.push(new_card.inferred.array[0]);
 					}
 				}
-
-				addToMaps(order, playerIndex);
 			}
 		}
+
+		for (const { order, playerIndex } of elim_candidates)
+			addToMaps(order, playerIndex);
+
 		identities = new_identities;
 		return changed;
 	};
@@ -632,8 +649,12 @@ export function restore_elim(identity) {
 	if (elims?.length > 0) {
 		logger.warn(`adding back inference ${id} which was falsely eliminated from ${elims} in player ${this.playerIndex}'s view`);
 
-		for (const order of elims)
+		for (const order of elims) {
+			if (this.thoughts[order].focused)
+				continue;
+
 			this.updateThoughts(order, (draft) => { draft.inferred = this.thoughts[order].inferred.union(identity); });
+		}
 	}
 
 	this.all_inferred = this.all_inferred.union(identity);

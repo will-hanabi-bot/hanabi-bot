@@ -253,6 +253,9 @@ export function interpret_clue(game, action) {
 	if (rewinded)
 		return;
 
+	common.good_touch_elim(state);
+	common.refresh_links(state);
+
 	const fixed = new Set(clued_resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
 	const trash_push = !fix && newly_touched.every(o => common.thoughts[o].possible.every(p => state.isBasicTrash(p)));

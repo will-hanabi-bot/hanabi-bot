@@ -211,7 +211,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 		return conn;
 
 	// Try prompting a wrongly-ranked pink card
-	if ((finesse === undefined || !common.thoughts[finesse].possible.has(identity)) && state.includesVariant(variantRegexes.pinkish)) {
+	if ((finesse === undefined || game.level < LEVEL.BLUFFS || !common.thoughts[finesse].possible.some(i => state.isPlayable(i))) && state.includesVariant(variantRegexes.pinkish)) {
 		const pink_prompt = common.find_prompt(state, reacting, identity, connected, ignoreOrders, true);
 
 		if (pink_prompt !== undefined && pink_prompt !== prompt) {

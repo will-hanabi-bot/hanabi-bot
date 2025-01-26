@@ -72,11 +72,11 @@ export function checkFix(game, oldThoughts, clueAction) {
 		}
 	}
 
-	const resets = common.good_touch_elim(state);
+	//common.good_touch_elim(state);
 	common.refresh_links(state);
 
 	// Includes resets from negative information
-	const all_resets = new Set([...clue_resets, ...resets]);
+	const all_resets = new Set(clue_resets);
 
 	if (all_resets.size > 0) {
 		const reset_order = Array.from(all_resets).find(order =>

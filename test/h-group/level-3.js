@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import HGroup from '../../src/conventions/h-group.js';
@@ -230,25 +230,11 @@ describe('sarcastic discard', () => {
 			starting: PLAYER.BOB,
 			clue_tokens: 6,
 			init: (game) => {
-				const { state } = game;
-
-				const update = (draft) => {
-					draft.clued = true;
-					draft.clues = [{ giver: PLAYER.ALICE, turn: -1, type: CLUE.COLOUR, value: COLOUR.RED },
-								   { giver: PLAYER.ALICE, turn: -1, type: CLUE.RANK, value: 2 }];
-				};
-
-				// Cathy's slot 5 is known r2.
-				const c_slot5 = state.hands[PLAYER.CATHY][4];
-				state.deck = state.deck.with(c_slot5, produce(state.deck[c_slot5], update));
-
-				for (const player of game.allPlayers) {
-					player.updateThoughts(c_slot5, (draft) => {
-						update(draft);
-						draft.inferred = draft.inferred.intersect(expandShortCard('r2'));
-						draft.possible = draft.possible.intersect(expandShortCard('r2'));
-					});
-				}
+				// Cathy's r2 is fully known.
+				preClue(game, game.state.hands[PLAYER.CATHY][4], [
+					{ giver: PLAYER.ALICE, type: CLUE.COLOUR, value: COLOUR.RED },
+					{ giver: PLAYER.ALICE, type: CLUE.RANK, value: 2 }
+				]);
 			}
 		});
 

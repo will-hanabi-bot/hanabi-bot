@@ -213,8 +213,6 @@ export function setup(GameClass, hands, test_options = {}) {
 		player.card_elim(state);
 
 	team_elim(game);
-
-	game.state.turn_count = 1;
 	return game;
 }
 

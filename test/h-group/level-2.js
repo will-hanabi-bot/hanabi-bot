@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
@@ -691,19 +691,20 @@ describe('asymmetric clues', () => {
 	it('accepts asymmetric information when directly clued a critical', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['y1', 'r4', 'b2', 'r2'],
+			['y4', 'r4', 'b2', 'g4'],
 			['r3', 'y4', 'r1', 'b5'],
 			['b4', 'y3', 'p4', 'y1']
 		], {
 			level: { min: 2 },
-			play_stacks: [1, 0, 0, 0, 0]
+			play_stacks: [2, 0, 0, 0, 0],
+			starting: PLAYER.DONALD,
+			init: (game) => {
+				// Bob's r4 is clued with red.
+				preClue(game, game.state.hands[PLAYER.BOB][1], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }]);
+			}
 		});
 
-		takeTurn(game, 'Alice clues red to Bob');				// r2 play, touching r4
-		takeTurn(game, 'Bob plays r2', 'p1');
-		takeTurn(game, 'Cathy clues yellow to Donald');
 		takeTurn(game, 'Donald clues 3 to Cathy');				// getting r3
-
 		takeTurn(game, 'Alice clues 5 to Cathy');
 		takeTurn(game, 'Bob clues red to Alice (slot 1)');
 

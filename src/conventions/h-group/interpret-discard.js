@@ -330,6 +330,7 @@ export function interpret_discard(game, action) {
 			});
 
 			resolve_discard(game, action, failed ? DISCARD_INTERP.POS_MISPLAY : DISCARD_INTERP.POS_DISCARD);
+			action.intentional = true;
 			return;
 		}
 	}

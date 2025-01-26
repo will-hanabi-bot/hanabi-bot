@@ -1,4 +1,4 @@
-import { BOT_VERSION } from './constants.js';
+import { BOT_VERSION, HAND_SIZE } from './constants.js';
 import { team_elim } from './basics/helper.js';
 import * as Basics from './basics.js';
 import * as Utils from './tools/util.js';
@@ -24,9 +24,6 @@ import { produce } from './StateProxy.js';
  */
 export function handle_action(action) {
 	const { state } = this;
-
-	if (state.turn_count === 0 && action.type !== 'draw')
-		state.turn_count = 1;
 
 	if (state.actionList[state.turn_count] === undefined)
 		state.actionList[state.turn_count] = [];
@@ -84,6 +81,9 @@ export function handle_action(action) {
 		case 'draw': {
 			// { type: 'draw', playerIndex: 0, order: 2, suitIndex: 1, rank: 2 },
 			Basics.onDraw(this, action);
+
+			if (state.turn_count === 0 && state.hands.every(h => h.length === HAND_SIZE[state.numPlayers]))
+				state.turn_count = 1;
 			break;
 		}
 		case 'gameOver': {

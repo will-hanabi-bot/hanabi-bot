@@ -61,10 +61,10 @@ export function isSaved(state, player, identity, order = -1, options = {}) {
 	return state.hands.flat().some(o => {
 		const card = player.thoughts[o];
 
-		return card.matches(identity, options) && o !== order &&
+		return state.deck[o].matches(identity, { assume: true }) && card.matches(identity, options) && o !== order &&
 			!player.links.some(link => link.identities.some(i =>		// This card is linked for the identity
 				i.suitIndex === identity.suitIndex && i.rank === identity.rank && link.orders.includes(order))) &&
-			(card.touched || (options.ignoreCM ? false : card.chop_moved));
+			(card.touched || (!options.ignoreCM && card.chop_moved));
 	});
 }
 

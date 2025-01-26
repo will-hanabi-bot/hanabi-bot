@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import * as ExAsserts from '../extra-asserts.js';
 
 import { ACTION } from '../../src/constants.js';
-import { PLAYER, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { take_action } from '../../src/conventions/h-group/take-action.js';
 
@@ -199,6 +199,67 @@ describe('positional discards', () => {
 
 		// Alice should discard slot 3 as a positional discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] });
+	});
+
+	it('plays from a positional discard against common good touch', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y1', 'b1', 'r2', 'i1'],
+			['b1', 'r1', 'g1', 'g1'],
+			['r1', 'r5', 'i1', 'y1']
+		], {
+			level: { min: 8 },
+			play_stacks: [4, 4, 5, 5, 5],
+			clue_tokens: 2,
+			variant: VARIANTS.PINK,
+			init: (game) => {
+				game.state.cardsLeft = 2;
+				game.state.early_game = false;
+			}
+		});
+
+		takeTurn(game, 'Alice clues 5 to Donald');	// bad touching i1
+		takeTurn(game, 'Bob clues red to Donald');
+		takeTurn(game, 'Cathy discards r1', 'y2');
+
+		// Alice's slot 2 should be gotten from the positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y5']);
+
+		// Alice should play slot 2.
+		const action = await take_action(game);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
+	});
+
+	it(`doesn't consider a missed pos dc if they perform another pos dc`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y1', 'b1', 'r2', 'g1', 'r1'],
+			['r5', 'r1', 'y1', 'g1', 'p1']
+		], {
+			level: { min: 8 },
+			play_stacks: [4, 4, 5, 5, 5],
+			clue_tokens: 0,
+			starting: PLAYER.BOB,
+			init: (game) => {
+				game.state.cardsLeft = 2;
+				game.state.early_game = false;
+			}
+		});
+
+		takeTurn(game, 'Bob discards y1', 'b1');
+		takeTurn(game, 'Cathy discards r1', 'p1');
+
+		// Alice's slot 2 should be gotten from the positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y5']);
+
+		// Cathy's r5 should still be gotten (now in slot 2 after drawing).
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].finessed, true);
+
+		// Alice should play slot 2.
+		const action = await take_action(game);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 });
 

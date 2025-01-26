@@ -290,6 +290,28 @@ describe('pink prompts', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['i3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
 	});
+
+	it('understands a known bluff when rank mismatches', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y1', 'r4', 'r4', 'y4'],
+			['y4', 'g4', 'g4', 'b4'],
+			['y2', 'b1', 'i5', 'b4']
+		], {
+			level: { min: 11 },
+			variant: VARIANTS.PINK
+		});
+
+		takeTurn(game, 'Alice clues 2 to Donald');
+		takeTurn(game, 'Bob plays y1', 'i4');
+		takeTurn(game, 'Cathy clues pink to Alice (slot 4)');
+
+		// This could be a known bluff on Donald's b1.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1', 'i2']);
+
+		takeTurn(game, 'Donald plays b1', 'i4');
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i2']);
+	});
 });
 
 describe('pink trash', () => {

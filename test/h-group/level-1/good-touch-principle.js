@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, expandShortCard, setup, takeTurn } from '../../test-utils.js';
+import { COLOUR, PLAYER, expandShortCard, preClue, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
@@ -92,6 +92,39 @@ describe('good touch principle', () => {
 
 		const trash = game.common.thinksTrash(game.state, PLAYER.ALICE);
 		assert.ok(trash[0] === 1);
+	});
+
+	it('eliminates from focus against more info', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'r1', 'y1', 'y1', 'g1'],
+			['b1', 'b1', 'y4', 'p1', 'r5']
+		], {
+			level: { min: 1 },
+			play_stacks: [3, 3, 5, 5, 5],
+			discarded: ['y4'],
+			init: (game) => {
+				// Cathy's slot 5 is known r5.
+				preClue(game, game.state.hands[PLAYER.CATHY][4],
+					[{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }, { type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }]);
+
+				const a_slot3 = game.state.hands[PLAYER.ALICE][2];
+
+				// Alice's slot 3 is !y4.
+				for (const player of game.allPlayers) {
+					player.updateThoughts(a_slot3, (draft) => {
+						draft.possible = player.thoughts[a_slot3].possible.subtract(expandShortCard('y4'));
+						draft.inferred = player.thoughts[a_slot3].inferred.subtract(expandShortCard('y4'));
+					});
+				}
+			}
+		});
+
+		takeTurn(game, 'Alice clues 4 to Cathy');
+		takeTurn(game, 'Bob clues yellow to Alice (slots 1,3)');
+
+		// ALice's slot 1 should be known y5.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y5']);
 	});
 
 	it('generates a link from GTP', () => {

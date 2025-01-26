@@ -113,6 +113,9 @@ export function interpret_clue(game, action) {
 
 	const { clued_resets, duplicate_reveal } = checkFix(game, oldCommon.thoughts, action);
 
+	common.good_touch_elim(state);
+	common.refresh_links(state);
+
 	let fix = clued_resets.length > 0 || duplicate_reveal.length > 0;
 
 	for (const order of hand) {

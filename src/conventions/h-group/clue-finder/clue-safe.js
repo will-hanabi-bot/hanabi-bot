@@ -118,7 +118,7 @@ function getNextDiscard(game, player, startIndex, clue_tokens) {
 		!common.thinksLoaded(state, nextPlayerIndex);
 
 	if ((clue_tokens === 0 || forced_discard) && !chopUnsafe(game, player, next_discard)) {
-		logger.highlight('cyan', 'low clues, first discard', state.playerNames[next_discard], 'is safe');
+		logger.highlight('cyan', 'low clues, first discard', state.playerNames[next_discard], 'is safe', logCard(state.deck[game.players[next_discard].chop(state.hands[next_discard], { afterClue: true })]));
 
 		const result = getNextDiscard(game, player, next_discard, 1);
 		next_discard = result.next_discard;
