@@ -50,8 +50,9 @@ export class Player {
 	 * @param {Set<number>} [unknown_plays]
 	 * @param {WaitingConnection[]} [waiting_connections]
 	 * @param {Record<string, number[]>} [elims]
+	 * @param {Map<number, Patch[]>} patches
 	 */
-	constructor(playerIndex, all_possible, all_inferred, hypo_stacks, hypo_plays = new Set(), thoughts = [], links = [], play_links = [], unknown_plays = new Set(), waiting_connections = [], elims = {}) {
+	constructor(playerIndex, all_possible, all_inferred, hypo_stacks, hypo_plays = new Set(), thoughts = [], links = [], play_links = [], unknown_plays = new Set(), waiting_connections = [], elims = {}, patches = new Map()) {
 		this.playerIndex = playerIndex;
 
 		this.thoughts = thoughts;
@@ -70,6 +71,7 @@ export class Player {
 
 		this.waiting_connections = waiting_connections;
 		this.elims = elims;
+		this.patches = patches;
 	}
 
 	/** @param {Player} json */
@@ -99,7 +101,8 @@ export class Player {
 			this.play_links.map(link => Utils.objClone(link)),
 			new Set(this.unknown_plays),
 			Utils.objClone(this.waiting_connections),
-			Utils.objClone(this.elims));
+			Utils.objClone(this.elims),
+			new Map(this.patches));
 	}
 
 	/** @returns {this} */
@@ -114,7 +117,8 @@ export class Player {
 			this.play_links,
 			this.unknown_plays,
 			this.waiting_connections,
-			this.elims);
+			this.elims,
+			this.patches);
 	}
 
 	/**
@@ -340,8 +344,11 @@ export class Player {
 	}
 
 	/**
+	 * @template {Player} T
+	 * @this {T}
 	 * @param {State} state
 	 * @param {Set<number>} [ignoreOrders]
+	 * @returns {T}
 	 * Computes the hypo stacks and unknown plays.
 	 */
 	update_hypo_stacks(state, ignoreOrders) {
@@ -454,10 +461,11 @@ export class Player {
 			}
 		}
 
-		let best_hypo_stacks = hypo_stacks,
-			best_unknown_plays = unknown_plays,
-			best_hypo_plays = already_played,
-			best_score = hypo_stacks.reduce((a, s) => a + s) + unknown_plays.size;
+		let bestPlayer = produce(this, (draft) => {
+			draft.hypo_stacks = hypo_stacks;
+			draft.unknown_plays = unknown_plays;
+			draft.hypo_plays = already_played;
+		});
 
 		if (ignoreOrders === undefined) {
 			// TODO: This doesn't quite get all possible arrangements of possible dupes; it should be some permutation of ignores between ids
@@ -467,20 +475,14 @@ export class Player {
 
 				for (let i = 0; i < orders.length; i++) {
 					ignore.add(orders[i]);
-					this.update_hypo_stacks(state, ignore);
+					const newPlayer = this.update_hypo_stacks(state, ignore);
 
-					if (this.hypo_score > best_score) {
-						best_hypo_stacks = this.hypo_stacks;
-						best_unknown_plays = this.unknown_plays;
-						best_hypo_plays = this.hypo_plays;
-						best_score = this.hypo_score;
-					}
+					if (newPlayer.hypo_score > bestPlayer.hypo_score)
+						bestPlayer = newPlayer;
 				}
 			}
 		}
 
-		this.hypo_stacks = best_hypo_stacks;
-		this.unknown_plays = best_unknown_plays;
-		this.hypo_plays = best_hypo_plays;
+		return bestPlayer;
 	}
 }

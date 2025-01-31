@@ -73,7 +73,7 @@ export function remove_finesse(game, waiting_connection) {
 	if (common.thoughts[focus].inferred.length === 0 && !common.thoughts[focus].reset)
 		common.thoughts[focus] = common.reset_card(focus);
 
-	common.update_hypo_stacks(state);
+	Object.assign(common, common.update_hypo_stacks(state));
 }
 
 /**
@@ -230,6 +230,7 @@ export function resolve_card_retained(game, waiting_connection) {
 		const unplayable_connections = common.waiting_connections.filter(wc =>
 			wc.conn_index !== -1 &&
 			wc !== waiting_connection &&
+			!(wc.symmetric && reacting === state.ourPlayerIndex) &&		// We can't defer if we know that this finesse is symmetric
 			wc.connections.some((conn, index) =>
 				index >= conn_index && conn.order === order && conn.identities.some(i => state.playableAway(i) > 0)) &&
 			// The reacting player has to wait for someone else, or they already tried to play

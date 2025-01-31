@@ -183,10 +183,7 @@ export function interpret_play(game, action) {
 
 	Basics.onPlay(this, action);
 
-	common.good_touch_elim(state);
-
-	// Resolve any links after playing
-	common.refresh_links(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 
 	// Update hypo stacks
 	team_elim(game);

@@ -73,7 +73,7 @@ function remove_finesse_conns(game, waiting_connection) {
 	if (common.thoughts[focus].inferred.length === 0 && !common.thoughts[focus].reset)
 		common.thoughts[focus] = common.reset_card(focus);
 
-	common.update_hypo_stacks(state);
+	Object.assign(common, common.update_hypo_stacks(state));
 }
 
 
@@ -282,7 +282,6 @@ export function update_turn(game, action) {
 	// Filter out connections that have been removed (or connections to the same card where others have been demonstrated)
 	common.waiting_connections = common.waiting_connections.filter((_, i) => !to_remove.includes(i));
 
-	common.update_hypo_stacks(state);
-	common.good_touch_elim(state);
+	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);
 }

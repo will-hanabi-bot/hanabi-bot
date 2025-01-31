@@ -126,7 +126,7 @@ describe('connecting cards', () => {
 		});
 
 		team_elim(game);
-		game.common.update_hypo_stacks(game.state);
+		Object.assign(game.common, game.common.update_hypo_stacks(game.state));
 
 		// Alice should play g1 to make g2 playable.
 		const action = await take_action(game);
@@ -155,7 +155,7 @@ describe('urgency principle', () => {
 				});
 
 				team_elim(game);
-				game.common.update_hypo_stacks(game.state);
+				Object.assign(game.common, game.common.update_hypo_stacks(game.state));
 			}
 		});
 

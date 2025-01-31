@@ -131,7 +131,6 @@ export function interpret_discard(game, action) {
 		}
 	}
 
-	common.good_touch_elim(state);
-	common.refresh_links(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 	team_elim(game);
 }

@@ -251,7 +251,7 @@ export function find_positional_discard(game, discarder, expected_discard) {
 			!isTrash(state, me, card, order) &&
 			me.hypo_stacks[card.suitIndex] + 1 === card.rank &&
 			!me.hypo_plays.has(order) &&
-			connectable_simple(game, state.ourPlayerIndex, playerIndex, card);
+			connectable_simple(game, discarder, playerIndex, card);
 	};
 
 	for (let i = 1; i < state.numPlayers; i++) {

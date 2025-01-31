@@ -478,7 +478,7 @@ export function interpret_clue(game, action) {
 		logger.info(`${fix ? 'fix clue' : 'mistake'}! not inferring anything else`);
 		// FIX: Rewind to when the earliest card was clued so that we don't perform false eliminations
 		if (common.thoughts[focus].inferred.length === 1)
-			common.update_hypo_stacks(state);
+			Object.assign(common, common.update_hypo_stacks(state));
 
 		// Pink fix clue on 1s
 		if (fix && state.includesVariant(variantRegexes.pinkish) && clue.type === CLUE.RANK && clue.value !== 1) {
@@ -501,7 +501,7 @@ export function interpret_clue(game, action) {
 			}
 		}
 
-		common.good_touch_elim(state);
+		Object.assign(common, common.good_touch_elim(state));
 
 		// Focus doesn't matter for a fix clue
 		common.updateThoughts(focus, (draft) => { draft.focused = oldCommon.thoughts[focus].focused; });
@@ -524,7 +524,7 @@ export function interpret_clue(game, action) {
 			common.updateThoughts(focus, (draft) => { draft.inferred = inferred.intersect(inferred.filter(i => i.rank === clue.value)); });
 		}
 
-		common.update_hypo_stacks(state);
+		Object.assign(common, common.update_hypo_stacks(state));
 		team_elim(game);
 		game.interpretMove(stall);
 		return;
@@ -780,9 +780,7 @@ export function interpret_clue(game, action) {
 		}
 	}
 
-	common.good_touch_elim(state);
-	common.refresh_links(state);
-	common.update_hypo_stacks(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
 
 	if (positional) {
 		game.moveHistory.pop();

@@ -113,8 +113,7 @@ export function interpret_clue(game, action) {
 
 	const { clued_resets, duplicate_reveal } = checkFix(game, oldCommon.thoughts, action);
 
-	common.good_touch_elim(state);
-	common.refresh_links(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 
 	let fix = clued_resets.length > 0 || duplicate_reveal.length > 0;
 
@@ -161,9 +160,7 @@ export function interpret_clue(game, action) {
 	if (common.thinksLocked(state, giver)) {
 		interpret_locked_clue(game, action);
 
-		common.good_touch_elim(state);
-		common.refresh_links(state);
-		common.update_hypo_stacks(state);
+		Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
 		team_elim(game);
 		return;
 	}
@@ -293,8 +290,6 @@ export function interpret_clue(game, action) {
 		}
 	}
 
-	common.good_touch_elim(state);
-	common.refresh_links(state);
-	common.update_hypo_stacks(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
 	team_elim(game);
 }

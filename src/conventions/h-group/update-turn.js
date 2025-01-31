@@ -238,7 +238,6 @@ export function update_turn(game, action) {
 		}
 	}
 
-	common.update_hypo_stacks(state);
-	common.good_touch_elim(state);
+	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);
 }

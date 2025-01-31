@@ -117,8 +117,7 @@ export function interpret_play(game, action) {
 			}
 		}
 
-		common.good_touch_elim(state);
-		common.refresh_links(state);
+		Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 		team_elim(game);
 		return;
 	}
@@ -178,10 +177,7 @@ export function interpret_play(game, action) {
 
 	Basics.onPlay(game, action);
 
-	common.good_touch_elim(state);
-
-	// Resolve any links after playing
-	common.refresh_links(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 
 	// Update hypo stacks
 	team_elim(game);

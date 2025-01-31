@@ -118,7 +118,7 @@ function init_game(game, options) {
 	}
 
 	for (const player of game.allPlayers)
-		player.card_elim(state);
+		Object.assign(player, player.card_elim(state));
 
 	state.currentPlayerIndex = options.starting ?? 0;
 	state.clue_tokens = options.clue_tokens ?? 8;
@@ -210,7 +210,7 @@ export function setup(GameClass, hands, test_options = {}) {
 	game.hookAfterDraws(game);
 
 	for (const player of game.players)
-		player.card_elim(state);
+		Object.assign(player, player.card_elim(state));
 
 	team_elim(game);
 	return game;

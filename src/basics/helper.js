@@ -23,8 +23,9 @@ import { applyPatches, produce } from '../StateProxy.js';
 /**
  * Updates all players with info from common knowledge.
  * @param {Game} game
+ * @param {boolean} [good_touch]
  */
-export function team_elim(game) {
+export function team_elim(game, good_touch = true) {
 	const { common, state } = game;
 
 	for (const player of game.players) {
@@ -40,12 +41,37 @@ export function team_elim(game) {
 		}
 
 		player.waiting_connections = common.waiting_connections.slice();
-		player.good_touch_elim(state, state.numPlayers === 2);
-		player.refresh_links(state);
-		player.update_hypo_stacks(state);
+		Object.assign(player, player[good_touch ? 'good_touch_elim' : 'card_elim'](state, state.numPlayers === 2).refresh_links(state).update_hypo_stacks(state));
 	}
 
 	common.patches = new Map();
+}
+
+/**
+ * Updates all players with info from common knowledge.
+ * @param {Game} game
+ * @param {boolean} [good_touch]
+ */
+export function team_elimP(game, good_touch = true) {
+	const { common, state } = game;
+
+	const newPlayers = game.players.map(player => produce(player, (draft) => {
+		for (const [order, patches] of common.patches) {
+			const { possible, inferred } = common.thoughts[order];
+			const { possible: player_possible } = player.thoughts[order];
+
+			applyPatches(draft.thoughts[order], patches.filter(p => p.path[0] !== 'possible' && p.path[0] !== 'inferred'));
+			draft.thoughts[order].possible = possible.intersect(player_possible);
+			draft.thoughts[order].inferred = inferred.intersect(player_possible);
+		}
+		draft.waiting_connections = common.waiting_connections.slice();
+	})[good_touch ? 'good_touch_elim' : 'card_elim'](state, state.numPlayers === 2).refresh_links(state).update_hypo_stacks(state));
+
+	const newGame = game.shallowCopy();
+	newGame.players = newPlayers;
+	newGame.common = produce(common, (draft) => { draft.patches = new Map(); });
+
+	return newGame;
 }
 
 /**
@@ -73,7 +99,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 	}
 
 	//common.good_touch_elim(state);
-	common.refresh_links(state);
+	Object.assign(common, common.refresh_links(state));
 
 	// Includes resets from negative information
 	const all_resets = new Set(clue_resets);

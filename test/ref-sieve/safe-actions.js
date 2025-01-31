@@ -98,7 +98,7 @@ describe('urgency principle', () => {
 				});
 
 				team_elim(game);
-				game.common.update_hypo_stacks(game.state);
+				Object.assign(game.common, game.common.update_hypo_stacks(game.state));
 			}
 		});
 

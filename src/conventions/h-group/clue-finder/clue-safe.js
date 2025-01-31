@@ -93,7 +93,7 @@ function getNextDiscard(game, player, startIndex, clue_tokens) {
 		else {
 			const finessed_card = state.deck[finessed_order];
 			state.play_stacks[finessed_card.suitIndex] = finessed_card.rank;
-			game.common.good_touch_elim(state);
+			Object.assign(game.common, game.common.good_touch_elim(state));
 			team_elim(game);
 		}
 

@@ -287,7 +287,7 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 
 				// Assume this is actually the card
 				hypo_common.updateThoughts(order, (draft) => { draft.inferred = hypo_common.thoughts[order].inferred.intersect(next_identity); });
-				hypo_common.good_touch_elim(hypo_state);
+				Object.assign(hypo_common, hypo_common.good_touch_elim(hypo_state));
 			}
 			already_connected.push(order);
 		}

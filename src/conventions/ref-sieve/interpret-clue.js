@@ -253,8 +253,7 @@ export function interpret_clue(game, action) {
 	if (rewinded)
 		return;
 
-	common.good_touch_elim(state);
-	common.refresh_links(state);
+	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 
 	const fixed = new Set(clued_resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
@@ -343,11 +342,7 @@ export function interpret_clue(game, action) {
 	if (interp === CLUE_INTERP.NONE)
 		return;
 
-	game.common = new_common;
-
-	game.common.good_touch_elim(state);
-	game.common.refresh_links(state);
-	game.common.update_hypo_stacks(state);
+	game.common = /** @type {Player} */(new_common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
 
 	for (const player of game.players) {
 		for (const [order, patches] of game.common.patches) {
@@ -366,7 +361,7 @@ export function interpret_clue(game, action) {
 	game.common.patches = new Map();
 
 	game.players = game.players.map(player => {
-		const new_player = patches.length  === 0 ? player : produce(player, (draft) => {
+		const new_player = (patches.length  === 0 ? player : produce(player, (draft) => {
 			for (const patch of patches) {
 				if (patch.path[2] === 'possible' || patch.path[2] === 'inferred') {
 					const order = Number(patch.path[1]);
@@ -379,11 +374,8 @@ export function interpret_clue(game, action) {
 				}
 			}
 			applyPatches(draft, patches.filter(p => p.path[2] !== 'possible' && p.path[2] !== 'inferred'));
-		});
+		})).good_touch_elim(state, state.numPlayers === 2).refresh_links(state).update_hypo_stacks(state);
 
-		new_player.good_touch_elim(state, state.numPlayers === 2);
-		new_player.refresh_links(state);
-		new_player.update_hypo_stacks(state);
-		return new_player;
+		return /** @type {Player} */(new_player);
 	});
 }
