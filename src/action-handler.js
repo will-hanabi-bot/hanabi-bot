@@ -80,7 +80,8 @@ export function handle_action(action) {
 		}
 		case 'draw': {
 			// { type: 'draw', playerIndex: 0, order: 2, suitIndex: 1, rank: 2 },
-			Basics.onDraw(this, action);
+			const newGame = Basics.onDraw(this, action);
+			Basics.mutate(this, newGame);
 
 			if (state.turn_count === 0 && state.hands.every(h => h.length === HAND_SIZE[state.numPlayers]))
 				state.turn_count = 1;

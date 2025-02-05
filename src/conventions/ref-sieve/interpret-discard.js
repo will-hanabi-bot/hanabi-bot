@@ -1,4 +1,4 @@
-import { team_elim, undo_hypo_stacks } from '../../basics/helper.js';
+import { team_elim } from '../../basics/helper.js';
 import { find_sarcastics, interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
 
@@ -74,7 +74,8 @@ export function interpret_discard(game, action) {
 	const { order, playerIndex, suitIndex, rank, failed } = action;
 	const identity = { suitIndex, rank };
 
-	Basics.onDiscard(this, action);
+	const newGame = Basics.onDiscard(this, action);
+	Basics.mutate(this, newGame);
 
 	/*const thoughts = common.thoughts[order];
 
@@ -94,11 +95,11 @@ export function interpret_discard(game, action) {
 	// Discarding a useful card
 	if (state.deck[order].clued && rank > state.play_stacks[suitIndex] && rank <= state.max_ranks[suitIndex]) {
 		logger.warn('discarded useful card!');
-		common.restore_elim(state.deck[order]);
+		Object.assign(common, common.restore_elim(state.deck[order]));
 
 		// Card was bombed
 		if (failed)
-			undo_hypo_stacks(game, identity);
+			Object.assign(common, common.undo_hypo_stacks(identity));
 		else
 			interpret_rs_sarcastic(game, action);
 	}

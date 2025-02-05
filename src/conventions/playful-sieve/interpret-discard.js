@@ -1,5 +1,4 @@
 import { isTrash } from '../../basics/hanabi-util.js';
-import { undo_hypo_stacks } from '../../basics/helper.js';
 import { interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
 
@@ -29,7 +28,8 @@ export function interpret_discard(game, action) {
 	const other = state.nextPlayerIndex(playerIndex);
 	const other_had_trash = common.thinksTrash(state, other).length > 0;
 
-	Basics.onDiscard(this, action);
+	const newGame = Basics.onDiscard(this, action);
+	Basics.mutate(this, newGame);
 
 	const thoughts = common.thoughts[order];
 
@@ -51,11 +51,11 @@ export function interpret_discard(game, action) {
 	// Discarding with a finesse will trigger the waiting connection to resolve.
 	if (state.deck[order].clued && rank > state.play_stacks[suitIndex] && rank <= state.max_ranks[suitIndex]) {
 		logger.warn('discarded useful card!');
-		common.restore_elim(state.deck[order]);
+		Object.assign(common, common.restore_elim(state.deck[order]));
 
 		// Card was bombed
 		if (failed)
-			undo_hypo_stacks(game, identity);
+			Object.assign(common, common.undo_hypo_stacks(identity));
 		else
 			interpret_sarcastic(game, action);
 	}

@@ -662,17 +662,21 @@ export function restore_elim(identity) {
 		// Only add the inference back if it's still a possibility
 		possible.has(identity) && (info_lock === undefined || info_lock.has(identity))));
 
+	let newPlayer = this;
+
 	if (elims?.length > 0) {
 		logger.warn(`adding back inference ${id} which was falsely eliminated from ${elims} in player ${this.playerIndex}'s view`);
 
 		for (const order of elims) {
-			if (this.thoughts[order].focused)
+			if (newPlayer.thoughts[order].focused)
 				continue;
 
-			this.updateThoughts(order, (draft) => { draft.inferred = this.thoughts[order].inferred.union(identity); });
+			newPlayer = newPlayer.withThoughts(order, (draft) => { draft.inferred = newPlayer.thoughts[order].inferred.union(identity); });
 		}
 	}
 
-	this.all_inferred = this.all_inferred.union(identity);
-	this.elims[id] = undefined;
+	return produce(newPlayer, (draft) => {
+		draft.all_inferred = newPlayer.all_inferred.union(identity);
+		draft.elims[id] = undefined;
+	});
 }

@@ -47,7 +47,8 @@ function apply_good_touch(game, action, oldThoughts) {
 	const { common, state } = game;
 	const { list, target } = action;
 
-	Basics.onClue(game, action);
+	const newGame = Basics.onClue(game, action);
+	Basics.mutate(game, newGame);
 
 	if (target === state.ourPlayerIndex) {
 		for (const order of state.hands[target]) {

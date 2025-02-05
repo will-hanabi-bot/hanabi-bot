@@ -1,6 +1,6 @@
 import { DISCARD_INTERP, LEVEL, PLAY_INTERP } from './h-constants.js';
 import { isTrash } from '../../basics/hanabi-util.js';
-import { team_elim, undo_hypo_stacks } from '../../basics/helper.js';
+import { team_elim } from '../../basics/helper.js';
 import { interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
 
@@ -181,7 +181,8 @@ export function interpret_discard(game, action) {
 		}
 	}
 
-	Basics.onDiscard(game, action);
+	const newGame = Basics.onDiscard(game, action);
+	Basics.mutate(game, newGame);
 
 	const { interp } = check_transfer(game, action);
 	if (interp !== DISCARD_INTERP.NONE) {
@@ -219,11 +220,11 @@ export function interpret_discard(game, action) {
 			logger.warn('discarded useful clued card!');
 
 			for (const player of game.allPlayers)
-				player.restore_elim(state.deck[order]);
+				Object.assign(player, player.restore_elim(state.deck[order]));
 
 			// Card was bombed
 			if (failed) {
-				undo_hypo_stacks(game, identity);
+				Object.assign(common, common.undo_hypo_stacks(identity));
 			}
 			else if (!common.thoughts[order].bluffed) {
 				/** @type {typeof DISCARD_INTERP[keyof typeof DISCARD_INTERP]} */

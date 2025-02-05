@@ -247,7 +247,8 @@ export function interpret_clue(game, action) {
 	const newly_touched = list.filter(o => !state.deck[o].clued);
 	const { common: prev_common, state: prev_state } = game.minimalCopy();
 
-	Basics.onClue(game, action);
+	const newGame = Basics.onClue(game, action);
+	Basics.mutate(game, newGame);
 
 	const { clued_resets, duplicate_reveal, rewinded } = checkFix(game, prev_common.thoughts, action);
 	if (rewinded)

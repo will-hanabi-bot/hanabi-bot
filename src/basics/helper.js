@@ -49,7 +49,8 @@ export function team_elim(game, good_touch = true) {
 
 /**
  * Updates all players with info from common knowledge.
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {boolean} [good_touch]
  */
 export function team_elimP(game, good_touch = true) {
@@ -148,7 +149,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 		}
 
 		for (const inf of infs_to_recheck)
-			common.restore_elim(inf);
+			Object.assign(common, common.restore_elim(inf));
 	}
 
 	// Any clued cards that lost all inferences
@@ -174,16 +175,6 @@ export function checkFix(game, oldThoughts, clueAction) {
 	});
 
 	return { clued_resets, duplicate_reveal };
-}
-
-/**
- * Reverts the hypo stacks of the given suitIndex to the given rank - 1, if it was originally above that.
- * @param {Game} game
- * @param {Identity} identity
- */
-export function undo_hypo_stacks(game, { suitIndex, rank }) {
-	logger.info(`discarded useful card ${logCard({suitIndex, rank})}, setting hypo stack to ${rank - 1}`);
-	game.common.hypo_stacks[suitIndex] = Math.min(game.common.hypo_stacks[suitIndex], rank - 1);
 }
 
 /**

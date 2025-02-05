@@ -1,5 +1,4 @@
 import { visibleFind } from '../../basics/hanabi-util.js';
-import { undo_hypo_stacks } from '../../basics/helper.js';
 
 import logger from '../../tools/logger.js';
 import { logCard } from '../../tools/log.js';
@@ -62,7 +61,7 @@ function apply_unknown_sarcastic(game, sarcastics, identity) {
 
 	// Mistake discard or sarcastic with unknown transfer location (and not all playable)
 	if (sarcastics.length === 0 || sarcastics.some(order => common.thoughts[order].inferred.some(c => state.playableAway(c) > 0)))
-		undo_hypo_stacks(game, identity);
+		Object.assign(common, common.undo_hypo_stacks(identity));
 }
 
 /**

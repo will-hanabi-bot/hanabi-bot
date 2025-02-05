@@ -181,7 +181,8 @@ export function interpret_play(game, action) {
 		game.locked_shifts = [];
 	}
 
-	Basics.onPlay(this, action);
+	const newGame = Basics.onPlay(this, action);
+	Basics.mutate(this, newGame);
 
 	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 

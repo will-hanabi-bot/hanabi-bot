@@ -107,7 +107,8 @@ export function interpret_play(game, action) {
 	}
 
 	if (state.numPlayers !== 2) {
-		Basics.onPlay(game, action);
+		const newGame = Basics.onPlay(game, action);
+		Basics.mutate(game, newGame);
 
 		for (const o of state.hands[playerIndex]) {
 			if (common.thoughts[o].called_to_discard) {
@@ -175,7 +176,8 @@ export function interpret_play(game, action) {
 		game.locked_shifts = [];
 	}
 
-	Basics.onPlay(game, action);
+	const newGame = Basics.onPlay(game, action);
+	Basics.mutate(game, newGame);
 
 	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 

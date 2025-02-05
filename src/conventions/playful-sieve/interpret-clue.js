@@ -109,7 +109,8 @@ export function interpret_clue(game, action) {
 
 	const no_info = touch.every(o => state.deck[o].clues.some(c => Utils.objEquals(c, Utils.objPick(clue, ['type', 'value']))));
 
-	Basics.onClue(game, action);
+	const newGame = Basics.onClue(game, action);
+	Basics.mutate(game, newGame);
 
 	const { clued_resets, duplicate_reveal } = checkFix(game, oldCommon.thoughts, action);
 

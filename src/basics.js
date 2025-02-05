@@ -14,8 +14,8 @@ import { produce } from './StateProxy.js';
  */
 
 /**
- * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {ClueAction} action
  */
 export function onClue(game, action) {
@@ -70,19 +70,12 @@ export function onClue(game, action) {
 	newGame.state = newState;
 	newGame.common = newCommon.card_elim(state).refresh_links(state);
 	newGame = team_elimP(newGame, false);
-
-	// Temporary hack to keep mutable state
-	Object.assign(game.state, newState);
-	Object.assign(game.common, newGame.common);
-	for (let i = 0; i < game.state.numPlayers; i++)
-		Object.assign(game.players[i], newGame.players[i]);
-
 	return newGame;
 }
 
 /**
- * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DiscardAction} action
  */
 export function onDiscard(game, action) {
@@ -129,19 +122,12 @@ export function onDiscard(game, action) {
 
 	newGame.state = newState;
 	newGame = team_elimP(newGame, false);
-
-	// Temporary hack to keep mutable state
-	Object.assign(game.state, newState);
-	Object.assign(game.common, newGame.common);
-	for (let i = 0; i < game.state.numPlayers; i++)
-		Object.assign(game.players[i], newGame.players[i]);
-
 	return newGame;
 }
 
 /**
- * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DrawAction} action
  */
 export function onDraw(game, action) {
@@ -177,19 +163,12 @@ export function onDraw(game, action) {
 	newGame.state = newState;
 	newGame.players = newPlayers;
 	newGame.common = newCommon;
-
-	// Temporary hack to keep mutable state
-	Object.assign(game.state, newState);
-	Object.assign(game.common, newGame.common);
-	for (let i = 0; i < game.state.numPlayers; i++)
-		Object.assign(game.players[i], newGame.players[i]);
-
 	return newGame;
 }
 
 /**
- * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {PlayAction} action
  */
 export function onPlay(game, action) {
@@ -232,12 +211,18 @@ export function onPlay(game, action) {
 
 	newGame.state = newState;
 	newGame = team_elimP(newGame, false);
+	return newGame;
+}
 
+/**
+ * Temporary hack to keep mutable state.
+ * @param {Game} game
+ * @param {Game} newGame
+ */
+export function mutate(game, newGame) {
 	// Temporary hack to keep mutable state
-	Object.assign(game.state, newState);
+	Object.assign(game.state, newGame.state);
 	Object.assign(game.common, newGame.common);
 	for (let i = 0; i < game.state.numPlayers; i++)
 		Object.assign(game.players[i], newGame.players[i]);
-
-	return newGame;
 }

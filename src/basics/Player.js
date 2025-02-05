@@ -485,4 +485,17 @@ export class Player {
 
 		return bestPlayer;
 	}
+
+	/**
+	 * Reverts the hypo stacks of the given suitIndex to the given rank - 1, if it was originally above that.
+	 * @param {Identity} identity
+	 */
+	undo_hypo_stacks({ suitIndex, rank }) {
+		logger.info(`discarded useful card ${logCard({suitIndex, rank})}, setting hypo stack to ${rank - 1}`);
+
+		return produce(this, (draft) => {
+			draft.hypo_stacks[suitIndex] = Math.min(this.hypo_stacks[suitIndex], rank - 1);
+		});
+	}
+
 }
