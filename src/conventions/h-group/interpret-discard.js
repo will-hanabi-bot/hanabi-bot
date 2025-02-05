@@ -59,7 +59,10 @@ function check_transfer(game, action) {
 		let transfers = [], interp;
 
 		if (replaceable) {
-			transfers = interpret_sarcastic(game, action);
+			const { newCommon, sarcastics } = interpret_sarcastic(game, action);
+			transfers = sarcastics;
+			Object.assign(common, newCommon);
+
 			interp = DISCARD_INTERP.SARCASTIC;
 
 			if (transfers.length === 0 && game.level >= LEVEL.SPECIAL_DISCARDS) {
@@ -229,7 +232,11 @@ export function interpret_discard(game, action) {
 			else if (!common.thoughts[order].bluffed) {
 				/** @type {typeof DISCARD_INTERP[keyof typeof DISCARD_INTERP]} */
 				let interp = DISCARD_INTERP.SARCASTIC;
-				let transferred = interpret_sarcastic(game, action).length > 0;
+
+				const { newCommon, sarcastics } = interpret_sarcastic(game, action);
+				Object.assign(common, newCommon);
+
+				let transferred = sarcastics.length > 0;
 
 				if (!transferred && game.level >= LEVEL.SPECIAL_DISCARDS) {
 					if (state.isPlayable(identity)) {

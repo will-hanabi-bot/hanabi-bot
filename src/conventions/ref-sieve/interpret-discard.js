@@ -1,4 +1,4 @@
-import { team_elim } from '../../basics/helper.js';
+import { team_elimP } from '../../basics/helper.js';
 import { find_sarcastics, interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
 
@@ -15,19 +15,18 @@ import { logCard } from '../../tools/log.js';
 
 /**
  * Interprets a sarcastic discard.
- * 
- * Impure! (modifies common)
  * @param {Game} game
  * @param {DiscardAction} discardAction
- * @returns {number[]} 					The targets for the sarcastic discard
  */
 export function interpret_rs_sarcastic(game, discardAction) {
 	const { common, me, state } = game;
 	const { playerIndex, suitIndex, rank } = discardAction;
 	const identity = { suitIndex, rank };
 
+	let newCommon = common;
+
 	if (!state.isPlayable(identity))
-		return interpret_sarcastic(game, discardAction);
+		({ newCommon } = interpret_sarcastic(game, discardAction));
 
 	// Sarcastic discard to other (or known sarcastic discard to us)
 	for (let i = 0; i < state.numPlayers; i++) {
@@ -37,29 +36,30 @@ export function interpret_rs_sarcastic(game, discardAction) {
 		if (receiver === playerIndex)
 			continue;
 
-		const sarcastics = find_sarcastics(state, receiver, common, identity);
+		const sarcastics = find_sarcastics(state, receiver, newCommon, identity);
 		const sarcastic_target = Math.min(...sarcastics);
 
 		if (sarcastics.length > 0 && me.thoughts[sarcastic_target].matches(identity, { infer: receiver === state.ourPlayerIndex })) {
-			common.updateThoughts(sarcastics[0], (draft) => { draft.inferred = state.base_ids.union(identity); });
+			newCommon = newCommon.withThoughts(sarcastics[0], (draft) => { draft.inferred = state.base_ids.union(identity); });
 			logger.info(`writing ${logCard(identity)} from sarcastic discard`);
-			return [sarcastic_target];
+			return { newCommon, sarcastics: [sarcastic_target] };
 		}
 	}
 
 	const sarcastics = find_sarcastics(state, state.ourPlayerIndex, me, identity);
 	const sarcastic_target = Math.min(...sarcastics);
+
 	if (sarcastics.length > 0) {
-		common.updateThoughts(sarcastic_target, (common_sarcastic) => {
+		newCommon = newCommon.withThoughts(sarcastic_target, (common_sarcastic) => {
 			common_sarcastic.inferred = state.base_ids.union(identity);
 			common_sarcastic.trash = false;
 		});
 		logger.info(`writing sarcastic ${logCard(identity)} on slot ${state.ourHand.findIndex(o => o === sarcastic_target) + 1}`);
-		return [sarcastic_target];
+		return { newCommon, sarcastics: [sarcastic_target] };
 	}
 
 	logger.warn(`couldn't find a valid target for sarcastic discard`);
-	return [];
+	return { newCommon, sarcastics: [] };
 }
 
 /**
@@ -70,38 +70,23 @@ export function interpret_rs_sarcastic(game, discardAction) {
  * @param {DiscardAction} action
  */
 export function interpret_discard(game, action) {
-	const { common, state } = game;
+	let { common, state } = game;
 	const { order, playerIndex, suitIndex, rank, failed } = action;
 	const identity = { suitIndex, rank };
 
-	const newGame = Basics.onDiscard(this, action);
-	Basics.mutate(this, newGame);
-
-	/*const thoughts = common.thoughts[order];
-
-	// If bombed or the card doesn't match any of our inferences (and is not trash), rewind to the reasoning and adjust
-	if (!thoughts.rewinded && (failed || (!state.hasConsistentInferences(thoughts) && !isTrash(state, me, state.deck[order], order)))) {
-		logger.info('all inferences', thoughts.inferred.map(logCard));
-
-		const action_index = thoughts.drawn_index;
-		const new_game = game.rewind(action_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }], thoughts.finessed);
-		if (new_game) {
-			new_game.updateNotes();
-			Object.assign(game, new_game);
-			return;
-		}
-	}*/
+	let newGame = Basics.onDiscard(game, action);
+	({ common, state } = newGame);
 
 	// Discarding a useful card
 	if (state.deck[order].clued && rank > state.play_stacks[suitIndex] && rank <= state.max_ranks[suitIndex]) {
 		logger.warn('discarded useful card!');
-		Object.assign(common, common.restore_elim(state.deck[order]));
+		common = common.restore_elim(state.deck[order]);
 
 		// Card was bombed
 		if (failed)
-			Object.assign(common, common.undo_hypo_stacks(identity));
+			common = common.undo_hypo_stacks(identity);
 		else
-			interpret_rs_sarcastic(game, action);
+			common = interpret_rs_sarcastic(game, action).newCommon;
 	}
 
 	if (state.numPlayers === 2) {
@@ -112,12 +97,12 @@ export function interpret_discard(game, action) {
 			const playables = common.thinksPlayables(state, playerIndex);
 
 			for (const order of playables)
-				game.locked_shifts[order] = (game.locked_shifts[order] ?? 0) + 1;
+				newGame.locked_shifts[order] = (newGame.locked_shifts[order] ?? 0) + 1;
 		}
 
 		// No safe action, chop has permission to discard
 		if (!common.thinksLoaded(state, partner) && !state.hands[partner].some(o => common.thoughts[o].called_to_discard)) {
-			common.updateThoughts(state.hands[partner][0], (chop) => {
+			common = common.withThoughts(state.hands[partner][0], (chop) => {
 				chop.permission_to_discard = true;
 			});
 		}
@@ -125,13 +110,16 @@ export function interpret_discard(game, action) {
 	else {
 		for (const o of state.hands[playerIndex]) {
 			if (common.thoughts[o].called_to_discard) {
-				common.updateThoughts(o, (draft) => {
+				common = common.withThoughts(o, (draft) => {
 					draft.called_to_discard = false;
 				});
 			}
 		}
 	}
 
-	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
-	team_elim(game);
+	newGame.common = common.good_touch_elim(state).refresh_links(state);
+	newGame = team_elimP(newGame);
+
+	Basics.mutate(game, newGame);
+	return newGame;
 }

@@ -57,7 +57,7 @@ export function interpret_discard(game, action) {
 		if (failed)
 			Object.assign(common, common.undo_hypo_stacks(identity));
 		else
-			interpret_sarcastic(game, action);
+			Object.assign(common, interpret_sarcastic(game, action).newCommon);
 	}
 
 	// Discarding while partner is locked and having a playable card

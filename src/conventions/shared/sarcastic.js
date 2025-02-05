@@ -2,6 +2,7 @@ import { visibleFind } from '../../basics/hanabi-util.js';
 
 import logger from '../../tools/logger.js';
 import { logCard } from '../../tools/log.js';
+import { produce } from '../../StateProxy.js';
 
 /**
  * @typedef {import('../../basics/Game.js').Game} Game
@@ -37,61 +38,63 @@ export function find_sarcastics(state, playerIndex, player, identity) {
 
 /**
  * Adds the sarcastic discard inference to the given set of sarcastic cards.
- * 
- * Impure! (modifies common)
- * @param {Game} game
+ * @param {State} state
+ * @param {Player} common
  * @param {number[]} sarcastics
  * @param {Identity} identity
  */
-function apply_unknown_sarcastic(game, sarcastics, identity) {
-	const { common, state } = game;
+function apply_unknown_sarcastic(state, common, sarcastics, identity) {
+	let newCommon = common;
 
 	// Need to add the inference back if it was previously eliminated due to good touch
 	for (const order of sarcastics) {
-		common.updateThoughts(order, (draft) => {
-			draft.inferred = common.thoughts[order].inferred.union(identity);
+		newCommon = newCommon.withThoughts(order, (draft) => {
+			draft.inferred = newCommon.thoughts[order].inferred.union(identity);
 			draft.trash = false;
 		});
 	}
 
 	if (sarcastics.length > 0) {
 		logger.info('adding link', sarcastics, logCard(identity));
-		common.links.push({ orders: sarcastics, identities: [identity], promised: true });
+		newCommon = produce(newCommon, (draft) => {
+			draft.links.push({ orders: sarcastics, identities: [identity], promised: true });
+		});
 	}
 
 	// Mistake discard or sarcastic with unknown transfer location (and not all playable)
-	if (sarcastics.length === 0 || sarcastics.some(order => common.thoughts[order].inferred.some(c => state.playableAway(c) > 0)))
-		Object.assign(common, common.undo_hypo_stacks(identity));
+	if (sarcastics.length === 0 || sarcastics.some(order => newCommon.thoughts[order].inferred.some(c => state.playableAway(c) > 0)))
+		newCommon = newCommon.undo_hypo_stacks(identity);
+
+	return newCommon;
 }
 
 /**
  * Locks the other player after a late sacrifice discard.
- * 
- * Impure! (modifies common)
- * @param  {Game} game
+ * @param {State} state
+ * @param {Player} common
  * @param  {number} playerIndex 	The player that performed a sacrifice discard.
  */
-function apply_locked_discard(game, playerIndex) {
-	const { common, state } = game;
+function apply_locked_discard(state, common, playerIndex) {
 	const other = state.nextPlayerIndex(playerIndex);
 
 	logger.highlight('cyan', `sacrifice discard, locking ${state.playerNames[other]}`);
 
+	let newCommon = common;
+
 	// Chop move all cards
 	for (const order of state.hands[other]) {
-		const card = common.thoughts[order];
+		const card = newCommon.thoughts[order];
 		if (!card.clued && !card.finessed && !card.chop_moved)
-			common.updateThoughts(order, (draft) => { draft.chop_moved = true; });
+			newCommon = newCommon.withThoughts(order, (draft) => { draft.chop_moved = true; });
 	}
+
+	return newCommon;
 }
 
 /**
  * Interprets a sarcastic discard.
- * 
- * Impure! (modifies common)
  * @param {Game} game
  * @param {DiscardAction} discardAction
- * @returns {number[]} 					The targets for the sarcastic discard
  */
 export function interpret_sarcastic(game, discardAction) {
 	const { common, me, state } = game;
@@ -101,26 +104,29 @@ export function interpret_sarcastic(game, discardAction) {
 	const duplicates = visibleFind(state, me, identity);
 	const locked_discard = state.numPlayers === 2 && common.thinksLocked(state, playerIndex) && !game.last_actions[state.nextPlayerIndex(playerIndex)].lock;
 
+	let newCommon = common;
+
 	// Unknown sarcastic discard to us
 	if (duplicates.length === 0) {
 		if (playerIndex === state.ourPlayerIndex)
-			return [];
+			return { newCommon, sarcastics: [] };
 
 		const sarcastics = find_sarcastics(state, state.ourPlayerIndex, me, identity);
 
 		if (sarcastics.length === 1) {
-			common.updateThoughts(sarcastics[0], (common_sarcastic) => {
+			newCommon = newCommon.withThoughts(sarcastics[0], (common_sarcastic) => {
 				common_sarcastic.inferred = state.base_ids.union(identity);
 				common_sarcastic.trash = false;
 			});
 		}
 		else {
-			apply_unknown_sarcastic(game, sarcastics, identity);
+			newCommon = apply_unknown_sarcastic(state, newCommon, sarcastics, identity);
 			if (locked_discard)
-				apply_locked_discard(game, playerIndex);
+				newCommon = apply_locked_discard(state, newCommon, playerIndex);
 		}
+
 		logger.info(`writing sarcastic ${logCard(identity)} on slot(s) ${sarcastics.map(s => state.ourHand.findIndex(o => o === s) + 1)}`);
-		return sarcastics;
+		return { newCommon, sarcastics };
 	}
 
 	// Sarcastic discard to other (or known sarcastic discard to us)
@@ -131,24 +137,24 @@ export function interpret_sarcastic(game, discardAction) {
 		if (receiver === playerIndex)
 			continue;
 
-		const sarcastics = find_sarcastics(state, receiver, common, identity);
+		const sarcastics = find_sarcastics(state, receiver, newCommon, identity);
 
 		if (sarcastics.some(o => me.thoughts[o].matches(identity, { infer: receiver === state.ourPlayerIndex }))) {
 			// The matching card must be the only possible option in the hand to be known sarcastic
 			if (sarcastics.length === 1) {
-				common.updateThoughts(sarcastics[0], (draft) => { draft.inferred = state.base_ids.union(identity); });
+				newCommon = newCommon.withThoughts(sarcastics[0], (draft) => { draft.inferred = state.base_ids.union(identity); });
 				logger.info(`writing ${logCard(identity)} from sarcastic discard`);
 			}
 			else {
-				apply_unknown_sarcastic(game, sarcastics, identity);
+				newCommon = apply_unknown_sarcastic(state, newCommon, sarcastics, identity);
 				if (locked_discard)
-					apply_locked_discard(game, playerIndex);
+					newCommon = apply_locked_discard(state, newCommon, playerIndex);
 			}
 			logger.info(`writing sarcastic ${logCard(identity)} on ${state.playerNames[playerIndex]}'s slot(s) ${sarcastics.map(s => state.ourHand.findIndex(o => o === s) + 1)}`);
-			return sarcastics;
+			return { newCommon, sarcastics };
 		}
 	}
 
 	logger.warn(`couldn't find a valid target for sarcastic discard`);
-	return [];
+	return { newCommon, sarcastics: [] };
 }
