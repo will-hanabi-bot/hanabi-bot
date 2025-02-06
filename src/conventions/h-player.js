@@ -28,7 +28,7 @@ export class HGroup_Player extends Player {
 			json.play_links.map(Utils.objClone),
 			new Set(json.unknown_plays),
 			Utils.objClone(json.waiting_connections),
-			Utils.objClone(json.elims));
+			new Map(json.elims));
 	}
 	/**
 	 * Returns the index (0-indexed) of the chop card, or -1 if the hand doesn't have a chop.

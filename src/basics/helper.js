@@ -76,6 +76,7 @@ export function team_elimP(game, good_touch = true) {
 }
 
 /**
+ * Impure!
  * @param {Game} game
  * @param {Card[]} oldThoughts
  * @param {ClueAction} clueAction
@@ -140,7 +141,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 				logger.info('setting hypo stacks to', common.hypo_stacks);
 
 				const id_hash = logCard(old_id);
-				const elims = common.elims[id_hash];
+				const elims = common.elims.get(id_hash);
 
 				// Don't allow the card being reset to regain this inference
 				if (elims && elims.includes(order))

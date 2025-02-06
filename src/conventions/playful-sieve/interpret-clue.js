@@ -143,9 +143,9 @@ export function interpret_clue(game, action) {
 				fix = true;
 
 				// Do not allow this card to regain inferences from false elimination
-				for (const [id, orders] of Object.entries(common.elims)) {
+				for (const [id, orders] of common.elims.entries()) {
 					if (orders?.includes(order))
-						common.elims[id].splice(orders.indexOf(order), 1);
+						common.elims.get(id).splice(orders.indexOf(order), 1);
 				}
 			}
 		}

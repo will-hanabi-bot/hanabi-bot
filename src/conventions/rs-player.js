@@ -26,7 +26,7 @@ export class RS_Player extends Player {
 			json.play_links.map(Utils.objClone),
 			new Set(json.unknown_plays),
 			Utils.objClone(json.waiting_connections),
-			Utils.objClone(json.elims));
+			new Map(json.elims));
 	}
 
 	/**

@@ -38,6 +38,9 @@ export class Player {
 	/** @type {Map<number, Patch[]>} */
 	patches = new Map();
 
+	/** @type {Map<string, number[]>} */
+	elims = new Map();
+
 	/**
 	 * @param {number} playerIndex
 	 * @param {IdentitySet} all_possible
@@ -49,10 +52,10 @@ export class Player {
 	 * @param {{ orders: number[], prereqs: Identity[], connected: number}[]} [play_links]
 	 * @param {Set<number>} [unknown_plays]
 	 * @param {WaitingConnection[]} [waiting_connections]
-	 * @param {Record<string, number[]>} [elims]
+	 * @param {Map<string, number[]>} [elims]
 	 * @param {Map<number, Patch[]>} patches
 	 */
-	constructor(playerIndex, all_possible, all_inferred, hypo_stacks, hypo_plays = new Set(), thoughts = [], links = [], play_links = [], unknown_plays = new Set(), waiting_connections = [], elims = {}, patches = new Map()) {
+	constructor(playerIndex, all_possible, all_inferred, hypo_stacks, hypo_plays = new Set(), thoughts = [], links = [], play_links = [], unknown_plays = new Set(), waiting_connections = [], elims = new Map(), patches = new Map()) {
 		this.playerIndex = playerIndex;
 
 		this.thoughts = thoughts;
@@ -86,7 +89,7 @@ export class Player {
 			json.play_links.map(Utils.objClone),
 			new Set(json.unknown_plays),
 			Utils.objClone(json.waiting_connections),
-			Utils.objClone(json.elims));
+			new Map(json.elims));
 	}
 
 	/** @returns {this} */
@@ -101,7 +104,7 @@ export class Player {
 			this.play_links.map(link => Utils.objClone(link)),
 			new Set(this.unknown_plays),
 			Utils.objClone(this.waiting_connections),
-			Utils.objClone(this.elims),
+			new Map(this.elims),
 			new Map(this.patches));
 	}
 
