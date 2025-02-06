@@ -1,32 +1,37 @@
-import { team_elim } from '../../basics/helper.js';
-import { logCard, logConnection } from '../../tools/log.js';
+import { team_elimP } from '../../basics/helper.js';
+import * as Basics from '../../basics.js';
+
 import logger from '../../tools/logger.js';
+import { logCard, logConnection } from '../../tools/log.js';
 
 /**
  * @typedef {import('../playful-sieve.js').default} Game
  * @typedef {import('../../basics/State.js').State} State
+ * @typedef {import('../../basics/Player.js').Player} Player
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').TurnAction} TurnAction
  * @typedef {import('../../types.js').Connection} Connection
  * @typedef {import('../../types.js').WaitingConnection} WaitingConnection
- * @typedef {Partial<{ remove: boolean, remove_finesse: boolean, next_index: number, quit: boolean }>} ResolveResult
+ * @typedef {import('../../types.js').IgnoreAction} IgnoreAction
+ * @typedef {Partial<{ remove: boolean, remove_finesse: boolean, next_index: number, rewind: boolean }>} ResolveResult
  */
 
 /**
  * "Undoes" a connection by reverting/removing notes on connecting cards.
  * 
  * Impure! (modifies common)
- * @param {Game} game
+ * @param {Player} common
  * @param {WaitingConnection} waiting_connection
  */
-function remove_finesse_conns(game, waiting_connection) {
-	const { common, state } = game;
+function remove_finesse_conns(common, waiting_connection) {
 	const { connections, focus, inference, symmetric } = waiting_connection;
+
+	let newCommon = common;
 
 	// Remove remaining finesses
 	for (const connection of connections) {
-		const card = common.thoughts[connection.order];
+		const card = newCommon.thoughts[connection.order];
 
 		// Notes are not written on symmetric connections. Thus, no need to remove finesses
 		if (symmetric)
@@ -50,7 +55,7 @@ function remove_finesse_conns(game, waiting_connection) {
 				logger.error(`no old inferences on card ${logCard(card)} ${connection.order} (while removing finesse)! current inferences ${card.inferred.map(logCard)}`);
 		}
 
-		common.updateThoughts(connection.order, (draft) => {
+		newCommon = newCommon.withThoughts(connection.order, (draft) => {
 			draft.inferred = new_inferred;
 
 			if (card_reset) {
@@ -67,13 +72,13 @@ function remove_finesse_conns(game, waiting_connection) {
 	}
 
 	// Remove inference (if possible)
-	if (common.thoughts[focus].possible.length > 1)
-		common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].inferred.subtract(inference); });
+	if (newCommon.thoughts[focus].possible.length > 1)
+		newCommon = newCommon.withThoughts(focus, (draft) => { draft.inferred = newCommon.thoughts[focus].inferred.subtract(inference); });
 
-	if (common.thoughts[focus].inferred.length === 0 && !common.thoughts[focus].reset)
-		common.thoughts[focus] = common.reset_card(focus);
+	if (newCommon.thoughts[focus].inferred.length === 0 && !newCommon.thoughts[focus].reset)
+		newCommon.thoughts = newCommon.thoughts.with(focus, newCommon.reset_card(focus));
 
-	Object.assign(common, common.update_hypo_stacks(state));
+	return newCommon;
 }
 
 
@@ -84,7 +89,7 @@ function remove_finesse_conns(game, waiting_connection) {
  */
 function resolve_card_retained(game, waiting_connection) {
 	const { common, state } = game;
-	const { connections, conn_index, inference, action_index } = waiting_connection;
+	const { connections, conn_index, inference } = waiting_connection;
 	const { type, reacting, order, identities } = connections[conn_index];
 	const last_action = game.last_actions[reacting];
 
@@ -97,13 +102,6 @@ function resolve_card_retained(game, waiting_connection) {
 
 		if (last_action?.type === 'clue')
 			return { remove: true };
-
-		// const old_finesse = older_queued_finesse(state, reacting, common, order);
-
-		// if (old_finesse !== undefined) {
-		// 	logger.warn(`${state.playerNames[reacting]} didn't play into ${type}, but they need to play into an older finesse that could be layered`);
-		// 	return { remove: false };
-		// }
 
 		if (last_action?.type === 'play') {
 			const { order: reacting_order } = last_action;
@@ -159,18 +157,6 @@ function resolve_card_retained(game, waiting_connection) {
 		}
 
 		logger.warn(`${state.playerNames[reacting]} didn't play into ${type}, removing inference ${logCard(inference)}`);
-
-		// Don't rewind if this is a symmetric connection that doesn't involve us
-		// if (reacting !== state.ourPlayerIndex && !(symmetric && connections.every((conn, i) => i < conn_index || conn.reacting !== state.ourPlayerIndex))) {
-		// 	const real_connects = getRealConnects(connections, conn_index);
-		// 	const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order, inference }]);
-		// 	if (new_game) {
-		// 		new_game.updateNotes();
-		// 		Object.assign(game, new_game);
-		// 		return { quit: true };
-		// 	}
-		// }
-
 		return { remove: true, remove_finesse: true };
 	}
 
@@ -182,14 +168,7 @@ function resolve_card_retained(game, waiting_connection) {
 		}
 
 		logger.warn(`${state.playerNames[reacting]} discarded with a waiting connection, removing inference ${logCard(inference)}`);
-
-		const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: 0, order, inference }]);
-		if (new_game) {
-			new_game.updateNotes();
-			Object.assign(game, new_game);
-			return { quit: true };
-		}
-		return { remove: true, remove_finesse: true };
+		return { rewind: true };
 	}
 
 	return { remove: false };
@@ -218,20 +197,7 @@ function resolve_card_gone(game, waiting_connection) {
 	}
 
 	logger.info(`didn't play, removing connection as ${logCard(inference)} ${common.thoughts[focus].inferred.map(logCard).join()} ${focus}`);
-
-	let new_inferred = common.thoughts[focus].inferred.subtract(inference);
-	const card_reset = new_inferred.length === 0;
-
-	if (card_reset)
-		new_inferred = common.thoughts[focus].possible.intersect(common.thoughts[focus].old_inferred ?? state.all_ids);
-
-	common.updateThoughts(focus, (draft) => {
-		draft.inferred = new_inferred;
-		if (card_reset)
-			draft.old_inferred = undefined;
-	});
-
-	return { remove: true };
+	return { remove: true, remove_finesse: true };
 }
 
 /**
@@ -251,21 +217,33 @@ export function update_turn(game, action) {
 	/** @type {number[]} */
 	const remove_finesses = [];
 
-	for (let i = 0; i < common.waiting_connections.length; i++) {
-		const waiting_connection = common.waiting_connections[i];
-		const { connections, conn_index, focus, inference, symmetric } = waiting_connection;
+	let newGame = game.shallowCopy();
+
+	for (let i = 0; i < newGame.common.waiting_connections.length; i++) {
+		const waiting_connection = newGame.common.waiting_connections[i];
+		const { connections, conn_index, focus, inference, action_index, symmetric } = waiting_connection;
 		const { reacting, order, identities } = connections[conn_index];
 		logger.info(`waiting for connecting ${logCard(state.deck[order])} ${order} as ${identities.map(logCard)} (${state.playerNames[reacting]}) for inference ${logCard(inference)} ${focus}${symmetric ? ' (symmetric)' : ''}`);
 
 		if (state.lastPlayerIndex(currentPlayerIndex) !== reacting)
 			continue;
 
-		const { remove, remove_finesse, next_index, quit } = state.hands[reacting].includes(order) ?
-			resolve_card_retained(game, waiting_connection) :
-			resolve_card_gone(game, waiting_connection);
+		const { remove, remove_finesse, next_index, rewind } = state.hands[reacting].includes(order) ?
+			resolve_card_retained(newGame, waiting_connection) :
+			resolve_card_gone(newGame, waiting_connection);
 
-		if (quit)
-			return;
+		if (rewind) {
+			const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: 0, order, inference }]);
+			if (new_game) {
+				new_game.updateNotes();
+				Object.assign(game, new_game);
+				return;
+			}
+
+			to_remove.push(i);
+			remove_finesses.push(i);
+			continue;
+		}
 
 		if (remove)
 			to_remove.push(i);
@@ -277,11 +255,14 @@ export function update_turn(game, action) {
 	}
 
 	for (const i of remove_finesses)
-		remove_finesse_conns(game, common.waiting_connections[i]);
+		newGame.common = remove_finesse_conns(newGame.common, common.waiting_connections[i]);
 
 	// Filter out connections that have been removed (or connections to the same card where others have been demonstrated)
-	common.waiting_connections = common.waiting_connections.filter((_, i) => !to_remove.includes(i));
+	newGame.common.waiting_connections = common.waiting_connections.filter((_, i) => !to_remove.includes(i));
 
-	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
-	team_elim(game);
+	newGame.common = newGame.common.good_touch_elim(state).update_hypo_stacks(state);
+	newGame = team_elimP(newGame);
+
+	Basics.mutate(game, newGame);
+	return newGame;
 }

@@ -74,7 +74,8 @@ function apply_good_touch(game, action, oldThoughts) {
 		}
 	}
 
-	const { clued_resets, duplicate_reveal } = checkFix(game, oldThoughts, action);
+	const { clued_resets, duplicate_reveal, newCommon } = checkFix(game, oldThoughts, action);
+	Object.assign(common, newCommon);
 	return { fix: clued_resets?.length > 0 || duplicate_reveal?.length > 0 };
 }
 

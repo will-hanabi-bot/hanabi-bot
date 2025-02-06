@@ -240,38 +240,39 @@ function target_play(game, action, target) {
  * @param  {ClueAction} action
  */
 export function interpret_clue(game, action) {
-	const { common, state } = game;
+	const { common: prev_common, state: prev_state } = game;
 	const { clue, list, target } = action;
 
-	const hand = state.hands[target];
-	const newly_touched = list.filter(o => !state.deck[o].clued);
-	const { common: prev_common, state: prev_state } = game.minimalCopy();
+	const hand = prev_state.hands[target];
+	const newly_touched = list.filter(o => !prev_state.deck[o].clued);
 
 	const newGame = Basics.onClue(game, action);
-	Basics.mutate(game, newGame);
+	const { state: newState } = newGame;
 
-	const { clued_resets, duplicate_reveal, rewinded } = checkFix(game, prev_common.thoughts, action);
-	if (rewinded)
+	const { clued_resets, duplicate_reveal, rewinded, newCommon, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
+	if (rewinded) {
+		Object.assign(game, rewindedGame);
 		return;
+	}
 
-	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
+	newGame.common = /** @type {Player} */(newCommon.good_touch_elim(newState).refresh_links(newState));
 
 	const fixed = new Set(clued_resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
-	const trash_push = !fix && newly_touched.every(o => common.thoughts[o].possible.every(p => state.isBasicTrash(p)));
+	const trash_push = !fix && newly_touched.every(o => newGame.common.thoughts[o].possible.every(p => newState.isBasicTrash(p)));
 
 	const { new_common, patches, interp } = (() => {
 		if (!fix && !trash_push) {
 			const intent = clue.type === CLUE.COLOUR ?
-				Math.max(...newly_touched.map(o => common.refer('left', hand, o))) :
-				determine_focus(game, action, { push: false });
+				Math.max(...newly_touched.map(o => newGame.common.refer('left', hand, o))) :
+				determine_focus(newGame, action, { push: false });
 
-			if (distribution_clue(game, action, common.thoughts[intent].order)) {
-				const { inferred } = common.thoughts[intent];
+			if (distribution_clue(newGame, action, newGame.common.thoughts[intent].order)) {
+				const { inferred } = newGame.common.thoughts[intent];
 
 				let patches;
-				const new_common = produce(common, (draft) => {
-					draft.thoughts[intent].inferred = inferred.intersect(inferred.filter(i => !state.isBasicTrash(i)));
+				const new_common = produce(newGame.common, (draft) => {
+					draft.thoughts[intent].inferred = inferred.intersect(inferred.filter(i => !newState.isBasicTrash(i)));
 					draft.thoughts[intent].certain_finessed = true;
 					draft.thoughts[intent].reset = false;
 				}, (p) => { patches = p; });
@@ -280,7 +281,7 @@ export function interpret_clue(game, action) {
 			}
 		}
 
-		const FAILURE = { new_common: common, patches: [], interp: CLUE_INTERP.NONE };
+		const FAILURE = { new_common: newGame.common, patches: [], interp: CLUE_INTERP.NONE };
 
 		const prev_playables = prev_common.thinksPlayables(prev_state, target, { symmetric: true });
 		const prev_trash = prev_common.thinksTrash(prev_state, target);
@@ -292,39 +293,39 @@ export function interpret_clue(game, action) {
 
 		if (!fix && prev_loaded) {
 			if (newly_touched.length > 0)
-				return ref_play(game, action, clue.type === CLUE.RANK && !trash_push);
+				return ref_play(newGame, action, clue.type === CLUE.RANK && !trash_push);
 
-			const { success, new_common, patches } = target_play(game, action, Math.max(...list));
+			const { success, new_common, patches } = target_play(newGame, action, Math.max(...list));
 			return success ? { new_common, patches, interp: CLUE_INTERP.RECLUE } : FAILURE;
 		}
 
-		const new_playables = common.thinksPlayables(state, target).filter(p => !prev_playables.includes(p));
-		const loaded = common.thinksLoaded(state, target);
+		const new_playables = newGame.common.thinksPlayables(newState, target).filter(p => !prev_playables.includes(p));
+		const loaded = newGame.common.thinksLoaded(newState, target);
 
 		if (newly_touched.length === 0) {
 			if (loaded) {
 				logger.info('revealed a safe action, not continuing');
-				return { new_common: common, patches: [], interp: CLUE_INTERP.REVEAL };
+				return { new_common: newGame.common, patches: [], interp: CLUE_INTERP.REVEAL };
 			}
 
-			const { success, new_common, patches } = target_play(game, action, Math.max(...list));
+			const { success, new_common, patches } = target_play(newGame, action, Math.max(...list));
 			return success ? { new_common, patches, interp: CLUE_INTERP.RECLUE } : FAILURE;
 		}
 
 		if (trash_push) {
 			logger.info('trash push');
-			return ref_play(game, action);
+			return ref_play(newGame, action);
 		}
 
 		if (fix || (loaded && !(clue.type === CLUE.COLOUR && new_playables.every(p => newly_touched.includes(p))))) {
 			logger.info(`revealed a safe action${fix ? ' (fix)': ''}, not continuing ${new_playables}`);
 
-			let new_common = common, patches = [];
+			let new_common = newGame.common, patches = [];
 
 			if (!fix && clue.type === CLUE.RANK && new_playables.every(p => newly_touched.includes(p))) {
 				const focus = Math.max(...newly_touched);
 
-				new_common = produce(common, (draft) => {
+				new_common = produce(newGame.common, (draft) => {
 					draft.thoughts[focus].focused = true;
 				}, (p) => { patches = patches.concat(p); });
 			}
@@ -333,41 +334,48 @@ export function interpret_clue(game, action) {
 		}
 
 		if (clue.type === CLUE.COLOUR)
-			return ref_play(game, action);
+			return ref_play(newGame, action);
 		else
-			return ref_discard(game, action);
+			return ref_discard(newGame, action);
 	})();
 
-	game.interpretMove(interp);
+	// game.interpretMove(interp);
+	newGame.moveHistory = newGame.moveHistory.concat({ turn: newState.turn_count, move: interp });
 
-	if (interp === CLUE_INTERP.NONE)
+	if (interp === CLUE_INTERP.NONE) {
+		newGame.common = new_common;
+		Basics.mutate(game, newGame);
+		game.moveHistory = newGame.moveHistory;
 		return;
+	}
 
-	game.common = /** @type {Player} */(new_common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
+	newGame.common = /** @type {Player} */(new_common.good_touch_elim(newState).refresh_links(newState).update_hypo_stacks(newState));
 
-	for (const player of game.players) {
-		for (const [order, patches] of game.common.patches) {
-			const { possible, inferred } = game.common.thoughts[order];
+	newGame.players = newGame.players.map(player => {
+		let newPlayer = player.shallowCopy();
+		for (const [order, patches] of newGame.common.patches) {
+			const { possible, inferred } = newGame.common.thoughts[order];
 			const { possible: player_possible } = player.thoughts[order];
 
-			player.updateThoughts(order, (draft) => {
+			newPlayer = newPlayer.withThoughts(order, (draft) => {
 				applyPatches(draft, patches.filter(p => p.path[0] !== 'possible' && p.path[0] !== 'inferred'));
 				draft.possible = possible.intersect(player_possible);
 				draft.inferred = inferred.intersect(player_possible);
 			}, false);
 		}
-		player.waiting_connections = game.common.waiting_connections.slice();
-	}
+		newPlayer.waiting_connections = newGame.common.waiting_connections.slice();
+		return newPlayer;
+	});
 
-	game.common.patches = new Map();
+	newGame.common.patches = new Map();
 
-	game.players = game.players.map(player => {
-		const new_player = (patches.length  === 0 ? player : produce(player, (draft) => {
+	newGame.players = newGame.players.map(player => {
+		const new_player = (patches.length === 0 ? player : produce(player, (draft) => {
 			for (const patch of patches) {
 				if (patch.path[2] === 'possible' || patch.path[2] === 'inferred') {
 					const order = Number(patch.path[1]);
 
-					const { possible, inferred } = game.common.thoughts[order];
+					const { possible, inferred } = newGame.common.thoughts[order];
 					const { possible: player_possible } = player.thoughts[order];
 
 					draft.thoughts[order].possible = possible.intersect(player_possible);
@@ -375,8 +383,12 @@ export function interpret_clue(game, action) {
 				}
 			}
 			applyPatches(draft, patches.filter(p => p.path[2] !== 'possible' && p.path[2] !== 'inferred'));
-		})).good_touch_elim(state, state.numPlayers === 2).refresh_links(state).update_hypo_stacks(state);
+		})).good_touch_elim(newState, newState.numPlayers === 2).refresh_links(newState).update_hypo_stacks(newState);
 
 		return /** @type {Player} */(new_player);
 	});
+
+	Basics.mutate(game, newGame);
+	game.moveHistory = newGame.moveHistory;
+	return newGame;
 }
