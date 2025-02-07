@@ -39,7 +39,7 @@ export function handle_action(action) {
 			const { giver, list } = action;
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			this.interpret_clue(this, action);
+			this.interpret_clue(action);
 			this.last_actions[giver] = action;
 
 			state.dda = undefined;
@@ -74,7 +74,7 @@ export function handle_action(action) {
 			state.screamed_at = false;
 			state.generated = false;
 
-			this.interpret_discard(this, action);
+			this.interpret_discard(action);
 			this.last_actions[playerIndex] = action;
 			break;
 		}
@@ -105,7 +105,7 @@ export function handle_action(action) {
 				this.notes[0] = { last: note, turn: 0, full: note };
 			}
 
-			this.update_turn(this, action);
+			this.update_turn(action);
 			this.updateNotes();
 			break;
 		}
@@ -119,7 +119,7 @@ export function handle_action(action) {
 
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			this.interpret_play(this, action);
+			this.interpret_play(action);
 			this.last_actions[playerIndex] = action;
 			state.dda = undefined;
 			state.screamed_at = false;

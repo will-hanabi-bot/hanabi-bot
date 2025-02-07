@@ -5,7 +5,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import { COLOUR, expandShortCard, PLAYER, setup, takeTurn } from '../test-utils.js';
 import RefSieve from '../../src/conventions/ref-sieve.js';
 import { ACTION } from '../../src/constants.js';
-import { take_action } from '../../src/conventions/playful-sieve/take-action.js';
 import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
@@ -20,7 +19,7 @@ describe('direct rank playables', () => {
 			['y4', 'g1', 'b1', 'g3', 'g4']
 		]);
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, value: 1 });
 	});
 
@@ -103,7 +102,7 @@ describe('urgency principle', () => {
 		});
 
 		// Alice should not give purple.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(!(action.type === ACTION.COLOUR && action.value === COLOUR.PURPLE));
 	});
 });

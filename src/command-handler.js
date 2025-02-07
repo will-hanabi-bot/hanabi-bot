@@ -166,7 +166,7 @@ export const handle = {
 			!game.catchup;
 
 		if (perform) {
-			const suggested_action = game.take_action(game);
+			const suggested_action = game.take_action();
 
 			if (game.in_progress) {
 				if (Utils.globals.manual === undefined)

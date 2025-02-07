@@ -6,7 +6,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import PlayfulSieve from '../../src/conventions/playful-sieve.js';
 
 import { ACTION, CLUE } from '../../src/constants.js';
-import { take_action } from '../../src/conventions/playful-sieve/take-action.js';
 import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
@@ -26,7 +25,7 @@ describe('giving clues while locked', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 5)');
 
 		// Alice should clue purple to Bob to tell him about p1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, value: COLOUR.PURPLE, target: PLAYER.BOB });
 
 		takeTurn(game, 'Alice clues purple to Bob');
@@ -44,7 +43,7 @@ describe('giving clues while locked', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 5)');
 
 		// Alice should clue 5 to prevent Bob from discarding slot 1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, value: 5, target: PLAYER.BOB });
 
 		takeTurn(game, 'Alice clues 5 to Bob');
@@ -191,7 +190,7 @@ describe('unlock promise', () => {
 		takeTurn(game, 'Alice clues red to Bob');				// Bob's hand is [xx, xx, 2, [r2], [r]5]
 		takeTurn(game, 'Bob clues red to Alice (slots 3,4)');	// Alice's hand is [xx, xx, r1, r1, xx]
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play r1 instead of discarding.
 		assert.equal(action.type, ACTION.PLAY, `Actual action was (${logPerformAction(action)})`);
@@ -235,7 +234,7 @@ describe('unlock promise', () => {
 		takeTurn(game, 'Alice discards b4 (slot 1)');
 		takeTurn(game, 'Bob clues purple to Alice (slots 1,2)');	// Alice's hand is [p1, p, y2, 2, y]
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play p1 instead of y2.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });

@@ -5,7 +5,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import { ACTION } from '../../src/constants.js';
 import { PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 
 import logger from '../../src/tools/logger.js';
 import { CLUE_INTERP } from '../../src/conventions/h-group/h-constants.js';
@@ -35,7 +34,7 @@ describe('positional discards', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
 
 		// Alice should play slot 3.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][2] });
 	});
 
@@ -195,7 +194,7 @@ describe('positional discards', () => {
 			}
 		});
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 3 as a positional discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] });
@@ -227,7 +226,7 @@ describe('positional discards', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y5']);
 
 		// Alice should play slot 2.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 
@@ -258,7 +257,7 @@ describe('positional discards', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].finessed, true);
 
 		// Alice should play slot 2.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 });
@@ -286,7 +285,7 @@ describe('positional misplays', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].finessed, true);
 
 		// Alice should play slot 3.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
 	});
 
@@ -312,7 +311,7 @@ describe('positional misplays', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
 
 		// Alice should play slot 3.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][2] });
 	});
 });

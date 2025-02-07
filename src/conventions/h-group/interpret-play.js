@@ -85,8 +85,8 @@ export function interpret_play(game, action) {
 			common.updateThoughts(ocm_order, (draft) => { draft.chop_moved = true; });
 	}
 
-	const newGame = Basics.onPlay(this, action);
-	Basics.mutate(this, newGame);
+	const newGame = Basics.onPlay(game, action);
+	Basics.mutate(game, newGame);
 
 	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);

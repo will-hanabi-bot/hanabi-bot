@@ -4,11 +4,10 @@ import { describe, it } from 'node:test';
 import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-
-import logger from '../../src/tools/logger.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
+
+import logger from '../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -117,7 +116,7 @@ describe(`gentleman's discards`, () => {
 
 		takeTurn(game, 'Donald clues blue to Alice (slots 3,4)');	// b1 in slot 4
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// We should discard b1 as a gentleman's discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -136,7 +135,7 @@ describe(`gentleman's discards`, () => {
 
 		takeTurn(game, 'Donald clues blue to Alice (slots 3,4)');	// b1 in slot 4
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// We should discard b1 as a layered gentleman's discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -156,7 +155,7 @@ describe(`gentleman's discards`, () => {
 
 		takeTurn(game, 'Donald clues blue to Alice (slots 3,4)');	// b1 in slot 4
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// We should just play b4 instead of performing a gentleman's discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
@@ -223,7 +222,7 @@ describe('baton discards', () => {
 		takeTurn(game, 'Cathy clues blue to Alice (slots 3,4)');	// b1 in slot 4
 		takeTurn(game, 'Donald clues 3 to Alice (slots 2,3)');		// r3 save in slot 2, filling in b3 on slot 3
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// We should discard b3 as a baton discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] });
@@ -245,7 +244,7 @@ describe('baton discards', () => {
 		takeTurn(game, 'Cathy clues blue to Alice (slots 3,4)');	// b1 in slot 4
 		takeTurn(game, 'Donald clues 3 to Alice (slots 2,3)');		// r3 save in slot 2, filling in b3 on slot 3
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// We should not discard b3 as a baton discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
@@ -296,7 +295,7 @@ describe('composition finesse', () => {
 		takeTurn(game, 'Bob clues red to Cathy');				// Composition finesse, getting r3 on our finesse
 		takeTurn(game, 'Cathy discards b3', 'y1');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// We should certain discard slot 1 as r3.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][0] });

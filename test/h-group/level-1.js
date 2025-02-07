@@ -5,7 +5,6 @@ import { ACTION, CLUE } from '../../src/constants.js';
 import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { early_game_clue } from '../../src/conventions/h-group/urgent-actions.js';
 import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
@@ -49,7 +48,7 @@ describe('save clue', () => {
 			}
 		});
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should give green to Cathy to finesse over save
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN }, `Expected (green to Cathy) but got ${logPerformAction(action)}`);
@@ -71,7 +70,7 @@ describe('save clue', () => {
 			}
 		});
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should give green to Bob instead of 4
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.BOB, value: COLOUR.GREEN });
@@ -164,7 +163,7 @@ describe('save clue', () => {
 		const clue = { type: CLUE.RANK, value: 5, target: PLAYER.BOB };
 		assert.equal(clue_safe(game, game.me, clue).safe, false);
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: 0 });
 	});
 
@@ -183,7 +182,7 @@ describe('save clue', () => {
 		takeTurn(game, 'Cathy clues green to Alice (slot 1)');
 
 		// We should clue 5 to Cathy to set up the double save.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.CATHY, value: 5 });
 	});
 });
@@ -235,7 +234,7 @@ describe('early game', () => {
 		// Bob can must clue at least one r1.
 		assert.equal(early_game_clue(game, PLAYER.ALICE), true);
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, value: 2 });
 	});
 });
@@ -301,7 +300,7 @@ describe('strategy', async () => {
 
 		takeTurn(game, 'Donald discards y4', 'r1');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: 0 }, `Expected (discard slot 4), got ${logPerformAction(action)}`);
 	});
 
@@ -319,7 +318,7 @@ describe('strategy', async () => {
 		takeTurn(game, 'Cathy clues 1 to Alice (slot 1)');
 
 		// Alice should clue 3 to Bob to save p3.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, value: 3, target: 1 });
 	});
 
@@ -337,7 +336,7 @@ describe('strategy', async () => {
 		takeTurn(game, 'Cathy clues 1 to Alice (slots 4,5)');
 
 		// Alice should just play, not try to clue Bob's p1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY });
 	});
 });

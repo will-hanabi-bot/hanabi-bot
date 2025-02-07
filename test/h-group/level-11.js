@@ -5,7 +5,6 @@ import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../t
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { team_elim } from '../../src/basics/helper.js';
 
@@ -471,7 +470,7 @@ describe('bluff clues', () => {
 		// Bob's slot 4 is symmetrically [b1,b2].
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['b1', 'b2']);
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play to prevent a misplay of the b2.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
@@ -860,7 +859,7 @@ describe('bluff clues', () => {
 			play_stacks: [0, 0, 5, 3, 0],
 			starting: PLAYER.ALICE
 		});
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, {target: 2, type: ACTION.COLOUR, value: COLOUR.RED});
 	});
 
@@ -875,7 +874,7 @@ describe('bluff clues', () => {
 			play_stacks: [4, 1, 1, 3, 0],
 			starting: PLAYER.ALICE
 		});
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, {target: 2, type: ACTION.COLOUR, value: COLOUR.PURPLE});
 	});
 

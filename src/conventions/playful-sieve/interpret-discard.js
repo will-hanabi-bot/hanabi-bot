@@ -28,8 +28,8 @@ export function interpret_discard(game, action) {
 	const other = state.nextPlayerIndex(playerIndex);
 	const other_had_trash = common.thinksTrash(state, other).length > 0;
 
-	const newGame = Basics.onDiscard(this, action);
-	Basics.mutate(this, newGame);
+	const newGame = Basics.onDiscard(game, action);
+	Basics.mutate(game, newGame);
 
 	const thoughts = common.thoughts[order];
 

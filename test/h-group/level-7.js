@@ -5,7 +5,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -26,7 +25,7 @@ describe('scream discard chop moves', () => {
 
 		takeTurn(game, 'Cathy clues red to Alice (slot 5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 4 as a SDCM.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -50,7 +49,7 @@ describe('scream discard chop moves', () => {
 
 		takeTurn(game, 'Cathy clues red to Alice (slot 5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play as y2 is not critical or playable.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
@@ -70,7 +69,7 @@ describe('scream discard chop moves', () => {
 
 		takeTurn(game, 'Cathy clues red to Alice (slot 5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 4 to SDCM as y2 is playable.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -90,7 +89,7 @@ describe('scream discard chop moves', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 5)');
 		takeTurn(game, 'Cathy clues green to Bob');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play as Bob is loaded.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
@@ -110,7 +109,7 @@ describe('scream discard chop moves', () => {
 		takeTurn(game, 'Bob clues green to Cathy');
 		takeTurn(game, 'Cathy discards p3', 'p4');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should 5 Stall on Bob.
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 5 });
@@ -131,7 +130,7 @@ describe('scream discard chop moves', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 1)');
 		takeTurn(game, 'Cathy clues 5 to Bob');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 5 as a SDCM.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][4] });
@@ -158,7 +157,7 @@ describe('shout discard chop moves', () => {
 
 		takeTurn(game, 'Cathy clues 1 to Alice (slots 4,5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 4 as a Shout Discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -184,7 +183,7 @@ describe('shout discard chop moves', () => {
 		takeTurn(game, 'Bob clues 1 to Cathy');
 		takeTurn(game, 'Cathy discards p1', 'p4');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should 5 Stall on Bob.
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 5 });
@@ -205,7 +204,7 @@ describe('generation discards', () => {
 
 		takeTurn(game, 'Cathy clues red to Alice (slot 5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 4 to generate for Cathy.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -224,7 +223,7 @@ describe('generation discards', () => {
 
 		takeTurn(game, 'Cathy clues red to Alice (slot 5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should discard slot 4 to generate for Cathy.
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
@@ -272,7 +271,7 @@ describe('generation discards', () => {
 		takeTurn(game, 'Bob clues red to Cathy');
 		takeTurn(game, 'Cathy plays r3', 'p4');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play slot 5 (r4 -> r5) rather than generating for Cathy.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] }, `Expected (Play slot 5), got (${logPerformAction(action)}).`);

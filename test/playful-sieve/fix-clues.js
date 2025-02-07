@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 
-import { take_action } from '../../src/conventions/playful-sieve/take-action.js';
 import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
@@ -25,7 +24,7 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues 5 to Alice (slot 1)');
 
 		// Alice should give 1 or blue to Bob to fix.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, value: 1 });
 	});
 

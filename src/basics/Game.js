@@ -163,46 +163,41 @@ export class Game {
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @param {Omit<ClueAction, "type">} _action
 	 */
-	interpret_clue(_game, _action) {
+	interpret_clue(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @param {Omit<DiscardAction, "type">} _action
 	 */
-	interpret_discard(_game, _action) {
+	interpret_discard(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param  {Game} _game
 	 * @param  {PlayAction} _action
 	 */
-	interpret_play(_game, _action) {
+	interpret_play(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @returns {Promise<PerformAction>}
 	 */
-	async take_action(_game) {
+	async take_action() {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @param {Omit<TurnAction, "type">} _action
 	 */
-	update_turn(_game, _action) {
+	update_turn(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
@@ -431,7 +426,7 @@ export class Game {
 		new_game.catchup = this.catchup;
 
 		if (!new_game.catchup && new_game.state.currentPlayerIndex === this.state.ourPlayerIndex) {
-			new_game.take_action(new_game).then(suggested_action =>
+			new_game.take_action().then(suggested_action =>
 				logger.highlight('cyan', 'Suggested action:', logPerformAction(suggested_action)));
 		}
 
@@ -468,7 +463,7 @@ export class Game {
 		Utils.globalModify({ game: hypo_game });
 
 		logger.wrapLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR, () => {
-			hypo_game.interpret_clue(hypo_game, action);
+			hypo_game.interpret_clue(action);
 		});
 
 		Utils.globalModify({ game: old_global_game });
