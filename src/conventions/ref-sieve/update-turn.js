@@ -19,8 +19,6 @@ import { logCard, logConnection } from '../../tools/log.js';
 
 /**
  * "Undoes" a connection by reverting/removing notes on connecting cards.
- * 
- * Impure! (modifies common)
  * @param {Player} common
  * @param {WaitingConnection} waiting_connection
  */
@@ -235,7 +233,7 @@ export function update_turn(game, action) {
 		if (rewind) {
 			const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: 0, order, inference }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
 				return;
 			}

@@ -40,7 +40,7 @@ export function interpret_discard(game, action) {
 		const action_index = thoughts.drawn_index;
 		const new_game = game.rewind(action_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
 			return;
 		}

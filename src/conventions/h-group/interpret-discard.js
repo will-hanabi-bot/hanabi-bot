@@ -127,7 +127,7 @@ function check_transfer(game, action) {
 		const real_connects = getRealConnects(connections, dc_conn_index);
 		const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order, inference }]);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
 			return { interp, new_game };
 		}
@@ -209,7 +209,7 @@ export function interpret_discard(game, action) {
 		const action_index = state.deck[order].drawn_index;
 		const new_game = game.rewind(action_index + 1, [{ type: 'identify', order, playerIndex, identities: [{ suitIndex, rank }] }]);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
 			return;
 		}

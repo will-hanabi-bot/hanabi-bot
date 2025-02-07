@@ -76,7 +76,6 @@ export function team_elimP(game, good_touch = true) {
 }
 
 /**
- * Impure!
  * @param {Game} game
  * @param {Card[]} oldThoughts
  * @param {ClueAction} clueAction
@@ -124,7 +123,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 			}]);
 
 			if (newGame !== undefined) {
-				newGame.updateNotes();
+				newGame.notes = newGame.updateNotes();
 				return { rewinded: true, newGame };
 			}
 		}
@@ -184,8 +183,12 @@ export function checkFix(game, oldThoughts, clueAction) {
  * @param {Game} game
  */
 export function reset_superpositions(game) {
+	let newCommon = game.common;
+
 	for (const order of game.state.hands.flat())
-		game.common.updateThoughts(order, (draft) => { draft.superposition = false; });
+		newCommon = newCommon.withThoughts(order, (draft) => { draft.superposition = false; });
+
+	return newCommon;
 }
 
 /**

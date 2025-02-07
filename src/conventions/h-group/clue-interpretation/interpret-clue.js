@@ -62,7 +62,7 @@ function apply_good_touch(game, action, oldThoughts) {
 					game.rewind(action_index, [{ type: 'ignore', order, conn_index: 0 }]);		// Rewinding the layered finesse doesn't work, just ignore us then.
 
 				if (new_game) {
-					new_game.updateNotes();
+					new_game.notes = new_game.updateNotes();
 					Object.assign(game, new_game);
 					return { rewinded: true };
 				}
@@ -231,7 +231,7 @@ function resolve_clue(game, old_game, action, focusResult, inf_possibilities, fo
 
 	common.updateThoughts(focus, (draft) => { draft.info_lock = draft.inferred.clone(); });
 
-	reset_superpositions(game);
+	Object.assign(game.common, reset_superpositions(game));
 }
 
 /**
@@ -403,7 +403,7 @@ export function interpret_clue(game, action) {
 		if (common.thoughts[focus].possible.length === 1 && common.dependentConnections(focus).length > 0) {
 			const new_game = game.rewind(state.deck[focus].drawn_index + 1, [{ type: 'identify', order: focus, playerIndex: target, identities: [common.thoughts[focus].possible.array[0].raw()] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
 				return;
 			}
@@ -438,7 +438,7 @@ export function interpret_clue(game, action) {
 				const real_connects = getRealConnects(connections, stomped_conn_index);
 				const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order: stomped_conn.order, inference }]);
 				if (new_game) {
-					new_game.updateNotes();
+					new_game.notes = new_game.updateNotes();
 					Object.assign(game, new_game);
 					return;
 				}
@@ -461,7 +461,7 @@ export function interpret_clue(game, action) {
 		if (rewind_identity !== undefined && !common.thoughts[rewind_order].rewinded && wc_target === state.ourPlayerIndex && state.ourHand.includes(rewind_order)) {
 			const new_game = game.rewind(state.deck[rewind_order].drawn_index + 1, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
 				return;
 			}

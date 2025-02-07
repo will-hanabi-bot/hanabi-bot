@@ -279,7 +279,7 @@ export function resolve_card_retained(game, waiting_connection) {
 			const real_connects = getRealConnects(connections, conn_index);
 			const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order, inference }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
 				return { quit: true };
 			}
@@ -298,7 +298,7 @@ export function resolve_card_retained(game, waiting_connection) {
 
 		const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: 0, order, inference }]);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
 			return { quit: true };
 		}

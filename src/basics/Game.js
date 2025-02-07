@@ -205,44 +205,48 @@ export class Game {
 	 * Updates notes on cards.
 	 */
 	updateNotes() {
-		if (this.state.options.speedrun)
-			return;
+		const { common, state } = this;
 
-		for (const order of this.state.hands.flat()) {
-			const card = this.common.thoughts[order];
+		if (state.options.speedrun)
+			return this.notes;
 
-			if (!card.saved && !card.called_to_discard)
-				continue;
+		return produce(this.notes, (draft) => {
+			for (const order of state.hands.flat()) {
+				const card = common.thoughts[order];
 
-			this.notes[order] ??= { last: '', turn: 0, full: '' };
+				if (!card.saved && !card.called_to_discard)
+					continue;
 
-			let note = card.getNote();
+				draft[order] ??= { last: '', turn: 0, full: '' };
 
-			const links = this.common.links.filter(link => link.promised && link.orders.includes(order));
+				let note = card.getNote();
 
-			if (links.length > 0) {
-				const link_note = links.flatMap(link => link.identities).map(logCard).join('? ') + '?';
+				const links = common.links.filter(link => link.promised && link.orders.includes(order));
 
-				if (note.includes("]"))
-					note += link_note;
-				else
-					note = `[${note}] ${link_note}`;
+				if (links.length > 0) {
+					const link_note = links.flatMap(link => link.identities).map(logCard).join('? ') + '?';
+
+					if (note.includes("]"))
+						note += link_note;
+					else
+						note = `[${note}] ${link_note}`;
+				}
+
+				// Only write a new note if it's different from the last note and is a later turn
+				if (note !== draft[order].last && state.turn_count > draft[order].turn) {
+					draft[order].last = note;
+					draft[order].turn = state.turn_count;
+
+					if (draft[order].full !== '')
+						draft[order].full += ' | ';
+
+					draft[order].full += `t${state.turn_count}: ${note}`;
+
+					if (!this.catchup && this.in_progress)
+						Utils.sendCmd('note', { tableID: this.tableID, order, note: draft[order].full });
+				}
 			}
-
-			// Only write a new note if it's different from the last note and is a later turn
-			if (note !== this.notes[order].last && this.state.turn_count > this.notes[order].turn) {
-				this.notes[order].last = note;
-				this.notes[order].turn = this.state.turn_count;
-
-				if (this.notes[order].full !== '')
-					this.notes[order].full += ' | ';
-
-				this.notes[order].full += `t${this.state.turn_count}: ${note}`;
-
-				if (!this.catchup && this.in_progress)
-					Utils.sendCmd('note', { tableID: this.tableID, order, note: this.notes[order].full });
-			}
-		}
+		});
 	}
 
 	/**

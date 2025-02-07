@@ -106,7 +106,7 @@ export function handle_action(action) {
 			}
 
 			this.update_turn(action);
-			this.updateNotes();
+			this.notes = this.updateNotes();
 			break;
 		}
 		case 'play': {
