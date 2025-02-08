@@ -94,8 +94,9 @@ function interpret_locked_clue(game, action) {
  * Interprets the given clue.
  * 
  * Impure!
- * @param  {Game} game
- * @param  {ClueAction} action
+ * @template {Game} T
+ * @param {T} game
+ * @param {ClueAction} action
  */
 export function interpret_clue(game, action) {
 	const { common, state } = game;
@@ -163,7 +164,7 @@ export function interpret_clue(game, action) {
 
 		Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
 		team_elim(game);
-		return;
+		return game;
 	}
 
 	const new_playable = common.thinksPlayables(state, target).some(o => !old_playables.includes(o));
@@ -293,4 +294,5 @@ export function interpret_clue(game, action) {
 
 	Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
 	team_elim(game);
+	return game;
 }

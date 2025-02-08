@@ -653,7 +653,8 @@ export function refresh_links(state) {
 }
 
 /**
- * @this {Player}
+ * @template {Player} T
+ * @this {T}
  * @param {Identity} identity
  */
 export function restore_elim(identity) {

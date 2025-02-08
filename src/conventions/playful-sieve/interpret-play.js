@@ -79,7 +79,8 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
  * Interprets a play action.
  * 
  * Impure!
- * @param  {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param  {PlayAction} action
  */
 export function interpret_play(game, action) {
@@ -101,7 +102,7 @@ export function interpret_play(game, action) {
 			if (new_game) {
 				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 	}
@@ -188,4 +189,5 @@ export function interpret_play(game, action) {
 
 	// Update hypo stacks
 	team_elim(game);
+	return game;
 }

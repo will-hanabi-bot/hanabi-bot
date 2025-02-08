@@ -164,6 +164,7 @@ export class Game {
 	/**
 	 * @abstract
 	 * @param {Omit<ClueAction, "type">} _action
+	 * @returns {this}
 	 */
 	interpret_clue(_action) {
 		throw new Error('must be implemented by subclass!');
@@ -172,6 +173,7 @@ export class Game {
 	/**
 	 * @abstract
 	 * @param {Omit<DiscardAction, "type">} _action
+	 * @returns {this}
 	 */
 	interpret_discard(_action) {
 		throw new Error('must be implemented by subclass!');
@@ -180,6 +182,7 @@ export class Game {
 	/**
 	 * @abstract
 	 * @param  {PlayAction} _action
+	 * @returns {this}
 	 */
 	interpret_play(_action) {
 		throw new Error('must be implemented by subclass!');
@@ -196,6 +199,7 @@ export class Game {
 	/**
 	 * @abstract
 	 * @param {Omit<TurnAction, "type">} _action
+	 * @returns {this}
 	 */
 	update_turn(_action) {
 		throw new Error('must be implemented by subclass!');

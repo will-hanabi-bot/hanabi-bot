@@ -5,9 +5,9 @@ import logger from '../../tools/logger.js';
 import { logCard, logConnection } from '../../tools/log.js';
 
 /**
- * @typedef {import('../playful-sieve.js').default} Game
+ * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/State.js').State} State
- * @typedef {import('../../basics/Player.js').Player} Player
+ * @typedef {import('../rs-player.js').RS_Player} Player
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').TurnAction} TurnAction
@@ -202,7 +202,8 @@ function resolve_card_gone(game, waiting_connection) {
  * Performs relevant updates after someone takes a turn.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {TurnAction} action
  */
 export function update_turn(game, action) {
@@ -235,7 +236,7 @@ export function update_turn(game, action) {
 			if (new_game) {
 				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 
 			to_remove.push(i);

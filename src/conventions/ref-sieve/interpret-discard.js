@@ -6,7 +6,7 @@ import logger from '../../tools/logger.js';
 import { logCard } from '../../tools/log.js';
 
 /**
- * @typedef {import('../playful-sieve.js').default} Game
+ * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/Player.js').Player} Player
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').Identity} Identity
@@ -26,7 +26,7 @@ export function interpret_rs_sarcastic(game, discardAction) {
 	let newCommon = common;
 
 	if (!state.isPlayable(identity))
-		({ newCommon } = interpret_sarcastic(game, discardAction));
+		({ common: newCommon } = interpret_sarcastic(game, discardAction).newGame);
 
 	// Sarcastic discard to other (or known sarcastic discard to us)
 	for (let i = 0; i < state.numPlayers; i++) {
@@ -66,7 +66,8 @@ export function interpret_rs_sarcastic(game, discardAction) {
  * Interprets (writes notes) for a discard of the given card.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DiscardAction} action
  */
 export function interpret_discard(game, action) {

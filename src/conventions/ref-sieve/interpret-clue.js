@@ -236,8 +236,9 @@ function target_play(game, action, target) {
  * Interprets the given clue.
  * 
  * Impure!
- * @param  {Game} game
- * @param  {ClueAction} action
+ * @template {Game} T
+ * @param {T} game
+ * @param {ClueAction} action
  */
 export function interpret_clue(game, action) {
 	const { common: prev_common, state: prev_state } = game;
@@ -252,7 +253,7 @@ export function interpret_clue(game, action) {
 	const { clued_resets, duplicate_reveal, rewinded, newCommon, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
 	if (rewinded) {
 		Object.assign(game, rewindedGame);
-		return;
+		return rewindedGame;
 	}
 
 	newGame.common = /** @type {Player} */(newCommon.good_touch_elim(newState).refresh_links(newState));
@@ -346,7 +347,7 @@ export function interpret_clue(game, action) {
 		newGame.common = new_common;
 		Basics.mutate(game, newGame);
 		game.moveHistory = newGame.moveHistory;
-		return;
+		return newGame;
 	}
 
 	newGame.common = /** @type {Player} */(new_common.good_touch_elim(newState).refresh_links(newState).update_hypo_stacks(newState));
@@ -390,5 +391,5 @@ export function interpret_clue(game, action) {
 
 	Basics.mutate(game, newGame);
 	game.moveHistory = newGame.moveHistory;
-	return newGame;
+	return game;
 }

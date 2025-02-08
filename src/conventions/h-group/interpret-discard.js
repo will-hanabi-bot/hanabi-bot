@@ -59,9 +59,9 @@ function check_transfer(game, action) {
 		let transfers = [], interp;
 
 		if (replaceable) {
-			const { newCommon, sarcastics } = interpret_sarcastic(game, action);
+			const { newGame, sarcastics } = interpret_sarcastic(game, action);
 			transfers = sarcastics;
-			Object.assign(common, newCommon);
+			Object.assign(common, newGame.common);
 
 			interp = DISCARD_INTERP.SARCASTIC;
 
@@ -163,7 +163,8 @@ function resolve_discard(game, action, interp) {
  * Interprets (writes notes) for a discard of the given card.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DiscardAction} action
  */
 export function interpret_discard(game, action) {
@@ -191,7 +192,7 @@ export function interpret_discard(game, action) {
 	if (interp !== DISCARD_INTERP.NONE) {
 		resolve_discard(game, action, interp);
 		action.intentional = true;
-		return;
+		return game;
 	}
 
 	// End early game?
@@ -211,7 +212,7 @@ export function interpret_discard(game, action) {
 		if (new_game) {
 			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
-			return;
+			return new_game;
 		}
 	}
 
@@ -233,8 +234,8 @@ export function interpret_discard(game, action) {
 				/** @type {typeof DISCARD_INTERP[keyof typeof DISCARD_INTERP]} */
 				let interp = DISCARD_INTERP.SARCASTIC;
 
-				const { newCommon, sarcastics } = interpret_sarcastic(game, action);
-				Object.assign(common, newCommon);
+				const { newGame, sarcastics } = interpret_sarcastic(game, action);
+				Object.assign(common, newGame.common);
 
 				let transferred = sarcastics.length > 0;
 
@@ -253,7 +254,7 @@ export function interpret_discard(game, action) {
 					logger.info('interpreted', interp);
 					resolve_discard(game, action, interp);
 					action.intentional = true;
-					return;
+					return game;
 				}
 			}
 		}
@@ -294,7 +295,7 @@ export function interpret_discard(game, action) {
 
 			if (interp !== DISCARD_INTERP.NONE) {
 				resolve_discard(game, action, interp);
-				return;
+				return game;
 			}
 		}
 	}
@@ -339,7 +340,7 @@ export function interpret_discard(game, action) {
 
 			resolve_discard(game, action, failed ? DISCARD_INTERP.POS_MISPLAY : DISCARD_INTERP.POS_DISCARD);
 			action.intentional = true;
-			return;
+			return game;
 		}
 	}
 	resolve_discard(game, action, DISCARD_INTERP.NONE);

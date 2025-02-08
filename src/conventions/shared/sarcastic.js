@@ -93,7 +93,8 @@ function apply_locked_discard(state, common, playerIndex) {
 
 /**
  * Interprets a sarcastic discard.
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DiscardAction} discardAction
  */
 export function interpret_sarcastic(game, discardAction) {
@@ -104,12 +105,13 @@ export function interpret_sarcastic(game, discardAction) {
 	const duplicates = visibleFind(state, me, identity);
 	const locked_discard = state.numPlayers === 2 && common.thinksLocked(state, playerIndex) && !game.last_actions[state.nextPlayerIndex(playerIndex)].lock;
 
+	const newGame = game.shallowCopy();
 	let newCommon = common;
 
 	// Unknown sarcastic discard to us
 	if (duplicates.length === 0) {
 		if (playerIndex === state.ourPlayerIndex)
-			return { newCommon, sarcastics: [] };
+			return { newGame, sarcastics: [] };
 
 		const sarcastics = find_sarcastics(state, state.ourPlayerIndex, me, identity);
 
@@ -126,7 +128,8 @@ export function interpret_sarcastic(game, discardAction) {
 		}
 
 		logger.info(`writing sarcastic ${logCard(identity)} on slot(s) ${sarcastics.map(s => state.ourHand.findIndex(o => o === s) + 1)}`);
-		return { newCommon, sarcastics };
+		newGame.common = newCommon;
+		return { newGame, sarcastics };
 	}
 
 	// Sarcastic discard to other (or known sarcastic discard to us)
@@ -151,10 +154,12 @@ export function interpret_sarcastic(game, discardAction) {
 					newCommon = apply_locked_discard(state, newCommon, playerIndex);
 			}
 			logger.info(`writing sarcastic ${logCard(identity)} on ${state.playerNames[playerIndex]}'s slot(s) ${sarcastics.map(s => state.ourHand.findIndex(o => o === s) + 1)}`);
-			return { newCommon, sarcastics };
+			newGame.common = newCommon;
+			return { newGame, sarcastics };
 		}
 	}
 
 	logger.warn(`couldn't find a valid target for sarcastic discard`);
-	return { newCommon, sarcastics: [] };
+	newGame.common = newCommon;
+	return { newGame, sarcastics: [] };
 }

@@ -109,7 +109,8 @@ function other_play(game, waiting_connection, lastPlayerIndex) {
  * Performs relevant updates after someone takes a turn.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {TurnAction} action
  */
 export function update_turn(game, action) {
@@ -133,7 +134,7 @@ export function update_turn(game, action) {
 			= update_wc(game, waiting_connection, lastPlayerIndex);
 
 		if (quit)
-			return;
+			return game;
 
 		if (remove)
 			to_remove.add(i);
@@ -201,7 +202,7 @@ export function update_turn(game, action) {
 		if (new_game) {
 			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
-			return;
+			return new_game;
 		}
 	}
 
@@ -240,4 +241,5 @@ export function update_turn(game, action) {
 
 	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);
+	return game;
 }

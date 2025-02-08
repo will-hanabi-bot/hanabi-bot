@@ -7,7 +7,7 @@ import logger from '../../tools/logger.js';
 import { logCard } from '../../tools/log.js';
 
 /**
- * @typedef {import('../playful-sieve.js').default} Game
+ * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').PlayAction} PlayAction
  */
@@ -79,8 +79,9 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
  * Interprets a play action.
  * 
  * Impure!
- * @param  {Game} game
- * @param  {PlayAction} action
+ * @template {Game} T
+ * @param {T} game
+ * @param {PlayAction} action
  */
 export function interpret_play(game, action) {
 	const { common, state } = game;
@@ -101,7 +102,7 @@ export function interpret_play(game, action) {
 			if (new_game) {
 				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 	}

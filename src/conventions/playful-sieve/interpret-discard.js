@@ -17,7 +17,8 @@ import { logCard } from '../../tools/log.js';
  * Interprets (writes notes) for a discard of the given card.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DiscardAction} action
  */
 export function interpret_discard(game, action) {
@@ -42,7 +43,7 @@ export function interpret_discard(game, action) {
 		if (new_game) {
 			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
-			return;
+			return new_game;
 		}
 	}
 
@@ -57,7 +58,7 @@ export function interpret_discard(game, action) {
 		if (failed)
 			Object.assign(common, common.undo_hypo_stacks(identity));
 		else
-			Object.assign(common, interpret_sarcastic(game, action).newCommon);
+			Object.assign(common, interpret_sarcastic(game, action).newGame.common);
 	}
 
 	// Discarding while partner is locked and having a playable card
@@ -88,4 +89,5 @@ export function interpret_discard(game, action) {
 			chop.inferred = chop.inferred.intersect(playable_possibilities);
 		});
 	}
+	return game;
 }
