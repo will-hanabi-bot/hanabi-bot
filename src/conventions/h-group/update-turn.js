@@ -109,7 +109,8 @@ function other_play(game, waiting_connection, lastPlayerIndex) {
  * Performs relevant updates after someone takes a turn.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {TurnAction} action
  */
 export function update_turn(game, action) {
@@ -133,7 +134,7 @@ export function update_turn(game, action) {
 			= update_wc(game, waiting_connection, lastPlayerIndex);
 
 		if (quit)
-			return;
+			return game;
 
 		if (remove)
 			to_remove.add(i);
@@ -154,7 +155,7 @@ export function update_turn(game, action) {
 		waiting_connection.selfPassback ||= selfPassback;
 	}
 
-	reset_superpositions(game);
+	Object.assign(game.common, reset_superpositions(game));
 
 	// Once a finesse has been demonstrated, the card's identity must be one of the inferences
 	for (const [order, demonstrations] of demonstrated.entries()) {
@@ -199,9 +200,9 @@ export function update_turn(game, action) {
 	if (rewind_actions.length > 0) {
 		const new_game = game.rewind(min_drawn_index + 1, rewind_actions);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
-			return;
+			return new_game;
 		}
 	}
 
@@ -223,7 +224,7 @@ export function update_turn(game, action) {
 	common.waiting_connections = common.waiting_connections.filter((_, i) => !to_remove.has(i));
 	logger.debug('remaining wcs', game.common.waiting_connections.map(wc => wc.connections.map(logConnection).join(' -> ')));
 
-	reset_superpositions(game);
+	Object.assign(game.common, reset_superpositions(game));
 
 	if (currentPlayerIndex === state.ourPlayerIndex) {
 		// Find an anxiety play
@@ -240,4 +241,5 @@ export function update_turn(game, action) {
 
 	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);
+	return game;
 }

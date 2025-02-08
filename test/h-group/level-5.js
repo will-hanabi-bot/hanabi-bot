@@ -6,10 +6,10 @@ import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
-import logger from '../../src/tools/logger.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
-import { logPerformAction } from '../../src/tools/log.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
+
+import logger from '../../src/tools/logger.js';
+import { logPerformAction } from '../../src/tools/log.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -396,7 +396,7 @@ describe('guide principle', () => {
 
 		takeTurn(game, 'Donald clues blue to Cathy');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert(action.type == ACTION.COLOUR || action.type == ACTION.RANK, `Expected purple/4 to Bob, got ${logPerformAction(action)}.`);
 		if (action.type == ACTION.COLOUR)
 			ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: 1, value: 5 });
@@ -433,7 +433,7 @@ describe('guide principle', () => {
 		});
 
 		takeTurn(game, 'Donald clues blue to Cathy');
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: 1, value: 5 });
 	});
 
@@ -475,7 +475,7 @@ describe('guide principle', () => {
 
 		// Bob may think playing gives Cathy a play, but Alice can see that it doesn't,
 		// and should save Cathy's 5.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: 2, value: 5 }, `Expected (5 to Cathy), got ${logPerformAction(action)}`);
 		takeTurn(game, 'Alice clues 5 to Cathy');
 
@@ -498,7 +498,7 @@ describe('guide principle', () => {
 		takeTurn(game, 'Donald clues purple to Cathy'); // finesses p1 (Alice), b1 (Bob), p2 (Bob)
 
 		// Bob plays rather than saving Cathy's b5 since the play should make the p3 playable.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 	});
 
@@ -582,7 +582,7 @@ describe('guide principle', () => {
 		takeTurn(game, 'Donald plays y1', 'y3');
 
 		// Alice should play g1, Bob will clue Cathy's r1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 	});
 });

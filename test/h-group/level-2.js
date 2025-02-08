@@ -7,7 +7,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -29,7 +28,7 @@ describe('reverse finesse', () => {
 
 		takeTurn(game, 'Cathy discards b3', 'g1');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// // Alice should give green to Bob to finesse over save
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.BOB, value: COLOUR.GREEN }, `Expected (green to Bob), got ${logPerformAction(action)}`);
@@ -90,7 +89,7 @@ describe('reverse finesse', () => {
 		takeTurn(game, 'Donald clues red to Alice (slot 1)');	// Could be r1 or r2: if it's r2, then r3 can be clued, but otherwise it can't.
 
 		// We must clue Bob or g1 may be discarded. Cluing Donald isn't safe if we have r1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { target: PLAYER.BOB });
 	});
 
@@ -790,7 +789,7 @@ describe('early game', () => {
 			clue_tokens: 7
 		});
 
-		const action = await game.take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: 0 });
 	});
 
@@ -801,7 +800,7 @@ describe('early game', () => {
 			['b4', 'r2', 'y1', 'b3', 'y1']
 		], { level: { min: 2 } });
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		assert.ok(action.type === ACTION.RANK && action.value === 1 && action.target === PLAYER.CATHY ||
 			action.type === ACTION.COLOUR && action.value === COLOUR.YELLOW && action.target === PLAYER.CATHY,
@@ -820,7 +819,7 @@ describe('early game', () => {
 
 		takeTurn(game, 'Cathy clues 5 to Bob');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(action.type === ACTION.DISCARD);
 	});
 
@@ -836,7 +835,7 @@ describe('early game', () => {
 
 		takeTurn(game, 'Cathy clues 5 to Alice (slot 5)');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, value: 5 });
 	});
 
@@ -854,7 +853,7 @@ describe('early game', () => {
 		takeTurn(game, 'Cathy clues 5 to Bob');
 
 		// y3 must be saved with either a rank or a colour clue.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(action.type === ACTION.RANK || action.type === ACTION.COLOUR);
 	});
 
@@ -873,7 +872,7 @@ describe('early game', () => {
 		const { safe } = clue_safe(game, game.me, { type: CLUE.RANK, value: 1, target: PLAYER.CATHY });
 		assert.equal(safe, true);
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(action.type === ACTION.RANK && action.value === 1 && action.target === PLAYER.CATHY);
 	});
 

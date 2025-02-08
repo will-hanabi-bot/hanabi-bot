@@ -6,7 +6,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import PlayfulSieve from '../../src/conventions/playful-sieve.js';
 
 import { ACTION } from '../../src/constants.js';
-import { take_action } from '../../src/conventions/playful-sieve/take-action.js';
 
 import logger from '../../src/tools/logger.js';
 
@@ -27,7 +26,7 @@ describe('sarcastic discards', () => {
 		takeTurn(game, 'Bob clues 2 to Alice (slot 2)');
 
 		// Alice should discard g2 as sarcastic.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 
@@ -64,7 +63,7 @@ describe('sarcastic discards', () => {
 		takeTurn(game, 'Bob clues 2 to Alice (slot 2)');
 
 		// Alice should discard g2 as sarcastic.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 });

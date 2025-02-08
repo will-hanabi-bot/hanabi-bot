@@ -163,46 +163,45 @@ export class Game {
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @param {Omit<ClueAction, "type">} _action
+	 * @returns {this}
 	 */
-	interpret_clue(_game, _action) {
+	interpret_clue(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @param {Omit<DiscardAction, "type">} _action
+	 * @returns {this}
 	 */
-	interpret_discard(_game, _action) {
+	interpret_discard(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param  {Game} _game
 	 * @param  {PlayAction} _action
+	 * @returns {this}
 	 */
-	interpret_play(_game, _action) {
+	interpret_play(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @returns {Promise<PerformAction>}
 	 */
-	async take_action(_game) {
+	async take_action() {
 		throw new Error('must be implemented by subclass!');
 	}
 
 	/**
 	 * @abstract
-	 * @param {Game} _game
 	 * @param {Omit<TurnAction, "type">} _action
+	 * @returns {this}
 	 */
-	update_turn(_game, _action) {
+	update_turn(_action) {
 		throw new Error('must be implemented by subclass!');
 	}
 
@@ -210,44 +209,48 @@ export class Game {
 	 * Updates notes on cards.
 	 */
 	updateNotes() {
-		if (this.state.options.speedrun)
-			return;
+		const { common, state } = this;
 
-		for (const order of this.state.hands.flat()) {
-			const card = this.common.thoughts[order];
+		if (state.options.speedrun)
+			return this.notes;
 
-			if (!card.saved && !card.called_to_discard)
-				continue;
+		return produce(this.notes, (draft) => {
+			for (const order of state.hands.flat()) {
+				const card = common.thoughts[order];
 
-			this.notes[order] ??= { last: '', turn: 0, full: '' };
+				if (!card.saved && !card.called_to_discard)
+					continue;
 
-			let note = card.getNote();
+				draft[order] ??= { last: '', turn: 0, full: '' };
 
-			const links = this.common.links.filter(link => link.promised && link.orders.includes(order));
+				let note = card.getNote();
 
-			if (links.length > 0) {
-				const link_note = links.flatMap(link => link.identities).map(logCard).join('? ') + '?';
+				const links = common.links.filter(link => link.promised && link.orders.includes(order));
 
-				if (note.includes("]"))
-					note += link_note;
-				else
-					note = `[${note}] ${link_note}`;
+				if (links.length > 0) {
+					const link_note = links.flatMap(link => link.identities).map(logCard).join('? ') + '?';
+
+					if (note.includes("]"))
+						note += link_note;
+					else
+						note = `[${note}] ${link_note}`;
+				}
+
+				// Only write a new note if it's different from the last note and is a later turn
+				if (note !== draft[order].last && state.turn_count > draft[order].turn) {
+					draft[order].last = note;
+					draft[order].turn = state.turn_count;
+
+					if (draft[order].full !== '')
+						draft[order].full += ' | ';
+
+					draft[order].full += `t${state.turn_count}: ${note}`;
+
+					if (!this.catchup && this.in_progress)
+						Utils.sendCmd('note', { tableID: this.tableID, order, note: draft[order].full });
+				}
 			}
-
-			// Only write a new note if it's different from the last note and is a later turn
-			if (note !== this.notes[order].last && this.state.turn_count > this.notes[order].turn) {
-				this.notes[order].last = note;
-				this.notes[order].turn = this.state.turn_count;
-
-				if (this.notes[order].full !== '')
-					this.notes[order].full += ' | ';
-
-				this.notes[order].full += `t${this.state.turn_count}: ${note}`;
-
-				if (!this.catchup && this.in_progress)
-					Utils.sendCmd('note', { tableID: this.tableID, order, note: this.notes[order].full });
-			}
-		}
+		});
 	}
 
 	/**
@@ -431,7 +434,7 @@ export class Game {
 		new_game.catchup = this.catchup;
 
 		if (!new_game.catchup && new_game.state.currentPlayerIndex === this.state.ourPlayerIndex) {
-			new_game.take_action(new_game).then(suggested_action =>
+			new_game.take_action().then(suggested_action =>
 				logger.highlight('cyan', 'Suggested action:', logPerformAction(suggested_action)));
 		}
 
@@ -468,7 +471,7 @@ export class Game {
 		Utils.globalModify({ game: hypo_game });
 
 		logger.wrapLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR, () => {
-			hypo_game.interpret_clue(hypo_game, action);
+			hypo_game.interpret_clue(action);
 		});
 
 		Utils.globalModify({ game: old_global_game });

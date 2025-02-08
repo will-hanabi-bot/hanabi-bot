@@ -39,7 +39,7 @@ export function handle_action(action) {
 			const { giver, list } = action;
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			this.interpret_clue(this, action);
+			Object.assign(this, this.interpret_clue(action));
 			this.last_actions[giver] = action;
 
 			state.dda = undefined;
@@ -74,13 +74,14 @@ export function handle_action(action) {
 			state.screamed_at = false;
 			state.generated = false;
 
-			this.interpret_discard(this, action);
+			Object.assign(this, this.interpret_discard(action));
 			this.last_actions[playerIndex] = action;
 			break;
 		}
 		case 'draw': {
 			// { type: 'draw', playerIndex: 0, order: 2, suitIndex: 1, rank: 2 },
-			Basics.onDraw(this, action);
+			const newGame = Basics.onDraw(this, action);
+			Basics.mutate(this, newGame);
 
 			if (state.turn_count === 0 && state.hands.every(h => h.length === HAND_SIZE[state.numPlayers]))
 				state.turn_count = 1;
@@ -104,8 +105,8 @@ export function handle_action(action) {
 				this.notes[0] = { last: note, turn: 0, full: note };
 			}
 
-			this.update_turn(this, action);
-			this.updateNotes();
+			Object.assign(this, this.update_turn(action));
+			this.notes = this.updateNotes();
 			break;
 		}
 		case 'play': {
@@ -118,7 +119,7 @@ export function handle_action(action) {
 
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			this.interpret_play(this, action);
+			Object.assign(this, this.interpret_play(action));
 			this.last_actions[playerIndex] = action;
 			state.dda = undefined;
 			state.screamed_at = false;

@@ -51,7 +51,8 @@ export function check_ocm(game, action) {
 
 /**
  * Impure!
- * @param  {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param  {PlayAction} action
  */
 export function interpret_play(game, action) {
@@ -68,9 +69,9 @@ export function interpret_play(game, action) {
 			// If the rewind succeeds, it will redo this action, so no need to complete the rest of the function
 			const new_game = game.rewind(card.drawn_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 	}
@@ -85,7 +86,8 @@ export function interpret_play(game, action) {
 			common.updateThoughts(ocm_order, (draft) => { draft.chop_moved = true; });
 	}
 
-	Basics.onPlay(this, action);
+	const newGame = Basics.onPlay(game, action);
+	Basics.mutate(game, newGame);
 
 	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);
@@ -96,4 +98,5 @@ export function interpret_play(game, action) {
 				common.updateThoughts(order, (draft) => { draft.uncertain = false; });
 		}
 	}
+	return game;
 }

@@ -5,11 +5,11 @@ import { COLOUR, PLAYER, expandShortCard, preClue, setup, takeTurn } from '../te
 import * as ExAsserts from '../extra-asserts.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import HGroup from '../../src/conventions/h-group.js';
-import logger from '../../src/tools/logger.js';
-
 import { order_1s } from '../../src/conventions/h-group/action-helper.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { determine_focus } from '../../src/conventions/h-group/hanabi-logic.js';
+
+import logger from '../../src/tools/logger.js';
 import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -110,7 +110,7 @@ describe('sarcastic discard', () => {
 		takeTurn(game, 'Bob clues yellow to Alice (slot 5)');
 
 		// Alice should discard slot 5 as a Sarcastic Discard.
-		const action = await game.take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: 0 });
 	});
 
@@ -173,7 +173,7 @@ describe('sarcastic discard', () => {
 		takeTurn(game, 'Cathy clues yellow to Alice (slot 5)');
 
 		// Alice should play slot 5 instead of discarding for tempo.
-		const action = await game.take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 0 });
 	});
 
@@ -196,7 +196,7 @@ describe('sarcastic discard', () => {
 		takeTurn(game, 'Cathy clues 4 to Alice (slots 4,5)');
 
 		// Alice should play slot 4 instead of discarding for tempo.
-		const action = await game.take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 1 });
 	});
 

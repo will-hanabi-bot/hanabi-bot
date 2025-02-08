@@ -6,14 +6,13 @@ import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import { ACTION_PRIORITY as PRIORITY } from '../../src/conventions/h-group/h-constants.js';
-import logger from '../../src/tools/logger.js';
-
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 import { determine_playable_card } from '../../src/conventions/h-group/action-helper.js';
 import { find_urgent_actions } from '../../src/conventions/h-group/urgent-actions.js';
-import { logPerformAction } from '../../src/tools/log.js';
 import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
+
+import logger from '../../src/tools/logger.js';
+import { logPerformAction } from '../../src/tools/log.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -259,7 +258,7 @@ describe('giving order chop move', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slots 3,4)');
 
 		// Alice should not OCM the trash r1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 1 });
 	});
 
@@ -275,7 +274,7 @@ describe('giving order chop move', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slots 3,4)');
 
 		// Alice should OCM 1 copy of g4.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 2 });
 	});
 
@@ -293,7 +292,7 @@ describe('giving order chop move', () => {
 		takeTurn(game, 'Cathy clues 1 to Alice (slots 3,4)');
 
 		// Alice should not OCM the copy of r2.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 1 });
 	});
 
@@ -311,7 +310,7 @@ describe('giving order chop move', () => {
 		takeTurn(game, 'Cathy clues 1 to Alice (slots 3,4)');
 
 		// Alice should not OCM r1.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 1 }, `Expected (play slot 4), suggested ${logPerformAction(action)}`);
 	});
 
@@ -329,7 +328,7 @@ describe('giving order chop move', () => {
 		takeTurn(game, 'Alice plays b1 (slot 5)');
 		takeTurn(game, 'Bob discards p4', 'g3');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play the rightmost 1 to avoid OCM'ing y1.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
@@ -471,7 +470,7 @@ describe('interpreting chop moves', () => {
 		takeTurn(game, 'Cathy discards y1', 'r1');
 
 		// Alice should play r2.
-		const action1 = await take_action(game);
+		const action1 = await game.take_action();
 		assert.ok(action1.type === ACTION.PLAY && action1.target === game.state.hands[PLAYER.ALICE][0]);
 
 		takeTurn(game, 'Alice plays r2 (slot 1)');
@@ -479,7 +478,7 @@ describe('interpreting chop moves', () => {
 		takeTurn(game, 'Cathy discards p3', 'y4');
 
 		// Alice should play r3.
-		const action2 = await take_action(game);
+		const action2 = await game.take_action();
 		assert.ok(action2.type === ACTION.PLAY && action2.target === game.state.hands[PLAYER.ALICE][1]);
 	});
 
@@ -502,7 +501,7 @@ describe('interpreting chop moves', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r5']);
 
 		// Alice should play r5 on her turn.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 
 		// Cathy shouldn't have any links.

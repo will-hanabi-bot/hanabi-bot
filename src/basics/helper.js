@@ -49,7 +49,8 @@ export function team_elim(game, good_touch = true) {
 
 /**
  * Updates all players with info from common knowledge.
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {boolean} [good_touch]
  */
 export function team_elimP(game, good_touch = true) {
@@ -83,46 +84,47 @@ export function checkFix(game, oldThoughts, clueAction) {
 	const { clue, giver, list, target } = clueAction;
 	const { common, state } = game;
 
+	let newCommon = common;
+
 	/** @type {Set<number>} */
 	const clue_resets = new Set();
 	for (const order of state.hands[target]) {
-		const clued_reset = (oldThoughts[order].inferred.length > 0 && common.thoughts[order].inferred.length === 0) ||
+		const clued_reset = (oldThoughts[order].inferred.length > 0 && newCommon.thoughts[order].inferred.length === 0) ||
 			(list.includes(order) && state.includesVariant(variantRegexes.pinkish) &&
 				!oldThoughts[order].focused &&		// Do not allow pink fix on focused cards
 				unknown_1(oldThoughts[order]) &&
 				clue.type === CLUE.RANK && clue.value !== 1);
 
 		if (clued_reset) {
-			common.thoughts = common.thoughts.with(order, common.reset_card(order));
+			newCommon.thoughts = newCommon.thoughts.with(order, newCommon.reset_card(order));
 			clue_resets.add(order);
 		}
 	}
 
 	//common.good_touch_elim(state);
-	Object.assign(common, common.refresh_links(state));
+	newCommon = newCommon.refresh_links(state);
 
 	// Includes resets from negative information
 	const all_resets = new Set(clue_resets);
 
 	if (all_resets.size > 0) {
 		const reset_order = Array.from(all_resets).find(order =>
-			!common.thoughts[order].rewinded &&
-			common.thoughts[order].possible.length === 1 && common.dependentConnections(order).length > 0);
+			!newCommon.thoughts[order].rewinded &&
+			newCommon.thoughts[order].possible.length === 1 && newCommon.dependentConnections(order).length > 0);
 
 		// There is a waiting connection that depends on this card
 		if (reset_order !== undefined) {
-			const reset_card = common.thoughts[reset_order];
-			const new_game = game.rewind(reset_card.drawn_index + 1, [{
+			const reset_card = newCommon.thoughts[reset_order];
+			const newGame = game.rewind(reset_card.drawn_index + 1, [{
 				type: 'identify',
 				order: reset_order,
 				playerIndex: state.hands.findIndex(hand => hand.includes(reset_order)),
 				identities: [reset_card.possible.array[0].raw()]
 			}]);
 
-			if (new_game !== undefined) {
-				new_game.updateNotes();
-				Object.assign(game, new_game);
-				return { rewinded: true };
+			if (newGame !== undefined) {
+				newGame.notes = newGame.updateNotes();
+				return { rewinded: true, newGame };
 			}
 		}
 
@@ -135,11 +137,11 @@ export function checkFix(game, oldThoughts, clueAction) {
 			if (old_id !== undefined) {
 				infs_to_recheck.push(old_id);
 
-				common.hypo_stacks[old_id.suitIndex] = Math.min(common.hypo_stacks[old_id.suitIndex], old_id.rank - 1);
-				logger.info('setting hypo stacks to', common.hypo_stacks);
+				newCommon.hypo_stacks[old_id.suitIndex] = Math.min(newCommon.hypo_stacks[old_id.suitIndex], old_id.rank - 1);
+				logger.info('setting hypo stacks to', newCommon.hypo_stacks);
 
 				const id_hash = logCard(old_id);
-				const elims = common.elims[id_hash];
+				const elims = newCommon.elims.get(id_hash);
 
 				// Don't allow the card being reset to regain this inference
 				if (elims && elims.includes(order))
@@ -148,7 +150,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 		}
 
 		for (const inf of infs_to_recheck)
-			common.restore_elim(inf);
+			newCommon = newCommon.restore_elim(inf);
 	}
 
 	// Any clued cards that lost all inferences
@@ -158,14 +160,14 @@ export function checkFix(game, oldThoughts, clueAction) {
 		logger.info('clued cards', clued_resets, 'were newly reset!');
 
 	const duplicate_reveal = list.filter(order => {
-		const card = common.thoughts[order];
+		const card = newCommon.thoughts[order];
 
-		if (game.common.thoughts[order].identity() === undefined || card.clues.filter(clue => clue.type === card.clues.at(-1).type && clue.value === card.clues.at(-1).value ).length > 1)
+		if (newCommon.thoughts[order].identity() === undefined || card.clues.filter(clue => clue.type === card.clues.at(-1).type && clue.value === card.clues.at(-1).value ).length > 1)
 			return false;
 
 		// The fix can be in anyone's hand except the giver's
-		const copy = visibleFind(state, common, card.identity(), { ignore: [giver], infer: true })
-			.find(o => common.thoughts[o].touched && o !== order);// && !c.newly_clued);
+		const copy = visibleFind(state, newCommon, card.identity(), { ignore: [giver], infer: true })
+			.find(o => newCommon.thoughts[o].touched && o !== order);// && !c.newly_clued);
 
 		if (copy)
 			logger.info('duplicate', logCard(card.identity()), 'revealed! copy of order', copy, card.possible.map(logCard));
@@ -173,17 +175,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 		return copy !== undefined;
 	});
 
-	return { clued_resets, duplicate_reveal };
-}
-
-/**
- * Reverts the hypo stacks of the given suitIndex to the given rank - 1, if it was originally above that.
- * @param {Game} game
- * @param {Identity} identity
- */
-export function undo_hypo_stacks(game, { suitIndex, rank }) {
-	logger.info(`discarded useful card ${logCard({suitIndex, rank})}, setting hypo stack to ${rank - 1}`);
-	game.common.hypo_stacks[suitIndex] = Math.min(game.common.hypo_stacks[suitIndex], rank - 1);
+	return { clued_resets, duplicate_reveal, newCommon };
 }
 
 /**
@@ -191,8 +183,12 @@ export function undo_hypo_stacks(game, { suitIndex, rank }) {
  * @param {Game} game
  */
 export function reset_superpositions(game) {
+	let newCommon = game.common;
+
 	for (const order of game.state.hands.flat())
-		game.common.updateThoughts(order, (draft) => { draft.superposition = false; });
+		newCommon = newCommon.withThoughts(order, (draft) => { draft.superposition = false; });
+
+	return newCommon;
 }
 
 /**

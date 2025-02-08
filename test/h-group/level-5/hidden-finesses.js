@@ -8,7 +8,6 @@ import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
 import { team_elim } from '../../../src/basics/helper.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { take_action } from '../../../src/conventions/h-group/take-action.js';
 
 import logger from '../../../src/tools/logger.js';
 
@@ -173,7 +172,7 @@ describe('hidden finesse', () => {
 		takeTurn(game, 'Cathy discards g4', 'p4');
 		takeTurn(game, 'Donald clues green to Bob');		// g1 needs to finesse from Alice, but slot 1 is [y2] and slot 2 is neg 1.
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play slot 3.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][2] });
@@ -210,7 +209,7 @@ describe('hidden finesse', () => {
 		// Slots 1 should be finessed.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play slot 1.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });

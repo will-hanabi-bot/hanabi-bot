@@ -1,6 +1,6 @@
 import { DISCARD_INTERP, LEVEL, PLAY_INTERP } from './h-constants.js';
 import { isTrash } from '../../basics/hanabi-util.js';
-import { team_elim, undo_hypo_stacks } from '../../basics/helper.js';
+import { team_elim } from '../../basics/helper.js';
 import { interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
 
@@ -59,7 +59,10 @@ function check_transfer(game, action) {
 		let transfers = [], interp;
 
 		if (replaceable) {
-			transfers = interpret_sarcastic(game, action);
+			const { newGame, sarcastics } = interpret_sarcastic(game, action);
+			transfers = sarcastics;
+			Object.assign(common, newGame.common);
+
 			interp = DISCARD_INTERP.SARCASTIC;
 
 			if (transfers.length === 0 && game.level >= LEVEL.SPECIAL_DISCARDS) {
@@ -124,7 +127,7 @@ function check_transfer(game, action) {
 		const real_connects = getRealConnects(connections, dc_conn_index);
 		const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order, inference }]);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
 			return { interp, new_game };
 		}
@@ -160,7 +163,8 @@ function resolve_discard(game, action, interp) {
  * Interprets (writes notes) for a discard of the given card.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {DiscardAction} action
  */
 export function interpret_discard(game, action) {
@@ -181,13 +185,14 @@ export function interpret_discard(game, action) {
 		}
 	}
 
-	Basics.onDiscard(game, action);
+	const newGame = Basics.onDiscard(game, action);
+	Basics.mutate(game, newGame);
 
 	const { interp } = check_transfer(game, action);
 	if (interp !== DISCARD_INTERP.NONE) {
 		resolve_discard(game, action, interp);
 		action.intentional = true;
-		return;
+		return game;
 	}
 
 	// End early game?
@@ -205,9 +210,9 @@ export function interpret_discard(game, action) {
 		const action_index = state.deck[order].drawn_index;
 		const new_game = game.rewind(action_index + 1, [{ type: 'identify', order, playerIndex, identities: [{ suitIndex, rank }] }]);
 		if (new_game) {
-			new_game.updateNotes();
+			new_game.notes = new_game.updateNotes();
 			Object.assign(game, new_game);
-			return;
+			return new_game;
 		}
 	}
 
@@ -219,16 +224,20 @@ export function interpret_discard(game, action) {
 			logger.warn('discarded useful clued card!');
 
 			for (const player of game.allPlayers)
-				player.restore_elim(state.deck[order]);
+				Object.assign(player, player.restore_elim(state.deck[order]));
 
 			// Card was bombed
 			if (failed) {
-				undo_hypo_stacks(game, identity);
+				Object.assign(common, common.undo_hypo_stacks(identity));
 			}
 			else if (!common.thoughts[order].bluffed) {
 				/** @type {typeof DISCARD_INTERP[keyof typeof DISCARD_INTERP]} */
 				let interp = DISCARD_INTERP.SARCASTIC;
-				let transferred = interpret_sarcastic(game, action).length > 0;
+
+				const { newGame, sarcastics } = interpret_sarcastic(game, action);
+				Object.assign(common, newGame.common);
+
+				let transferred = sarcastics.length > 0;
 
 				if (!transferred && game.level >= LEVEL.SPECIAL_DISCARDS) {
 					if (state.isPlayable(identity)) {
@@ -245,7 +254,7 @@ export function interpret_discard(game, action) {
 					logger.info('interpreted', interp);
 					resolve_discard(game, action, interp);
 					action.intentional = true;
-					return;
+					return game;
 				}
 			}
 		}
@@ -286,7 +295,7 @@ export function interpret_discard(game, action) {
 
 			if (interp !== DISCARD_INTERP.NONE) {
 				resolve_discard(game, action, interp);
-				return;
+				return game;
 			}
 		}
 	}
@@ -331,7 +340,7 @@ export function interpret_discard(game, action) {
 
 			resolve_discard(game, action, failed ? DISCARD_INTERP.POS_MISPLAY : DISCARD_INTERP.POS_DISCARD);
 			action.intentional = true;
-			return;
+			return game;
 		}
 	}
 	resolve_discard(game, action, DISCARD_INTERP.NONE);

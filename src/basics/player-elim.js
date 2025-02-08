@@ -213,10 +213,11 @@ export function card_elim(state) {
 /**
  * Eliminates card identities based on Good Touch Principle.
  * Returns the orders of the cards that lost all inferences (were reset).
- * @this {Player}
+ * @template {Player} T
+ * @this {T}
  * @param {State} state
  * @param {boolean} only_self 	Whether to only use cards in own hand for elim (e.g. in 2-player games, where GTP is less strong.)
- * @returns {typeof this}
+ * @returns {T}
  */
 export function good_touch_elim(state, only_self = false) {
 	const match_map = /** @type {Map<string, Set<number>>} */ (new Map());
@@ -391,12 +392,9 @@ export function good_touch_elim(state, only_self = false) {
 				new_identities = new_identities.subtract(identity);
 				changed = true;
 
-				newPlayer = produce(newPlayer, (draft) => {
-					draft.elims[id_hash] ??= [];
-
-					if (!draft.elims[id_hash].includes(order))
-						draft.elims[id_hash].push(order);
-				});
+				const newElims = new Map(newPlayer.elims);
+				newElims.set(id_hash, (newElims.get(id_hash) ?? []).concat(order));
+				newPlayer.elims = newElims;
 
 				if (!cm) {
 					if (new_inferred.length === 0 && !reset)
@@ -519,7 +517,8 @@ export function reset_card(order) {
 
 /**
  * Finds good touch (non-promised) links in the hand.
- * @this {Player}
+ * @template {Player} T
+ * @this {T}
  * @param {State} state
  * @param {number[]} [hand]
  */
@@ -580,9 +579,10 @@ export function find_links(state, hand = state.hands[this.playerIndex]) {
 
 /**
  * Refreshes the array of links based on new information (if any).
- * @this {Player}
+ * @template {Player} T
+ * @this {T}
  * @param {State} state
- * @returns {typeof this}
+ * @returns {T}
  */
 export function refresh_links(state) {
 	/** @type {Link[]} */
@@ -653,26 +653,34 @@ export function refresh_links(state) {
 }
 
 /**
- * @this {Player}
+ * @template {Player} T
+ * @this {T}
  * @param {Identity} identity
  */
 export function restore_elim(identity) {
 	const id = logCard(identity);
-	const elims = this.elims[id]?.filter(order => (({ possible, info_lock } = this.thoughts[order]) =>
+	const elims = this.elims.get(id)?.filter(order => (({ possible, info_lock } = this.thoughts[order]) =>
 		// Only add the inference back if it's still a possibility
 		possible.has(identity) && (info_lock === undefined || info_lock.has(identity))));
+
+	let newPlayer = this;
 
 	if (elims?.length > 0) {
 		logger.warn(`adding back inference ${id} which was falsely eliminated from ${elims} in player ${this.playerIndex}'s view`);
 
 		for (const order of elims) {
-			if (this.thoughts[order].focused)
+			if (newPlayer.thoughts[order].focused)
 				continue;
 
-			this.updateThoughts(order, (draft) => { draft.inferred = this.thoughts[order].inferred.union(identity); });
+			newPlayer = newPlayer.withThoughts(order, (draft) => { draft.inferred = newPlayer.thoughts[order].inferred.union(identity); });
 		}
 	}
 
-	this.all_inferred = this.all_inferred.union(identity);
-	this.elims[id] = undefined;
+	const newElims = new Map(newPlayer.elims);
+	newElims.delete(id);
+
+	return produce(newPlayer, (draft) => {
+		draft.all_inferred = newPlayer.all_inferred.union(identity);
+		draft.elims = newElims;
+	});
 }

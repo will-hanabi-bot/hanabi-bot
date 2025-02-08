@@ -5,7 +5,6 @@ import { ACTION } from '../../../src/constants.js';
 import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
-import { take_action } from '../../../src/conventions/h-group/take-action.js';
 
 import logger from '../../../src/tools/logger.js';
 
@@ -38,7 +37,7 @@ describe('save clue interpretation', () => {
 			variant: VARIANTS.BROWN
 		});
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.BOB, value: COLOUR.PURPLE });
 	});
@@ -60,7 +59,7 @@ describe('focus connections', () => {
 		takeTurn(game, 'Bob clues brown to Alice (slot 2,4,5)');
 		takeTurn(game, 'Cathy clues brown to Bob');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play slot 5.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
@@ -85,7 +84,7 @@ describe('focus connections', () => {
 		takeTurn(game, 'Cathy clues brown to Bob');
 		takeTurn(game, 'Donald plays n3', 'y2');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play slot 4.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
@@ -111,7 +110,7 @@ describe('brown tempo clues', () => {
 
 		takeTurn(game, 'Cathy clues blue to Bob');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		// Alice should play slot 5.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });

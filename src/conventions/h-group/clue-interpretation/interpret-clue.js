@@ -47,7 +47,8 @@ function apply_good_touch(game, action, oldThoughts) {
 	const { common, state } = game;
 	const { list, target } = action;
 
-	Basics.onClue(game, action);
+	const newGame = Basics.onClue(game, action);
+	Basics.mutate(game, newGame);
 
 	if (target === state.ourPlayerIndex) {
 		for (const order of state.hands[target]) {
@@ -61,7 +62,7 @@ function apply_good_touch(game, action, oldThoughts) {
 					game.rewind(action_index, [{ type: 'ignore', order, conn_index: 0 }]);		// Rewinding the layered finesse doesn't work, just ignore us then.
 
 				if (new_game) {
-					new_game.updateNotes();
+					new_game.notes = new_game.updateNotes();
 					Object.assign(game, new_game);
 					return { rewinded: true };
 				}
@@ -73,7 +74,8 @@ function apply_good_touch(game, action, oldThoughts) {
 		}
 	}
 
-	const { clued_resets, duplicate_reveal } = checkFix(game, oldThoughts, action);
+	const { clued_resets, duplicate_reveal, newCommon } = checkFix(game, oldThoughts, action);
+	Object.assign(common, newCommon);
 	return { fix: clued_resets?.length > 0 || duplicate_reveal?.length > 0 };
 }
 
@@ -229,7 +231,7 @@ function resolve_clue(game, old_game, action, focusResult, inf_possibilities, fo
 
 	common.updateThoughts(focus, (draft) => { draft.info_lock = draft.inferred.clone(); });
 
-	reset_superpositions(game);
+	Object.assign(game.common, reset_superpositions(game));
 }
 
 /**
@@ -321,7 +323,8 @@ function urgent_save(game, action, focus, oldCommon, old_game) {
  * Interprets the given clue. First tries to look for inferred connecting cards, then attempts to find prompts/finesses.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {ClueAction} action
  */
 export function interpret_clue(game, action) {
@@ -362,7 +365,7 @@ export function interpret_clue(game, action) {
 				const new_game = game.rewind(state.deck[rewind_order].drawn_index + 1, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
 				if (new_game) {
 					Object.assign(game, new_game);
-					return;
+					return new_game;
 				}
 			}
 
@@ -372,7 +375,7 @@ export function interpret_clue(game, action) {
 
 		common.waiting_connections = common.waiting_connections.filter((_, i) => !to_remove.has(i));
 		team_elim(game);
-		return;
+		return game;
 	}
 
 	const focusResult = determine_focus(game, state.hands[target], common, list, clue);
@@ -384,7 +387,7 @@ export function interpret_clue(game, action) {
 
 	// Rewind occurred, this action will be completed as a result of it
 	if (rewinded)
-		return;
+		return game;
 
 	if (chop && !action.noRecurse) {
 		common.updateThoughts(focus, (draft) => { draft.chop_when_first_clued = true; });
@@ -401,9 +404,9 @@ export function interpret_clue(game, action) {
 		if (common.thoughts[focus].possible.length === 1 && common.dependentConnections(focus).length > 0) {
 			const new_game = game.rewind(state.deck[focus].drawn_index + 1, [{ type: 'identify', order: focus, playerIndex: target, identities: [common.thoughts[focus].possible.array[0].raw()] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 	}
@@ -436,9 +439,9 @@ export function interpret_clue(game, action) {
 				const real_connects = getRealConnects(connections, stomped_conn_index);
 				const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order: stomped_conn.order, inference }]);
 				if (new_game) {
-					new_game.updateNotes();
+					new_game.notes = new_game.updateNotes();
 					Object.assign(game, new_game);
-					return;
+					return new_game;
 				}
 			}
 		}
@@ -459,9 +462,9 @@ export function interpret_clue(game, action) {
 		if (rewind_identity !== undefined && !common.thoughts[rewind_order].rewinded && wc_target === state.ourPlayerIndex && state.ourHand.includes(rewind_order)) {
 			const new_game = game.rewind(state.deck[rewind_order].drawn_index + 1, [{ type: 'identify', order: rewind_order, playerIndex: state.ourPlayerIndex, identities: [rewind_identity.raw()] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 
@@ -506,7 +509,7 @@ export function interpret_clue(game, action) {
 		// Focus doesn't matter for a fix clue
 		common.updateThoughts(focus, (draft) => { draft.focused = oldCommon.thoughts[focus].focused; });
 		game.interpretMove(mistake ? CLUE_INTERP.MISTAKE : CLUE_INTERP.FIX);
-		return;
+		return game;
 	}
 
 	// Check if the giver was in a stalling situation
@@ -527,12 +530,12 @@ export function interpret_clue(game, action) {
 		Object.assign(common, common.update_hypo_stacks(state));
 		team_elim(game);
 		game.interpretMove(stall);
-		return;
+		return game;
 	}
 	else if (thinks_stall.size > 0 && giver === state.ourPlayerIndex) {
 		// Asymmetric move: prefer not to give such a clue
 		game.interpretMove(CLUE_INTERP.NONE);
-		return;
+		return game;
 	}
 
 	if (distribution_clue(game, action, common.thoughts[focus].order)) {
@@ -546,7 +549,7 @@ export function interpret_clue(game, action) {
 		logger.info('distribution clue!');
 		game.interpretMove(CLUE_INTERP.DISTRIBUTION);
 		team_elim(game);
-		return;
+		return game;
 	}
 
 	// Check for chop moves at level 4+
@@ -574,7 +577,7 @@ export function interpret_clue(game, action) {
 
 			game.interpretMove(CLUE_INTERP.CM_TRASH);
 			team_elim(game);
-			return;
+			return game;
 		}
 
 		const cm5_orders = interpret_5cm(game, target, focus, clue);
@@ -584,7 +587,7 @@ export function interpret_clue(game, action) {
 			perform_cm(state, common, cm5_orders);
 			game.interpretMove(CLUE_INTERP.CM_5);
 			team_elim(game);
-			return;
+			return game;
 		}
 	}
 
@@ -603,7 +606,7 @@ export function interpret_clue(game, action) {
 
 		game.interpretMove(CLUE_INTERP.FIX);
 		team_elim(game);
-		return;
+		return game;
 	}
 
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall);
@@ -841,4 +844,5 @@ export function interpret_clue(game, action) {
 		logger.info('Failed to debug hand state', err, state.hands[target], Utils.globals.game.common.thoughts.map(c => c.order));
 	}
 	team_elim(game);
+	return game;
 }

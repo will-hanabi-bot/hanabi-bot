@@ -7,12 +7,11 @@ import * as ExAsserts from '../extra-asserts.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
+import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
-import { produce } from '../../src/StateProxy.js';
-import { team_elim } from '../../src/basics/helper.js';
 import { logPerformAction } from '../../src/tools/log.js';
+import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -245,7 +244,7 @@ describe('tempo clue chop moves', () => {
 
 		takeTurn(game, 'Cathy clues purple to Bob');
 
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { target: PLAYER.BOB, type: ACTION.RANK, value: 2 }, `Expected (2 to Bob), got ${logPerformAction(action)}`);
 	});
 });

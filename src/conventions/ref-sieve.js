@@ -16,15 +16,38 @@ import * as Utils from '../tools/util.js';
  * @typedef {typeof import('./ref-sieve/rs-constants.js').PLAY_INTERP} PLAY_INTERP
  * @typedef {typeof import('./ref-sieve/rs-constants.js').DISCARD_INTERP} DISCARD_INTERP
  * @typedef {CLUE_INTERP[keyof CLUE_INTERP] | PLAY_INTERP[keyof PLAY_INTERP] | DISCARD_INTERP[keyof DISCARD_INTERP]} INTERP
+ * @typedef {import('../types.js').ClueAction} ClueAction
+ * @typedef {import('../types.js').DiscardAction} DiscardAction
+ * @typedef {import('../types.js').TurnAction} TurnAction
+ * @typedef {import('../types.js').PlayAction} PlayAction
  */
 
 export default class RefSieve extends Game {
 	convention_name = 'RefSieve';
-	interpret_clue = interpret_clue;
-	interpret_discard = interpret_discard;
-	take_action = take_action;
-	update_turn = update_turn;
-	interpret_play = interpret_play;
+
+	/** @param {ClueAction} action */
+	interpret_clue(action) {
+		return interpret_clue(this, action);
+	}
+
+	/** @param {DiscardAction} action */
+	interpret_discard(action) {
+		return interpret_discard(this, action);
+	}
+
+	/** @param {PlayAction} action */
+	interpret_play(action) {
+		return interpret_play(this, action);
+	}
+
+	async take_action() {
+		return take_action(this);
+	}
+
+	/** @param {TurnAction} action */
+	update_turn(action) {
+		return update_turn(this, action);
+	}
 
 	/** @type {number[]} */
 	locked_shifts = [];

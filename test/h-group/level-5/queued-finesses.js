@@ -5,7 +5,7 @@ import { PLAYER, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION } from '../../../src/constants.js';
-import { take_action } from '../../../src/conventions/h-group/take-action.js';
+
 import logger from '../../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -29,7 +29,7 @@ describe('queued finesse', () => {
 		takeTurn(game, 'Cathy clues 2 to Bob');			// r2 finesse on us
 
 		// Alice should play slot 1 first.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 
 		takeTurn(game, 'Alice plays g1 (slot 1)');
@@ -53,7 +53,7 @@ describe('queued finesse', () => {
 		takeTurn(game, 'Bob clues red to Cathy');		// r1, r2 finesse on us
 
 		// Alice should play slot 2 first.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 
 		// Alice's slots should be [r1, g2, r2].
@@ -94,7 +94,7 @@ describe('queued finesse', () => {
 		takeTurn(game, 'Cathy discards p3', 'y1');
 
 		// Alice should play slot 2 first (continue digging for r1).
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 
@@ -117,7 +117,7 @@ describe('queued finesse', () => {
 		takeTurn(game, 'Bob clues yellow to Donald');	// y2 finesse, we have y1
 
 		// Alice cannot play y1 in slot 1, because y1 could be layered in the r4 finesse.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(action.type !== ACTION.PLAY);
 	});
 
@@ -140,7 +140,7 @@ describe('queued finesse', () => {
 		takeTurn(game, 'Bob clues yellow to Donald');	// y2 finesse, we have y1
 
 		// Alice can play y1 in slot 1, because the queued r4 cannot be layered.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 	});
 
@@ -174,7 +174,7 @@ describe('queued finesse', () => {
 		takeTurn(game, 'Donald clues 5 to Bob');
 
 		// Alice should play y1 in slot 3.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][2] });
 	});
 });

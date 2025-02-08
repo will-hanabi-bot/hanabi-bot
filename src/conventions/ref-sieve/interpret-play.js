@@ -1,13 +1,13 @@
 import { CLUE } from '../../constants.js';
 import { IdentitySet } from '../../basics/IdentitySet.js';
-import { team_elim } from '../../basics/helper.js';
+import { team_elimP } from '../../basics/helper.js';
 import * as Basics from '../../basics.js';
 
 import logger from '../../tools/logger.js';
 import { logCard } from '../../tools/log.js';
 
 /**
- * @typedef {import('../playful-sieve.js').default} Game
+ * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').PlayAction} PlayAction
  */
@@ -79,8 +79,9 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
  * Interprets a play action.
  * 
  * Impure!
- * @param  {Game} game
- * @param  {PlayAction} action
+ * @template {Game} T
+ * @param {T} game
+ * @param {PlayAction} action
  */
 export function interpret_play(game, action) {
 	const { common, state } = game;
@@ -99,35 +100,39 @@ export function interpret_play(game, action) {
 			// If the rewind succeeds, it will redo this action, so no need to complete the rest of the function
 			const new_game = game.rewind(card.drawn_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 	}
 
 	if (state.numPlayers !== 2) {
-		Basics.onPlay(game, action);
+		let newGame = Basics.onPlay(game, action);
+		Basics.mutate(game, newGame);
 
 		for (const o of state.hands[playerIndex]) {
 			if (common.thoughts[o].called_to_discard) {
-				common.updateThoughts(o, (draft) => {
+				newGame.common = newGame.common.withThoughts(o, (draft) => {
 					draft.called_to_discard = false;
 				});
 			}
 		}
 
-		Object.assign(common, common.good_touch_elim(state).refresh_links(state));
-		team_elim(game);
-		return;
+		newGame.common = newGame.common.good_touch_elim(state).refresh_links(state);
+		newGame = team_elimP(newGame);
+		Basics.mutate(game, newGame);
+		return newGame;
 	}
+
+	let newGame = game.shallowCopy();
 
 	const locked_shifts = game.locked_shifts[order];
 	if (locked_shifts !== undefined)
-		delete game.locked_shifts[order];
+		newGame.locked_shifts[order] = undefined;
 
 	if (common.thinksLocked(state, other)) {
-		const unlocked_order = unlock_promise(game, action, playerIndex, other, locked_shifts);
+		const unlocked_order = unlock_promise(newGame, action, playerIndex, other, locked_shifts);
 
 		if (unlocked_order !== undefined) {
 			const connecting = { suitIndex, rank: rank + 1 };
@@ -146,16 +151,21 @@ export function interpret_play(game, action) {
 
 					if (unlocked.possible.has(connecting)) {
 						logger.info(`overwriting slot ${slot} as ${logCard(connecting)} from possiilities`);
-						common.updateThoughts(unlocked_order, (draft) => { draft.inferred = IdentitySet.create(state.variant.suits.length, connecting); });
+						newGame.common = newGame.common.withThoughts(unlocked_order, (draft) => {
+							draft.inferred = IdentitySet.create(state.variant.suits.length, connecting);
+						});
 					}
 					else {
 						logger.warn('ignoring unlock promise');
 					}
 				}
 				else {
-					common.updateThoughts(unlocked_order, (draft) => { draft.inferred = common.thoughts[unlocked_order].inferred.intersect(connecting); });
+					newGame.common = newGame.common.withThoughts(unlocked_order, (draft) => {
+						draft.inferred = common.thoughts[unlocked_order].inferred.intersect(connecting);
+					});
+
 					logger.info(`unlocking slot ${slot} as ${logCard(connecting)}`);
-					game.locked_shifts = [];
+					newGame.locked_shifts = [];
 				}
 			}
 		}
@@ -167,18 +177,18 @@ export function interpret_play(game, action) {
 				if (o === order)
 					continue;
 
-				game.locked_shifts[o] = (game.locked_shifts[o] ?? 0) + 1;
+				newGame.locked_shifts[o] = (game.locked_shifts[o] ?? 0) + 1;
 			}
 		}
 	}
 	else {
-		game.locked_shifts = [];
+		newGame.locked_shifts = [];
 	}
 
-	Basics.onPlay(game, action);
+	newGame = Basics.onPlay(newGame, action);
+	newGame.common = newGame.common.good_touch_elim(state).refresh_links(state);
+	newGame = team_elimP(newGame);
 
-	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
-
-	// Update hypo stacks
-	team_elim(game);
+	Basics.mutate(game, newGame);
+	return newGame;
 }

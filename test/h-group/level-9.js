@@ -5,7 +5,6 @@ import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
-import { take_action } from '../../src/conventions/h-group/take-action.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -133,7 +132,7 @@ describe('stalling', () => {
 		takeTurn(game, 'Cathy discards r3', 'p4');
 
 		// Alice is in DDA, she should clue 2 to Bob even though it bad touches.
-		const action = await take_action(game);
+		const action = await game.take_action();
 
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 2 });
 	});
@@ -152,7 +151,7 @@ describe('stalling', () => {
 		takeTurn(game, 'Cathy clues 5 to Alice (slot 5)');
 
 		// Alice should 5 Stall on Cathy, since Bob's 5 is farther away from chop.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.CATHY, value: 5 }, `Expected (5 to Cathy), got ${logPerformAction(action)}`);
 
 		// 5 to Bob is not a valid 5 stall.
@@ -174,7 +173,7 @@ describe('stalling', () => {
 		takeTurn(game, 'Cathy discards r3', 'p4');
 
 		// Alice should clue 1 to Bob.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 1 }, `Expected (1 to Bob), got ${logPerformAction(action)}`);
 
 		// 5 to Bob is not a valid 5 stall.
@@ -197,7 +196,7 @@ describe('stalling', () => {
 		takeTurn(game, 'Cathy clues 2 to Bob');			// saving r2, revealing b2
 
 		// Alice should discard rather than cluing red to Bob.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD }, `Expected (discard), got ${logPerformAction(action)}`);
 
 		// Red to Bob is not a valid tempo clue.
@@ -224,7 +223,7 @@ describe('anxiety plays', () => {
 		takeTurn(game, 'Donald clues 2 to Alice (slot 1)');
 
 		// Alice should play slot 2 as r5.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target:game.state.hands[PLAYER.ALICE][1] }, `Expected (play slot 2), got ${logPerformAction(action)} instead`);
 	});
 
@@ -243,7 +242,7 @@ describe('anxiety plays', () => {
 		takeTurn(game, 'Donald clues 5 to Alice (slots 1,2,3,4)');
 
 		// Alice should clue instead of playing/discarding.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(action.type === ACTION.RANK || action.type === ACTION.COLOUR);
 	});
 
@@ -263,7 +262,7 @@ describe('anxiety plays', () => {
 		takeTurn(game, 'Donald clues 5 to Alice (slots 1,2,3,4)');
 
 		// Alice should discard, since it isn't possible to play any card.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		assert.ok(action.type === ACTION.DISCARD, `Expected discard, got ${logPerformAction(action)} instead`);
 	});
 
@@ -284,7 +283,7 @@ describe('anxiety plays', () => {
 		takeTurn(game, 'Donald clues red to Alice (slot 1)');
 
 		// Alice should play slot 1 as r4.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 	});
 
@@ -309,7 +308,7 @@ describe('anxiety plays', () => {
 		takeTurn(game, 'Donald clues green to Alice (slot 1)');
 
 		// Alice should clue red/3 to Bob as anxiety.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		const { type, target, value } = action;
 		assert.ok((type === ACTION.COLOUR && target === PLAYER.BOB && value === COLOUR.RED) ||
 			(type === ACTION.RANK && target === PLAYER.BOB && value === 3), `Expected (3/red to Bob), got ${logPerformAction(action)}`);
@@ -333,7 +332,7 @@ describe('double discard avoidance', async () => {
 
 		// A discard of a useful card means Alice is in a DDA situation.
 		ExAsserts.objHasProperties(game.state.dda, {suitIndex: COLOUR.RED, rank: 3});
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 5 });
 		takeTurn(game, 'Alice clues 5 to Bob');
 
@@ -362,7 +361,7 @@ describe('double discard avoidance', async () => {
 		ExAsserts.objHasProperties(state.dda, {suitIndex: COLOUR.RED, rank: 3});
 
 		// However, since Alice can see the other r3, Alice can discard.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: state.hands[PLAYER.ALICE][3] });
 	});
 
@@ -386,7 +385,7 @@ describe('double discard avoidance', async () => {
 		ExAsserts.objHasProperties(state.dda, {suitIndex: COLOUR.RED, rank: 3});
 
 		// Alice gives a fill-in clue as the highest priority stall clue.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.BOB, value: COLOUR.GREEN });
 		takeTurn(game, 'Alice clues green to Bob');
 

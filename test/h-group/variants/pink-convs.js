@@ -5,10 +5,9 @@ import * as ExAsserts from '../../extra-asserts.js';
 import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../../test-utils.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
 import HGroup from '../../../src/conventions/h-group.js';
+import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 import logger from '../../../src/tools/logger.js';
-import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { take_action } from '../../../src/conventions/h-group/take-action.js';
 import { logClue } from '../../../src/tools/log.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -170,7 +169,7 @@ describe('pink 1s assumption', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slots 4,5)');
 
 		// Alice must play slot 5 (not allowed to OCM by playing slot 4).
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
 	});
 });

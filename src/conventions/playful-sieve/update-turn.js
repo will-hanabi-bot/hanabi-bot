@@ -15,7 +15,8 @@ import logger from '../../tools/logger.js';
  * Performs relevant updates after someone takes a turn.
  * 
  * Impure!
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {TurnAction} action
  */
 export function update_turn(game, action) {
@@ -58,4 +59,5 @@ export function update_turn(game, action) {
 
 	Object.assign(common, common.good_touch_elim(state).update_hypo_stacks(state));
 	team_elim(game);
+	return game;
 }

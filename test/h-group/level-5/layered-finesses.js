@@ -7,7 +7,6 @@ import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { clue_safe } from '../../../src/conventions/h-group/clue-finder/clue-safe.js';
-import { take_action } from '../../../src/conventions/h-group/take-action.js';
 
 import logger from '../../../src/tools/logger.js';
 import { produce } from '../../../src/StateProxy.js';
@@ -79,7 +78,7 @@ describe('layered finesse', () => {
 		takeTurn(game, 'Donald clues 3 to Cathy');
 
 		// We should play slot 1 as b3.
-		const action = await take_action(game);
+		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].order });
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b3']);
 	});

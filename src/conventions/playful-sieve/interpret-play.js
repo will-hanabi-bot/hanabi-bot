@@ -79,7 +79,8 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
  * Interprets a play action.
  * 
  * Impure!
- * @param  {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param  {PlayAction} action
  */
 export function interpret_play(game, action) {
@@ -99,9 +100,9 @@ export function interpret_play(game, action) {
 			// If the rewind succeeds, it will redo this action, so no need to complete the rest of the function
 			const new_game = game.rewind(card.drawn_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
 			if (new_game) {
-				new_game.updateNotes();
+				new_game.notes = new_game.updateNotes();
 				Object.assign(game, new_game);
-				return;
+				return new_game;
 			}
 		}
 	}
@@ -181,10 +182,12 @@ export function interpret_play(game, action) {
 		game.locked_shifts = [];
 	}
 
-	Basics.onPlay(this, action);
+	const newGame = Basics.onPlay(game, action);
+	Basics.mutate(game, newGame);
 
 	Object.assign(common, common.good_touch_elim(state).refresh_links(state));
 
 	// Update hypo stacks
 	team_elim(game);
+	return game;
 }
