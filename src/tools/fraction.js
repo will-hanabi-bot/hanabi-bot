@@ -1,9 +1,13 @@
 /**
  * @param {number} a
  * @param {number} b
+ * @param {number} depth
  */
-function find_gcd(a, b) {
-	return (b === 0) ? a : find_gcd(b, a % b);
+function find_gcd(a, b, depth = 0) {
+	if (Number.isNaN(a) || Number.isNaN(b))
+		throw new Error(`attempted to find gcd of (${a}, ${b})!`);
+
+	return (b === 0) ? a : find_gcd(b, a % b, depth + 1);
 }
 
 /**

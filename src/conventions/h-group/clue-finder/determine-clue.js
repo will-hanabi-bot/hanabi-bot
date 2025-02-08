@@ -137,14 +137,14 @@ export function evaluate_clue(game, action) {
 
 	logger.highlight('green', `------- ENTERING HYPO ${logClue(clue)} --------`);
 
-	const hypo_game = game.simulate_clue(action, { enableLogs: true });
+	let hypo_game = game.simulate_clue(action, { enableLogs: true });
 
 	if (giver === state.ourPlayerIndex) {
 		hypo_game.catchup = true;
 		// This is emulating the needed side effects of handle_action for a clue action.
 		// It might be simpler to call handle_action on the hypo_game.
 		hypo_game.last_actions[giver] = {...action, clue: {...action.clue}};
-		hypo_game.handle_action({ type: 'turn', num: hypo_game.state.turn_count, currentPlayerIndex: hypo_game.state.nextPlayerIndex(hypo_game.state.ourPlayerIndex) });
+		hypo_game = hypo_game.handle_action({ type: 'turn', num: hypo_game.state.turn_count, currentPlayerIndex: hypo_game.state.nextPlayerIndex(hypo_game.state.ourPlayerIndex) });
 		hypo_game.catchup = false;
 	}
 

@@ -239,6 +239,7 @@ function target_play(game, action, target) {
  * @template {Game} T
  * @param {T} game
  * @param {ClueAction} action
+ * @returns {T}
  */
 export function interpret_clue(game, action) {
 	const { common: prev_common, state: prev_state } = game;
@@ -250,13 +251,11 @@ export function interpret_clue(game, action) {
 	const newGame = Basics.onClue(game, action);
 	const { state: newState } = newGame;
 
-	const { clued_resets, duplicate_reveal, rewinded, newCommon, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
-	if (rewinded) {
-		Object.assign(game, rewindedGame);
+	const { clued_resets, duplicate_reveal, rewinded, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
+	if (rewinded)
 		return rewindedGame;
-	}
 
-	newGame.common = /** @type {Player} */(newCommon.good_touch_elim(newState).refresh_links(newState));
+	newGame.common = /** @type {Player} */(rewindedGame.common.good_touch_elim(newState).refresh_links(newState));
 
 	const fixed = new Set(clued_resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
@@ -345,8 +344,6 @@ export function interpret_clue(game, action) {
 
 	if (interp === CLUE_INTERP.NONE) {
 		newGame.common = new_common;
-		Basics.mutate(game, newGame);
-		game.moveHistory = newGame.moveHistory;
 		return newGame;
 	}
 
@@ -389,7 +386,5 @@ export function interpret_clue(game, action) {
 		return /** @type {Player} */(new_player);
 	});
 
-	Basics.mutate(game, newGame);
-	game.moveHistory = newGame.moveHistory;
-	return game;
+	return newGame;
 }

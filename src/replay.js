@@ -84,7 +84,7 @@ async function main() {
 	await getShortForms(variant);
 
 	const state = new State(players, ourPlayerIndex, variant, options);
-	const game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, Number(level ?? 1));
+	let game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, Number(level ?? 1));
 	game.catchup = true;
 
 	Utils.globalModify({ game, cache: new Map() });
@@ -93,7 +93,7 @@ async function main() {
 	for (let playerIndex = 0; playerIndex < state.numPlayers; playerIndex++) {
 		for (let i = 0; i < state.handSize; i++) {
 			const { suitIndex, rank } = playerIndex !== state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
-			game.handle_action({ type: 'draw', playerIndex, order, suitIndex, rank });
+			game = game.handle_action({ type: 'draw', playerIndex, order, suitIndex, rank });
 			order++;
 		}
 	}
@@ -103,25 +103,26 @@ async function main() {
 	// Take actions
 	for (const action of actions) {
 		if (turn !== 0)
-			game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
+			game = game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
 
-		game.handle_action(Utils.performToAction(game.state, action, currentPlayerIndex, deck));
+		game = game.handle_action(Utils.performToAction(game.state, action, currentPlayerIndex, deck));
 
 		if ((action.type === ACTION.PLAY || action.type === ACTION.DISCARD) && order < deck.length) {
 			const { suitIndex, rank } = currentPlayerIndex !== state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
-			game.handle_action({ type: 'draw', playerIndex: currentPlayerIndex, order, suitIndex, rank });
+			game = game.handle_action({ type: 'draw', playerIndex: currentPlayerIndex, order, suitIndex, rank });
 			order++;
 		}
 
 		if (action.type === ACTION.PLAY && game.state.strikes === 3)
-			game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.STRIKEOUT, votes: -1 });
+			game = game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.STRIKEOUT, votes: -1 });
 
 		currentPlayerIndex = state.nextPlayerIndex(currentPlayerIndex);
 		turn++;
+		Utils.globalModify({ game });
 	}
 
 	if (actions.at(-1).type !== 'gameOver')
-		game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.NORMAL, votes: -1 });
+		game = game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.NORMAL, votes: -1 });
 
 	game.catchup = false;
 }

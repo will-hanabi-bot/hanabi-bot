@@ -203,9 +203,8 @@ export function setup(GameClass, hands, test_options = {}) {
 
 	const state = new State(playerNames, test_options.ourPlayerIndex ?? PLAYER.ALICE, variant, {});
 	const [minLevel, maxLevel] = [test_options?.level?.min ?? 1, test_options?.level?.max ?? MAX_H_LEVEL];
-	const game = new GameClass(-1, state, false, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
+	let game = new GameClass(-1, state, false, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
 	game.catchup = true;
-	Utils.globalModify({ game, cache: new Map() });
 
 	let orderCounter = 0;
 
@@ -215,7 +214,7 @@ export function setup(GameClass, hands, test_options = {}) {
 		for (const short of hand.toReversed()) {
 			const { suitIndex, rank } = expandShortCard(short);
 
-			game.handle_action({ type: 'draw', order: orderCounter, playerIndex, suitIndex, rank });
+			game = game.handle_action({ type: 'draw', order: orderCounter, playerIndex, suitIndex, rank });
 			orderCounter++;
 		}
 	}
@@ -229,6 +228,7 @@ export function setup(GameClass, hands, test_options = {}) {
 		Object.assign(player, player.card_elim(state));
 
 	team_elim(game);
+	Utils.globalModify({ game, cache: new Map() });
 	return game;
 }
 
@@ -253,18 +253,18 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 	}
 
 	game.catchup = true;
-	game.handle_action(action);
+	Object.assign(game, game.handle_action(action));
 
 	if (action.type === 'play' || action.type === 'discard') {
 		if (draw === 'xx' && state.currentPlayerIndex !== state.ourPlayerIndex)
 			throw new Error(`Missing draw for ${state.playerNames[state.currentPlayerIndex]}'s action (${logAction(action)}).`);
 
 		const { suitIndex, rank } = expandShortCard(draw);
-		game.handle_action({ type: 'draw', playerIndex: state.currentPlayerIndex, order: state.cardOrder + 1, suitIndex, rank });
+		Object.assign(game, game.handle_action({ type: 'draw', playerIndex: state.currentPlayerIndex, order: state.cardOrder + 1, suitIndex, rank }));
 	}
 
 	const nextPlayerIndex = state.nextPlayerIndex(state.currentPlayerIndex);
-	game.handle_action({ type: 'turn', num: state.turn_count, currentPlayerIndex: nextPlayerIndex });
+	Object.assign(game, game.handle_action({ type: 'turn', num: state.turn_count, currentPlayerIndex: nextPlayerIndex }));
 
 	game.catchup = false;
 }
