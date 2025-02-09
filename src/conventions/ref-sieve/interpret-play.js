@@ -82,6 +82,7 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
  * @template {Game} T
  * @param {T} game
  * @param {PlayAction} action
+ * @returns {T}
  */
 export function interpret_play(game, action) {
 	const { common, state } = game;
@@ -101,7 +102,6 @@ export function interpret_play(game, action) {
 			const new_game = game.rewind(card.drawn_index + 1, [{ type: 'identify', order, playerIndex, identities: [identity] }]);
 			if (new_game) {
 				new_game.notes = new_game.updateNotes();
-				Object.assign(game, new_game);
 				return new_game;
 			}
 		}
@@ -109,7 +109,6 @@ export function interpret_play(game, action) {
 
 	if (state.numPlayers !== 2) {
 		let newGame = Basics.onPlay(game, action);
-		Basics.mutate(game, newGame);
 
 		for (const o of state.hands[playerIndex]) {
 			if (common.thoughts[o].called_to_discard) {
@@ -121,7 +120,6 @@ export function interpret_play(game, action) {
 
 		newGame.common = newGame.common.good_touch_elim(state).refresh_links(state);
 		newGame = team_elimP(newGame);
-		Basics.mutate(game, newGame);
 		return newGame;
 	}
 
@@ -189,6 +187,5 @@ export function interpret_play(game, action) {
 	newGame.common = newGame.common.good_touch_elim(state).refresh_links(state);
 	newGame = team_elimP(newGame);
 
-	Basics.mutate(game, newGame);
 	return newGame;
 }

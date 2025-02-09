@@ -120,7 +120,5 @@ export function interpret_discard(game, action) {
 
 	newGame.common = common.good_touch_elim(state).refresh_links(state);
 	newGame = team_elimP(newGame);
-
-	Basics.mutate(game, newGame);
 	return newGame;
 }

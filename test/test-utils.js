@@ -162,7 +162,7 @@ function injectFuncs(options) {
 	};
 
 	// @ts-ignore
-	this.minimalCopyDefault = this.minimalCopy;
+	this.minimalCopyDefault = this.minimalCopyDefault ?? this.minimalCopy;
 	this.minimalCopy = function () {
 		// @ts-ignore
 		const new_game = this.minimalCopyDefault();

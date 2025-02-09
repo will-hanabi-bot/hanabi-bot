@@ -274,36 +274,52 @@ export function maxWith(arr, valueFunc, minValue = -Infinity) {
  * @param {unknown} obj2
  */
 export function objEquals(obj1, obj2) {
+	return objDiff(obj1, obj2) === undefined;
+}
+
+/**
+ * Checks if two objects look the same (i.e. have the same properties).
+ * @param {unknown} obj1
+ * @param {unknown} obj2
+ * @param {string[]} [ignore]
+ * @param {string[]} [path]
+ */
+export function objDiff(obj1, obj2, ignore = [], path = []) {
 	if (typeof obj1 !== typeof obj2)
-		return false;
+		return `path ${path.join('.')}: left has type ${typeof obj1}, right has type ${typeof obj2}`;
 
 	if (typeof obj1 !== 'object' || obj1 === null || obj2 === null)
-		return obj1 === obj2;
+		return obj1 !== obj2 ? `path ${path.join('.')}: left is ${obj1}, right is ${obj2}` : undefined;
 
 	const keys1 = Object.keys(obj1);
 
 	// Different number of keys
 	if (keys1.length !== Object.keys(obj2).length)
-		return false;
+		return `path ${path.join('.')}: left object has keys ${Object.keys(obj1)}, right has keys ${Object.keys(obj2).keys}`;
 
 	for (const key of keys1) {
+		if (ignore.includes(path.concat(key).join('.')))
+			continue;
+
 		const val1 = obj1[key];
 		const val2 = obj2[key];
 
 		// Values have different types
-		if (typeof val1 !== typeof obj2[key])
-			return false;
+		if (typeof val1 !== typeof val2)
+			return `path ${path.concat(key).join('.')}: left has type ${typeof val1}, right has type ${typeof val2}`;
 
 		if (typeof val1 === 'object') {
 			// Nested objects aren't the same
-			if (!objEquals(val1, val2))
-				return false;
+			const diff = objDiff(val1, val2, path.concat(key));
+
+			if (diff !== undefined)
+				return diff;
 		}
 		else if (val1 !== val2) {
-			return false;
+			return `path ${path.concat(key).join('.')}: left is ${val1}, right is ${val2}`;
 		}
 	}
-	return true;
+	return undefined;
 }
 
 /**

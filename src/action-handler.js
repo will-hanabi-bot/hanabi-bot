@@ -202,5 +202,6 @@ export function handle_action(action) {
 		default:
 			break;
 	}
+	Utils.globalModify({ game: newGame });
 	return newGame;
 }

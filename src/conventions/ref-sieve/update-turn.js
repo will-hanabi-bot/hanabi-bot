@@ -235,7 +235,6 @@ export function update_turn(game, action) {
 			const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: 0, order, inference }]);
 			if (new_game) {
 				new_game.notes = new_game.updateNotes();
-				Object.assign(game, new_game);
 				return new_game;
 			}
 
@@ -262,6 +261,5 @@ export function update_turn(game, action) {
 	newGame.common = newGame.common.good_touch_elim(state).update_hypo_stacks(state);
 	newGame = team_elimP(newGame);
 
-	Basics.mutate(game, newGame);
 	return newGame;
 }

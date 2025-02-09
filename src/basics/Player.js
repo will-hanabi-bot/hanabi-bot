@@ -144,6 +144,7 @@ export class Player {
 	 */
 	withThoughts(order, func, listenPatches = this.playerIndex === -1) {
 		const copy = this.shallowCopy();
+		copy.patches = new Map(this.patches);
 		copy.thoughts = copy.thoughts.with(order, produce(this.thoughts[order], func, (patches) => {
 			if (listenPatches && patches.length > 0)
 				copy.patches.set(order, (this.patches.get(order) ?? []).concat(patches));
