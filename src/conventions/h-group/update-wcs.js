@@ -71,7 +71,7 @@ export function remove_finesse(game, waiting_connection) {
 		common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].inferred.subtract(inference); });
 
 	if (common.thoughts[focus].inferred.length === 0 && !common.thoughts[focus].reset)
-		common.thoughts[focus] = common.reset_card(focus);
+		common.thoughts[focus] = common.thoughts[focus].reset_inferences();
 
 	Object.assign(common, common.update_hypo_stacks(state));
 }

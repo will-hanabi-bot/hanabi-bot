@@ -26,7 +26,8 @@ export function card_elim(state) {
 	let uncertain_ids = state.base_ids;
 	let uncertain_map = /** @type {Map<number, IdentitySet>} */ (new Map());
 
-	const candidates = state.hands.flatMap((hand, playerIndex) => hand.map(order => ({ playerIndex, order })));
+	const candidates = state.hands.flatMap((hand, playerIndex) => hand.map(order => ({ playerIndex, order })))
+		.filter(({ order }) => this.thoughts[order].possible.some(p => !state.isBasicTrash(p)));
 
 	let identities = state.base_ids;
 	for (const order of state.hands.flat()) {
@@ -36,11 +37,24 @@ export function card_elim(state) {
 			break;
 	}
 
-	let newPlayer = this;
+	/** @type {Map<number, Card>} */
+	const newThoughts = new Map();
+
+	/** @type {(order: number) => Card} */
+	const getThoughts = (order) => newThoughts.get(order) ?? this.thoughts[order];
+
+	/** @type {(order: number, producer: (draft: Card) => void) => void} */
+	const updateThoughts = (order, producer) => {
+		const target = newThoughts.get(order) ?? this.thoughts[order].shallowCopy();
+		producer(target);
+		newThoughts.set(order, target);
+	};
+
+	let eliminated = state.base_ids;
 
 	/** @type {(order: number, playerIndex: number) => void} */
 	const addToMap = (order, playerIndex) => {
-		const card = newPlayer.thoughts[order];
+		const card = getThoughts(order);
 		const id = card.identity({ symmetric: this.playerIndex === -1 });
 		const unknown_to = card.identity({ symmetric: true }) === undefined ? [playerIndex] : [];
 
@@ -77,15 +91,11 @@ export function card_elim(state) {
 			if (known_count !== total_count)
 				continue;
 
-			newPlayer = produce(newPlayer, (draft) => {
-				// Remove it from the list of future possibilities
-				draft.all_possible = newPlayer.all_possible.subtract(identity);
-				draft.all_inferred = newPlayer.all_inferred.subtract(identity);
-			});
+			eliminated = eliminated.union(identity);
 			new_identities = new_identities.subtract(identity);
 
 			for (const { order, playerIndex } of candidates) {
-				const { possible, inferred, reset } = newPlayer.thoughts[order];
+				const { possible, inferred, reset } = getThoughts(order);
 
 				const no_elim = !possible.has(identity) ||
 					certain_map.get(id_hash)?.some(c => c.order === order || c.unknown_to.includes(playerIndex)) ||
@@ -96,15 +106,15 @@ export function card_elim(state) {
 
 				changed = true;
 
-				newPlayer = produce(newPlayer, (draft) => {
-					draft.thoughts[order].possible = possible.subtract(identity);
-					draft.thoughts[order].inferred = inferred.subtract(identity);
+				updateThoughts(order, (draft) => {
+					draft.possible = possible.subtract(identity);
+					draft.inferred = inferred.subtract(identity);
 				});
 
-				const updated_card = newPlayer.thoughts[order];
+				const updated_card = getThoughts(order);
 
 				if (updated_card.inferred.length === 0 && !reset) {
-					newPlayer.thoughts = newPlayer.thoughts.with(order, newPlayer.reset_card(order));
+					newThoughts.set(order, updated_card.reset_inferences());
 				}
 				// Card can be further eliminated
 				else if (updated_card.possible.length === 1) {
@@ -131,8 +141,8 @@ export function card_elim(state) {
 		let changed = false;
 
 		const cross_elim_candidates = candidates.filter(({ order }) => {
-			const card = newPlayer.thoughts[order];
-			return card.possible.length <= 5 || card.clued;
+			const card = getThoughts(order);
+			return card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length <= 5 || card.clued);
 		});
 
 		/** @param {IdentitySet} identities */
@@ -158,13 +168,13 @@ export function card_elim(state) {
 
 				for (const { order } of entries) {
 					// Players can't elim if one of their cards is part of it
-					if (group.some(e => e.order === order) || !newPlayer.thoughts[order].possible.has(id))
+					if (group.some(e => e.order === order) || !getThoughts(order).possible.has(id))
 						continue;
 
-					const { possible, inferred } = newPlayer.thoughts[order];
-					newPlayer = produce(newPlayer, (draft) => {
-						draft.thoughts[order].possible = possible.subtract(id);
-						draft.thoughts[order].inferred = inferred.intersect(possible);
+					const { possible, inferred } = getThoughts(order);
+					updateThoughts(order, (draft) => {
+						draft.possible = possible.subtract(id);
+						draft.inferred = inferred.intersect(possible);
 					});
 					changed = true;
 				}
@@ -181,32 +191,76 @@ export function card_elim(state) {
 				cross_elim_candidates.splice(cross_elim_candidates.findIndex(({ order }) => order === e.order), 1);
 		};
 
-		for (let i = 2; i <= cross_elim_candidates.length; i++) {
-			const subsets = Utils.allSubsetsOfSize(cross_elim_candidates.filter(({ order }) => newPlayer.thoughts[order].possible.length <= i), i);
+		const gen_gray_code = function* () {
+			let i = 2;
+			while (true) {
+				yield 0; yield 1; yield 0; yield i;
+				i++;
+			}
+		};
 
-			for (const subset of subsets) {
-				let failed = false;
-				let acc_ids = state.base_ids;
-				for (const { order } of subset) {
-					acc_ids = acc_ids.union(newPlayer.thoughts[order].possible);
+		let innerChanged = false;
 
-					if (total_multiplicity(acc_ids) > subset.length) {
-						failed = true;
-						break;
-					}
+		do {
+			/** @type {Map<string, number>} */
+			const idMap = new Map();
+			const contained = Array.from({ length: cross_elim_candidates.length }, _ => false);
+			let groupSize = 0, multiplicity = 0;
+			const gray_code = gen_gray_code();
+
+			let nextFlip = /** @type {number} */ (gray_code.next().value);
+			changed = false;
+
+			while (nextFlip < cross_elim_candidates.length) {
+				const { order } = cross_elim_candidates[nextFlip];
+				const adding = !contained[nextFlip];
+
+				for (const p of getThoughts(order).possible) {
+					const hash = logCard(p);
+					const newVal = (idMap.get(hash) ?? 0) + (adding ? 1 : -1);
+					idMap.set(hash, newVal);
+
+					if (adding && newVal === 1)
+						multiplicity += cardCount(state.variant, p) - state.baseCount(p);
+
+					if (!adding && newVal === 0)
+						multiplicity -= cardCount(state.variant, p) - state.baseCount(p);
 				}
 
-				if (!failed && subset.length === total_multiplicity(acc_ids))
-					perform_elim(subset, acc_ids);
-			}
-		}
+				groupSize = groupSize + (adding ? 1 : -1);
+				contained[nextFlip] = !contained[nextFlip];
 
+				if (groupSize > 1 && multiplicity === groupSize) {
+					const subset = cross_elim_candidates.filter((_, i) => contained[i]);
+					const acc_ids = subset.reduce((a, { order }) => a.union(getThoughts(order).possible), state.base_ids);
+
+					perform_elim(subset, acc_ids);
+					innerChanged ||= changed;
+					break;
+				}
+				nextFlip = /** @type {number} */ (gray_code.next().value);
+			}
+		} while (changed);
+
+		changed = innerChanged;
 		return changed;
 	};
 
 	basic_elim();
 	while (cross_elim() || basic_elim());
 
+	const { all_possible, all_inferred } = this;
+	const newAP = all_possible.subtract(eliminated);
+	const newAI = all_inferred.subtract(eliminated);
+
+	const newPlayer = produce(this, (draft) => {
+		// Remove all eliminated ids from the list of future possibilities
+		draft.all_possible = newAP;
+		draft.all_inferred = newAI;
+
+		for (const [order, newCard] of newThoughts.entries())
+			draft.thoughts[order] = newCard;
+	});
 	return newPlayer;
 }
 
@@ -312,7 +366,7 @@ export function good_touch_elim(state, only_self = false) {
 			draft.thoughts[order].inferred = new_inferred;
 
 			if (!cm && new_inferred.length === 0 && !newPlayer.thoughts[order].reset)
-				draft.thoughts[order] = newPlayer.reset_card(order);
+				draft.thoughts[order] = newPlayer.thoughts[order].reset_inferences();
 		}
 	});
 
@@ -398,7 +452,7 @@ export function good_touch_elim(state, only_self = false) {
 
 				if (!cm) {
 					if (new_inferred.length === 0 && !reset)
-						newPlayer.thoughts = newPlayer.thoughts.with(order, newPlayer.reset_card(order));
+						newPlayer.thoughts = newPlayer.thoughts.with(order, newPlayer.thoughts[order].reset_inferences());
 
 					// Newly eliminated
 					else if (new_inferred.length === 1 && old_card.inferred.length > 1 && !state.isBasicTrash(new_inferred.array[0]))
@@ -475,44 +529,6 @@ export function good_touch_elim(state, only_self = false) {
 	}
 
 	return newPlayer;
-}
-
-/**
- * @this {Player}
- * @param {number} order
- */
-export function reset_card(order) {
-	const { possible, old_inferred, info_lock } = this.thoughts[order];
-
-	return produce(this.thoughts[order], (draft) => {
-		draft.reset = true;
-		draft.known = false;
-
-		const broke_info_lock = info_lock !== undefined && info_lock.intersect(possible).length === 0;
-
-		if (broke_info_lock) {
-			logger.warn(`broke info lock on ${order}, no intersection between locked ${info_lock.map(logCard)} and possible ${possible.map(logCard)}`);
-			draft.info_lock = undefined;
-		}
-
-		if (draft.finessed) {
-			draft.finessed = false;
-			draft.hidden = false;
-			if (!broke_info_lock && info_lock) {
-				draft.inferred = info_lock;
-			}
-			else if (draft.old_inferred !== undefined) {
-				draft.inferred = old_inferred.intersect(possible);
-			}
-			else {
-				logger.error(`no old inferred on card with order ${order}! player ${this.playerIndex}`);
-				draft.inferred = possible;
-			}
-		}
-		else {
-			draft.inferred = (!broke_info_lock && info_lock) || possible;
-		}
-	});
 }
 
 /**

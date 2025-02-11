@@ -1,6 +1,8 @@
 import { IdentitySet } from './IdentitySet.js';
 import * as Utils from '../tools/util.js';
 import { logCard } from '../tools/log.js';
+import { produce } from '../StateProxy.js';
+import logger from '../tools/logger.js';
 
 /**
  * @typedef {{infer?: boolean, symmetric?: boolean, assume?: boolean}} MatchOptions
@@ -320,5 +322,39 @@ export class Card extends ActualCard {
 			note = 'dc';
 
 		return note;
+	}
+
+	reset_inferences() {
+		const { order, possible, old_inferred, info_lock } = this;
+
+		return produce(this, (draft) => {
+			draft.reset = true;
+			draft.known = false;
+
+			const broke_info_lock = info_lock !== undefined && info_lock.intersect(possible).length === 0;
+
+			if (broke_info_lock) {
+				logger.warn(`broke info lock on ${order}, no intersection between locked ${info_lock.map(logCard)} and possible ${possible.map(logCard)}`);
+				draft.info_lock = undefined;
+			}
+
+			if (draft.finessed) {
+				draft.finessed = false;
+				draft.hidden = false;
+				if (!broke_info_lock && info_lock) {
+					draft.inferred = info_lock;
+				}
+				else if (draft.old_inferred !== undefined) {
+					draft.inferred = old_inferred.intersect(possible);
+				}
+				else {
+					logger.error(`no old inferred on card with order ${order}!`);
+					draft.inferred = possible;
+				}
+			}
+			else {
+				draft.inferred = (!broke_info_lock && info_lock) || possible;
+			}
+		});
 	}
 }

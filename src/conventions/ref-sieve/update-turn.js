@@ -1,5 +1,4 @@
 import { team_elimP } from '../../basics/helper.js';
-import * as Basics from '../../basics.js';
 
 import logger from '../../tools/logger.js';
 import { logCard, logConnection } from '../../tools/log.js';
@@ -74,7 +73,7 @@ function remove_finesse_conns(common, waiting_connection) {
 		newCommon = newCommon.withThoughts(focus, (draft) => { draft.inferred = newCommon.thoughts[focus].inferred.subtract(inference); });
 
 	if (newCommon.thoughts[focus].inferred.length === 0 && !newCommon.thoughts[focus].reset)
-		newCommon.thoughts = newCommon.thoughts.with(focus, newCommon.reset_card(focus));
+		newCommon.thoughts = newCommon.thoughts.with(focus, newCommon.thoughts[focus].reset_inferences());
 
 	return newCommon;
 }

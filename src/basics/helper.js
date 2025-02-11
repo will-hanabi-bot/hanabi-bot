@@ -98,7 +98,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 				clue.type === CLUE.RANK && clue.value !== 1);
 
 		if (clued_reset) {
-			newCommon.thoughts = newCommon.thoughts.with(order, newCommon.reset_card(order));
+			newCommon.thoughts = newCommon.thoughts.with(order, newCommon.thoughts[order].reset_inferences());
 			clue_resets.add(order);
 		}
 	}

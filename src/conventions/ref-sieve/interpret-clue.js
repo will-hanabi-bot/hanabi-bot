@@ -289,7 +289,9 @@ export function interpret_clue(game, action) {
 			prev_state.hands[target].some(o => prev_common.thoughts[o].called_to_discard) ||
 			prev_playables.some(o => !fixed.has(o));
 
-		logger.info('prev loaded?', prev_loaded , logClue({ ...clue, target }));
+		logger.info('prev loaded?', prev_loaded, logClue({ ...clue, target }), prev_trash,
+			prev_state.hands[target].find(o => prev_common.thoughts[o].called_to_discard),
+			prev_playables.find(o => !fixed.has(o)));
 
 		if (!fix && prev_loaded) {
 			if (newly_touched.length > 0)
