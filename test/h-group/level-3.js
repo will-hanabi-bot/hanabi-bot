@@ -161,7 +161,7 @@ describe('sarcastic discard', () => {
 				const y5 = state.hands[PLAYER.BOB][2];
 				({ inferred, possible } = common.thoughts[y5]);
 
-				state.deck = state.deck.with(y5, produce(state.deck[y4], (draft) => { draft.clued = true; }));
+				state.deck = state.deck.with(y5, produce(state.deck[y5], (draft) => { draft.clued = true; }));
 				common.updateThoughts(y5, (draft) => {
 					draft.inferred = inferred.intersect(['y5'].map(expandShortCard));
 					draft.possible = possible.intersect(['y5'].map(expandShortCard));

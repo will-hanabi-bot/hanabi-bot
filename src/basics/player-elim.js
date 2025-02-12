@@ -26,17 +26,6 @@ export function card_elim(state) {
 	let uncertain_ids = state.base_ids;
 	let uncertain_map = /** @type {Map<number, IdentitySet>} */ (new Map());
 
-	const candidates = state.hands.flatMap((hand, playerIndex) => hand.map(order => ({ playerIndex, order })))
-		.filter(({ order }) => this.thoughts[order].possible.some(p => !state.isBasicTrash(p)));
-
-	let identities = state.base_ids;
-	for (const order of state.hands.flat()) {
-		identities = identities.union(this.thoughts[order].possible);
-
-		if (identities.length === state.all_ids.length)
-			break;
-	}
-
 	/** @type {Map<number, Card>} */
 	const newThoughts = new Map();
 
@@ -50,65 +39,74 @@ export function card_elim(state) {
 		newThoughts.set(order, target);
 	};
 
-	let eliminated = state.base_ids;
+	/** @type {Map<string, { order: number, playerIndex: number}[]>} */
+	const idMap = new Map();
 
-	/** @type {(order: number, playerIndex: number) => void} */
-	const addToMap = (order, playerIndex) => {
-		const card = getThoughts(order);
-		const id = card.identity({ symmetric: this.playerIndex === -1 });
-		const unknown_to = card.identity({ symmetric: true }) === undefined ? [playerIndex] : [];
+	/** @type {{ order: number, playerIndex: number }[]} */
+	const candidates = [];
 
-		if (id !== undefined) {
-			const id_hash = logCard(id);
-			certain_map.set(id_hash, (certain_map.get(id_hash) ?? []).concat({ order, unknown_to }));
+	let all_identities = state.base_ids;
+	for (const order of state.hands.flat()) {
+		all_identities = all_identities.union(this.thoughts[order].possible);
 
-			if (card.possible.length === 1)
-				candidates.splice(candidates.findIndex(c => c.order === order), 1);
-		}
-	};
-
-	for (let i = 0; i < state.numPlayers; i++) {
-		for (const order of state.hands[i])
-			addToMap(order, i);
+		if (all_identities.length === state.all_ids.length)
+			break;
 	}
+
+	for (let playerIndex = 0; playerIndex < state.numPlayers; playerIndex++) {
+		for (const order of state.hands[playerIndex]) {
+			const card = this.thoughts[order];
+			const id = card.identity({ symmetric: this.playerIndex === -1 });
+			const unknown_to = card.identity({ symmetric: true }) === undefined ? [playerIndex] : [];
+
+			if (id !== undefined)
+				Utils.mapInsertArr(certain_map, logCard(id), { order, unknown_to });
+
+			if (card.possible.length > 1)
+				candidates.push({ order, playerIndex });
+
+			for (const p of card.possible)
+				Utils.mapInsertArr(idMap, logCard(p), { order, playerIndex });
+		}
+	}
+
+	let eliminated = state.base_ids;
 
 	/**
 	 * The "typical" empathy operation. If there are enough known instances of an identity, it is removed from every card (including future cards).
 	 * Returns true if at least one card was modified.
+	 * @param {Identity[]} identities
 	 */
-	const basic_elim = () => {
+	const basic_elim = (identities) => {
 		let changed = false;
-		const curr_identities = identities.array;
-		let new_identities = identities;
+		const recursive_ids = [];
 
-		for (let i = 0; i < curr_identities.length; i++) {
-			const identity = curr_identities[i];
-			const id_hash = logCard(identity);
+		for (const id of identities) {
+			const id_hash = logCard(id);
 
-			const known_count = state.baseCount(identity) + (certain_map.get(id_hash)?.length ?? 0) + (uncertain_ids.has(identity) ? 1 : 0);
-			const total_count = cardCount(state.variant, identity);
+			const known_count = state.baseCount(id) + (certain_map.get(id_hash)?.length ?? 0) + (uncertain_ids.has(id) ? 1 : 0);
+			const total_count = cardCount(state.variant, id);
 
 			if (known_count !== total_count)
 				continue;
 
-			eliminated = eliminated.union(identity);
-			new_identities = new_identities.subtract(identity);
+			eliminated = eliminated.union(id);
 
-			for (const { order, playerIndex } of candidates) {
+			const remainingCandidates = idMap.get(id_hash).filter(({ order, playerIndex }) => {
 				const { possible, inferred, reset } = getThoughts(order);
 
-				const no_elim = !possible.has(identity) ||
+				const no_elim = !possible.has(id) ||
 					certain_map.get(id_hash)?.some(c => c.order === order || c.unknown_to.includes(playerIndex)) ||
-					uncertain_map.get(order)?.has(identity);
+					uncertain_map.get(order)?.has(id);
 
 				if (no_elim)
-					continue;
+					return true;
 
 				changed = true;
 
 				updateThoughts(order, (draft) => {
-					draft.possible = possible.subtract(identity);
-					draft.inferred = inferred.subtract(identity);
+					draft.possible = possible.subtract(id);
+					draft.inferred = inferred.subtract(id);
 				});
 
 				const updated_card = getThoughts(order);
@@ -118,13 +116,20 @@ export function card_elim(state) {
 				}
 				// Card can be further eliminated
 				else if (updated_card.possible.length === 1) {
-					curr_identities.push(updated_card.identity());
-					addToMap(order, playerIndex);
+					const recursive_id = updated_card.identity();
+
+					Utils.mapInsertArr(certain_map, logCard(recursive_id), { order, unknown_to: [] });
+					recursive_ids.push(recursive_id);
+					candidates.splice(candidates.findIndex(c => c.order === order), 1);
 				}
-			}
-			// logger.debug(`removing ${id_hash} from ${state.playerNames[this.playerIndex]} possibilities, now ${this.all_possible.map(logCard)}`);
+				return false;
+			});
+			idMap.set(id_hash, remainingCandidates);
 		}
-		identities = new_identities;
+
+		if (recursive_ids.length > 0)
+			changed ||= basic_elim(recursive_ids);
+
 		return changed;
 	};
 
@@ -138,12 +143,13 @@ export function card_elim(state) {
 		uncertain_ids = state.base_ids;
 		uncertain_map = new Map();
 
-		let changed = false;
-
 		const cross_elim_candidates = candidates.filter(({ order }) => {
 			const card = getThoughts(order);
-			return card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length <= 5 || card.clued);
+			return card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length < 5 || card.clued);
 		});
+
+		if (cross_elim_candidates.length <= 1)
+			return;
 
 		/** @param {IdentitySet} identities */
 		const total_multiplicity = (identities) => identities.reduce((acc, id) => acc += cardCount(state.variant, id) - state.baseCount(id), 0);
@@ -153,6 +159,8 @@ export function card_elim(state) {
 		 * @param {IdentitySet} identities
 		 */
 		const perform_elim = (entries, identities) => {
+			let changed = false;
+
 			// There are N cards for N identities - everyone knows they are holding what they cannot see
 			const groups = Utils.groupBy(entries, ({ order }) => JSON.stringify(state.deck[order].identity()));
 
@@ -187,8 +195,8 @@ export function card_elim(state) {
 				uncertain_ids = uncertain_ids.union(identities);
 			}
 
-			for (const e of entries)
-				cross_elim_candidates.splice(cross_elim_candidates.findIndex(({ order }) => order === e.order), 1);
+			changed ||= basic_elim(identities.array);
+			return changed;
 		};
 
 		const gen_gray_code = function* () {
@@ -199,11 +207,11 @@ export function card_elim(state) {
 			}
 		};
 
-		let innerChanged = false;
+		let changed = false;
 
 		do {
 			/** @type {Map<string, number>} */
-			const idMap = new Map();
+			const crossIDMap = new Map();
 			const contained = Array.from({ length: cross_elim_candidates.length }, _ => false);
 			let groupSize = 0, multiplicity = 0;
 			const gray_code = gen_gray_code();
@@ -217,8 +225,8 @@ export function card_elim(state) {
 
 				for (const p of getThoughts(order).possible) {
 					const hash = logCard(p);
-					const newVal = (idMap.get(hash) ?? 0) + (adding ? 1 : -1);
-					idMap.set(hash, newVal);
+					const newVal = (crossIDMap.get(hash) ?? 0) + (adding ? 1 : -1);
+					crossIDMap.set(hash, newVal);
 
 					if (adding && newVal === 1)
 						multiplicity += cardCount(state.variant, p) - state.baseCount(p);
@@ -234,20 +242,17 @@ export function card_elim(state) {
 					const subset = cross_elim_candidates.filter((_, i) => contained[i]);
 					const acc_ids = subset.reduce((a, { order }) => a.union(getThoughts(order).possible), state.base_ids);
 
-					perform_elim(subset, acc_ids);
-					innerChanged ||= changed;
-					break;
+					changed = perform_elim(subset, acc_ids);
+					if (changed)
+						break;
 				}
 				nextFlip = /** @type {number} */ (gray_code.next().value);
 			}
 		} while (changed);
-
-		changed = innerChanged;
-		return changed;
 	};
 
-	basic_elim();
-	while (cross_elim() || basic_elim());
+	basic_elim(all_identities.array);
+	cross_elim();
 
 	const { all_possible, all_inferred } = this;
 	const newAP = all_possible.subtract(eliminated);

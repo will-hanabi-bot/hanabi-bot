@@ -529,3 +529,23 @@ export function assignId({ suitIndex, rank }) {
 		draft.rank = rank;
 	};
 }
+
+/**
+ * @template K,V
+ * @param {Map<K, V[]>} map
+ * @param {K} key
+ * @param {V} item
+ */
+export function mapInsertArr(map, key, item) {
+	let val = map.get(key);
+
+	if (val !== undefined) {
+		val.push(item);
+	}
+	else {
+		val = [item];
+		map.set(key, val);
+	}
+
+	return val;
+}
