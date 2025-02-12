@@ -74,7 +74,7 @@ describe('good touch principle', () => {
 		takeTurn(game, 'Cathy clues 4 to Bob');		// getting b4
 
 		// Aice's slot 5 should be y4 only, and slot 3 should have no inferences.
-		assert.ok(game.common.thinksTrash(state, PLAYER.ALICE).includes(state.hands[PLAYER.ALICE][2]));
+		assert.ok(game.common.thinksTrash(game.state, PLAYER.ALICE).includes(state.hands[PLAYER.ALICE][2]));
 		ExAsserts.cardHasInferences(game.common.thoughts[state.hands[PLAYER.ALICE][4]], ['y4']);
 	});
 

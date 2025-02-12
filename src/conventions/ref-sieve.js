@@ -109,7 +109,7 @@ export default class RefSieve extends Game {
 	}
 
 	minimalCopy() {
-		const newGame = super.minimalCopy();
+		const newGame = super.shallowCopy();
 		newGame.locked_shifts = this.locked_shifts.slice();
 		newGame.copyDepth = this.copyDepth + 1;
 		return newGame;

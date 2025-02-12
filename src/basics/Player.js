@@ -23,7 +23,6 @@ export class Player {
 	refresh_links = Elim.refresh_links;
 	find_links = Elim.find_links;
 	good_touch_elim = Elim.good_touch_elim;
-	reset_card = Elim.reset_card;
 	restore_elim = Elim.restore_elim;
 
 	/** @type {number[]} */
@@ -144,6 +143,7 @@ export class Player {
 	 */
 	withThoughts(order, func, listenPatches = this.playerIndex === -1) {
 		const copy = this.shallowCopy();
+		copy.patches = new Map(this.patches);
 		copy.thoughts = copy.thoughts.with(order, produce(this.thoughts[order], func, (patches) => {
 			if (listenPatches && patches.length > 0)
 				copy.patches.set(order, (this.patches.get(order) ?? []).concat(patches));

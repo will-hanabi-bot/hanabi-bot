@@ -141,7 +141,7 @@ export function onDraw(game, action) {
 		draft.cardOrder = order;
 		draft.cardsLeft--;
 
-		if (state.cardsLeft === 1)
+		if (draft.cardsLeft === 0)
 			draft.endgameTurns = state.numPlayers;
 	});
 

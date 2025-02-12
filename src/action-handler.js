@@ -1,5 +1,5 @@
 import { BOT_VERSION, HAND_SIZE } from './constants.js';
-import { team_elim } from './basics/helper.js';
+import { team_elimP } from './basics/helper.js';
 import * as Basics from './basics.js';
 import * as Utils from './tools/util.js';
 
@@ -19,19 +19,20 @@ import { produce } from './StateProxy.js';
 
 /**
  * Impure!
- * @this Game
+ * @template {Game} T
+ * @this T
  * @param {Action} 	action
  */
 export function handle_action(action) {
 	const { state } = this;
 
-	if (state.actionList[state.turn_count] === undefined)
-		state.actionList[state.turn_count] = [];
+	let newGame = produce(this, (draft) => {
+		draft.state.actionList[state.turn_count] ??= [];
+		draft.state.actionList[state.turn_count].push(action);
 
-	state.actionList[state.turn_count].push(action);
-
-	if (action.type === 'clue' && action.giver === state.ourPlayerIndex)
-		this.handHistory[state.turn_count] = Utils.objClone(state.ourHand);
+		if (action.type === 'clue' && action.giver === state.ourPlayerIndex)
+			draft.handHistory[state.turn_count] = state.ourHand.slice();
+	});
 
 	switch(action.type) {
 		case 'clue': {
@@ -39,23 +40,27 @@ export function handle_action(action) {
 			const { giver, list } = action;
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			Object.assign(this, this.interpret_clue(action));
-			this.last_actions[giver] = action;
+			newGame = newGame.interpret_clue(action);
 
-			state.dda = undefined;
-			state.screamed_at = false;
-			state.generated = false;
+			newGame = produce(newGame, (draft) => {
+				draft.last_actions[giver] = action;
 
-			// Remove the newly_clued flag
-			for (const order of list) {
-				state.deck = state.deck.with(order, produce(state.deck[order], draft => { draft.newly_clued = false; }));
-				for (const player of this.allPlayers)
-					player.updateThoughts(order, (draft) => { draft.newly_clued = false; });
-			}
+				draft.state.dda = undefined;
+				draft.state.screamed_at = false;
+				draft.state.generated = false;
 
-			// Clear the list of ignored cards
-			this.next_ignore = [];
-			this.next_finesse = [];
+				// Remove the newly_clued flag
+				for (const order of list) {
+					draft.state.deck[order].newly_clued = false;
+					for (const player of draft.players)
+						player.thoughts[order].newly_clued = false;
+					draft.common.thoughts[order].newly_clued = false;
+				}
+
+				// Clear the list of ignored cards
+				draft.next_ignore = [];
+				draft.next_finesse = [];
+			});
 			break;
 		}
 		case 'discard': {
@@ -63,66 +68,80 @@ export function handle_action(action) {
 			const { order, playerIndex, rank, suitIndex } = action;
 			const card = state.deck[order];
 
-			if (card.identity() === undefined)
-				state.deck = state.deck.with(order, produce(card, Utils.assignId({ suitIndex, rank })));
-			this.players[playerIndex].updateThoughts(order, Utils.assignId({ suitIndex, rank }));
+			newGame = produce(newGame, (draft) => {
+				if (card.identity() === undefined) {
+					draft.state.deck[order].suitIndex = suitIndex;
+					draft.state.deck[order].rank = rank;
+				}
+				draft.players[playerIndex].thoughts[order].suitIndex = suitIndex;
+				draft.players[playerIndex].thoughts[order].rank = rank;
+
+				// Assume one cannot SDCM after being screamed at
+				draft.state.dda = undefined;
+				draft.state.screamed_at = false;
+				draft.state.generated = false;
+			});
 
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			// Assume one cannot SDCM after being screamed at
-			state.dda = undefined;
-			state.screamed_at = false;
-			state.generated = false;
-
-			Object.assign(this, this.interpret_discard(action));
-			this.last_actions[playerIndex] = action;
+			newGame = newGame.interpret_discard(action);
+			newGame = produce(newGame, (draft) => { draft.last_actions[playerIndex] = action; });
 			break;
 		}
 		case 'draw': {
 			// { type: 'draw', playerIndex: 0, order: 2, suitIndex: 1, rank: 2 },
-			const newGame = Basics.onDraw(this, action);
-			Basics.mutate(this, newGame);
+			newGame = Basics.onDraw(newGame, action);
 
-			if (state.turn_count === 0 && state.hands.every(h => h.length === HAND_SIZE[state.numPlayers]))
-				state.turn_count = 1;
+			if (state.turn_count === 0 && newGame.state.hands.every(h => h.length === HAND_SIZE[state.numPlayers]))
+				newGame = produce(newGame, (draft) => { draft.state.turn_count = 1; });
 			break;
 		}
 		case 'gameOver': {
 			logger.highlight('redb', logAction(action));
-			this.in_progress = false;
+			newGame = produce(newGame, (draft) => { draft.in_progress = false; });
 			break;
 		}
 		case 'turn': {
 			//  { type: 'turn', num: 1, currentPlayerIndex: 1 }
 			const { currentPlayerIndex, num } = action;
-			state.currentPlayerIndex = currentPlayerIndex;
-			state.turn_count = num + 1;
+			newGame = produce(newGame, (draft) => {
+				draft.state.currentPlayerIndex = currentPlayerIndex;
+				draft.state.turn_count = num + 1;
 
-			if (state.turn_count == 2 && this.notes[0] === undefined && !this.catchup && this.in_progress) {
-				const note = `[INFO: v${BOT_VERSION}, ${this.convention_name + (/** @type {any} */(this).level ?? '')}]`;
+				if (num === 1 && newGame.notes[0] === undefined && !newGame.catchup && newGame.in_progress) {
+					const note = `[INFO: v${BOT_VERSION}, ${newGame.convention_name + (/** @type {any} */(newGame).level ?? '')}]`;
 
-				Utils.sendCmd('note', { tableID: this.tableID, order: 0, note });
-				this.notes[0] = { last: note, turn: 0, full: note };
-			}
+					Utils.sendCmd('note', { tableID: newGame.tableID, order: 0, note });
+					draft.notes[0] = { last: note, turn: 0, full: note };
+				}
+			});
 
-			Object.assign(this, this.update_turn(action));
-			this.notes = this.updateNotes();
+			newGame = newGame.update_turn(action);
+			newGame.notes = newGame.updateNotes();
 			break;
 		}
 		case 'play': {
 			const { order, playerIndex, rank, suitIndex } = action;
 			const card = state.deck[order];
 
-			if (card.identity() === undefined)
-				state.deck = state.deck.with(order, produce(card, Utils.assignId({ suitIndex, rank })));
-			this.players[playerIndex].updateThoughts(order, Utils.assignId({ suitIndex, rank }));
+			newGame = produce(newGame, (draft) => {
+				if (card.identity() === undefined) {
+					draft.state.deck[order].suitIndex = suitIndex;
+					draft.state.deck[order].rank = rank;
+				}
+				draft.players[playerIndex].thoughts[order].suitIndex = suitIndex;
+				draft.players[playerIndex].thoughts[order].rank = rank;
+			});
 
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
 
-			Object.assign(this, this.interpret_play(action));
-			this.last_actions[playerIndex] = action;
-			state.dda = undefined;
-			state.screamed_at = false;
+			newGame = newGame.interpret_play(action);
+
+			newGame = produce(newGame, (draft) => {
+				draft.last_actions[playerIndex] = action;
+				draft.state.dda = undefined;
+				draft.state.screamed_at = false;
+			});
 			break;
 		}
 		case 'identify': {
@@ -133,10 +152,10 @@ export function handle_action(action) {
 
 			logger.info(`identifying card with order ${order} as ${identities.map(logCard)}, infer? ${infer}`);
 
-			this.common.updateThoughts(order, (draft) => {
+			const newCommon = newGame.common.withThoughts(order, (draft) => {
 				draft.rewinded = true;
 				if (infer) {
-					draft.inferred = this.common.thoughts[order].inferred.intersect(identities);
+					draft.inferred = newGame.common.thoughts[order].inferred.intersect(identities);
 				}
 				else {
 					if (identities.length === 1) {
@@ -149,29 +168,40 @@ export function handle_action(action) {
 				}
 			});
 
+			newGame.common = newCommon;
+
 			if (!infer && identities.length === 1) {
 				const { suitIndex, rank } = identities[0];
-				this.me.updateThoughts(order, Utils.assignId({ suitIndex, rank }));
-				state.deck = state.deck.with(order, produce(state.deck[order], Utils.assignId({ suitIndex, rank })));
+
+				newGame = produce(newGame, (draft) => {
+					draft.state.deck[order].suitIndex = suitIndex;
+					draft.state.deck[order].rank = rank;
+					draft.players[state.ourPlayerIndex].thoughts[order].suitIndex = suitIndex;
+					draft.players[state.ourPlayerIndex].thoughts[order].rank = rank;
+				});
 			}
-			team_elim(this);
+			newGame = team_elimP(newGame);
 			break;
 		}
 		case 'ignore': {
 			const { conn_index, order, inference } = action;
 
-			this.next_ignore[conn_index] ??= [];
+			newGame = produce(newGame, (draft) => {
+				draft.next_ignore[conn_index] ??= [];
 
-			// Ignore the card
-			this.next_ignore[conn_index].push({ order, inference });
+				// Ignore the card
+				draft.next_ignore[conn_index].push({ order, inference });
+			});
 			break;
 		}
 		case 'finesse':  {
 			const { list, clue } = action;
-			this.next_finesse.push({ list, clue });
+			newGame = produce(newGame, (draft) => { draft.next_finesse.push({ list, clue }); });
 			break;
 		}
 		default:
 			break;
 	}
+	Utils.globalModify({ game: newGame });
+	return newGame;
 }

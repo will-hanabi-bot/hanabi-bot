@@ -159,7 +159,8 @@ export const handle = {
 	 */
 	gameAction: async (data) => {
 		const { action } = data;
-		game.handle_action(action);
+		game = game.handle_action(action);
+		Utils.globalModify({ game });
 
 		const perform = (action.type === 'turn' || (game.state.turn_count === 1 && action.type === 'draw')) &&
 			game.state.currentPlayerIndex === game.state.ourPlayerIndex &&

@@ -101,14 +101,14 @@ describe('prompts', () => {
 			['g1', 'r2', 'b4', 'p4', 'g4'],
 			['y4', 'y4', 'g4', 'r4', 'p4']
 		], {
-			starting: PLAYER.BOB
+			starting: PLAYER.CATHY,
+			init: (game) => {
+				// Alice and Bob have a card clued with red in slot 2.
+				preClue(game, game.state.hands[PLAYER.ALICE][1], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.CATHY }]);
+				preClue(game, game.state.hands[PLAYER.BOB][1], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.CATHY }]);
+			}
 		});
 
-		takeTurn(game, 'Bob clues red to Alice (slot 2)');	// getting b1. r1 clued
-		takeTurn(game, 'Cathy clues red to Bob');			// getting g1. r2 clued
-		takeTurn(game, 'Alice plays b1 (slot 1)');
-
-		takeTurn(game, 'Bob plays g1', 'p3');
 		takeTurn(game, 'Cathy clues 2 to Bob');		// getting r2
 
 		// We should be prompted in slot 2 for r1.

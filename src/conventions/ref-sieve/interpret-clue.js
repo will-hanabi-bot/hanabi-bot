@@ -239,6 +239,7 @@ function target_play(game, action, target) {
  * @template {Game} T
  * @param {T} game
  * @param {ClueAction} action
+ * @returns {T}
  */
 export function interpret_clue(game, action) {
 	const { common: prev_common, state: prev_state } = game;
@@ -250,13 +251,11 @@ export function interpret_clue(game, action) {
 	const newGame = Basics.onClue(game, action);
 	const { state: newState } = newGame;
 
-	const { clued_resets, duplicate_reveal, rewinded, newCommon, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
-	if (rewinded) {
-		Object.assign(game, rewindedGame);
+	const { clued_resets, duplicate_reveal, rewinded, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
+	if (rewinded)
 		return rewindedGame;
-	}
 
-	newGame.common = /** @type {Player} */(newCommon.good_touch_elim(newState).refresh_links(newState));
+	newGame.common = /** @type {Player} */(rewindedGame.common.good_touch_elim(newState).refresh_links(newState));
 
 	const fixed = new Set(clued_resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
@@ -290,7 +289,9 @@ export function interpret_clue(game, action) {
 			prev_state.hands[target].some(o => prev_common.thoughts[o].called_to_discard) ||
 			prev_playables.some(o => !fixed.has(o));
 
-		logger.info('prev loaded?', prev_loaded , logClue({ ...clue, target }));
+		logger.info('prev loaded?', prev_loaded, logClue({ ...clue, target }), prev_trash,
+			prev_state.hands[target].find(o => prev_common.thoughts[o].called_to_discard),
+			prev_playables.find(o => !fixed.has(o)));
 
 		if (!fix && prev_loaded) {
 			if (newly_touched.length > 0)
@@ -345,8 +346,6 @@ export function interpret_clue(game, action) {
 
 	if (interp === CLUE_INTERP.NONE) {
 		newGame.common = new_common;
-		Basics.mutate(game, newGame);
-		game.moveHistory = newGame.moveHistory;
 		return newGame;
 	}
 
@@ -389,7 +388,5 @@ export function interpret_clue(game, action) {
 		return /** @type {Player} */(new_player);
 	});
 
-	Basics.mutate(game, newGame);
-	game.moveHistory = newGame.moveHistory;
-	return game;
+	return newGame;
 }

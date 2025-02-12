@@ -432,13 +432,14 @@ describe('bluff clues', () => {
 	it('never assumes a bluff when reverse finesse exists', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['b4', 'r1', 'y1', 'g5', 'p2'],
+			['b4', 'r1', 'y1', 'g5', 'g2'],
 			['b3', 'w1', 'w1', 'w5', 'w2'],
-			['p1', 'r4', 'b5', 'b2', 'y4']
+			['r1', 'r4', 'b5', 'b2', 'y4']
 		], {
 			level: { min: 11 },
 			play_stacks: [2, 2, 2, 2, 2],
-			starting: PLAYER.DONALD
+			starting: PLAYER.DONALD,
+			variant: VARIANTS.WHITE
 		});
 		takeTurn(game, 'Donald clues blue to Bob');
 

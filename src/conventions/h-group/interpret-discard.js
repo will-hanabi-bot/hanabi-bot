@@ -344,6 +344,7 @@ export function interpret_discard(game, action) {
 		}
 	}
 	resolve_discard(game, action, DISCARD_INTERP.NONE);
+	return game;
 }
 
 /**

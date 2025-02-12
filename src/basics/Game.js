@@ -7,7 +7,7 @@ import * as Utils from '../tools/util.js';
 
 import logger from '../tools/logger.js';
 import { logCard, logPerformAction } from '../tools/log.js';
-import { produce } from '../StateProxy.js';
+import { produce, produceC } from '../StateProxy.js';
 
 
 /**
@@ -289,7 +289,7 @@ export class Game {
 
 		logger.highlight('green', '------- STARTING REWIND -------');
 
-		const newGame = this.createBlank();
+		let newGame = this.createBlank();
 		newGame.catchup = true;
 		newGame.notes = [];
 		const history = actionList.slice(0, action_index).flat();
@@ -309,21 +309,21 @@ export class Game {
 			const our_action = action.type === 'clue' && action.giver === this.state.ourPlayerIndex;
 
 			if (!our_action) {
-				newGame.handle_action(action);
+				newGame = newGame.handle_action(action);
 				return;
 			}
 
-			const hypoGame = newGame.minimalCopy();
+			let hypoGame = newGame.minimalCopy();
 
 			newGame.state.hands[this.state.ourPlayerIndex] = this.handHistory[Math.max(1, newGame.state.turn_count)];
 
-			newGame.handle_action(action);
+			newGame = newGame.handle_action(action);
 
 			// Simulate the actual hand as well for replacement
 			logger.off();
 
 			Utils.globalModify({ game: hypoGame });
-			hypoGame.handle_action(action);
+			hypoGame = hypoGame.handle_action(action);
 			Utils.globalModify({ game: newGame });
 
 			logger.on();
@@ -337,7 +337,7 @@ export class Game {
 				newGame.hookAfterDraws(newGame);
 				injected = true;
 			}
-			newGame.handle_action(action);
+			newGame = newGame.handle_action(action);
 		};
 
 		logger.wrapLevel(logger.LEVELS.ERROR, () => {
@@ -391,7 +391,7 @@ export class Game {
 	navigate(turn) {
 		logger.highlight('greenb', `------- NAVIGATING (turn ${turn}) -------`);
 
-		const new_game = this.createBlank();
+		let new_game = this.createBlank();
 		new_game.catchup = true;
 		new_game.notes = [];
 
@@ -409,7 +409,7 @@ export class Game {
 			let action = actions[action_index];
 
 			while(action.type === 'draw') {
-				new_game.handle_action(action);
+				new_game = new_game.handle_action(action);
 				action_index++;
 				action = actions[action_index];
 			}
@@ -418,7 +418,7 @@ export class Game {
 			// Don't log history
 			logger.wrapLevel(logger.LEVELS.ERROR, () => {
 				while (new_game.state.turn_count < turn - 1) {
-					new_game.handle_action(actions[action_index]);
+					new_game = new_game.handle_action(actions[action_index]);
 					action_index++;
 
 				}
@@ -426,7 +426,7 @@ export class Game {
 
 			// Log the previous turn and the 'turn' action leading to the desired turn
 			while (new_game.state.turn_count < turn && actions[action_index] !== undefined) {
-				new_game.handle_action(actions[action_index]);
+				new_game = new_game.handle_action(actions[action_index]);
 				action_index++;
 			}
 		}
@@ -444,6 +444,31 @@ export class Game {
 		return new_game;
 	}
 
+	simulateClean() {
+		const hypo_game = this.minimalCopy();
+		hypo_game.catchup = true;
+		hypo_game.rewind = () => undefined;
+
+		const all_orders = this.state.hands.flat();
+
+		// Remove all existing newly clued notes
+		hypo_game.state = produce(hypo_game.state, (draft) => {
+			for (const o of all_orders)
+				draft.deck[o].newly_clued = false;
+		});
+
+		hypo_game.players = hypo_game.players.map(produceC((draft) => {
+			for (const o of all_orders)
+				draft.thoughts[o].newly_clued = false;
+		}));
+
+		hypo_game.common = produce(hypo_game.common, (draft) => {
+			for (const o of all_orders)
+				draft.thoughts[o].newly_clued = false;
+		});
+		return hypo_game;
+	}
+
 	/**
 	 * Returns a hypothetical state where the provided clue was given.
 	 * This is slightly different from simulate_action() in that the normal "clue cleanup" actions are not taken.
@@ -454,26 +479,17 @@ export class Game {
 	 * @param {{enableLogs?: boolean}} options
 	 */
 	simulate_clue(action, options = {}) {
-		const hypo_game = /** @type {this} */ (this.minimalCopy());
-		hypo_game.catchup = true;
-		hypo_game.rewind = () => undefined;
-
-		// Remove all existing newly clued notes
-		for (const o of this.state.hands.flat()) {
-			const { deck } = hypo_game.state;
-			hypo_game.state.deck = deck.with(o, produce(deck[o], (draft) => { draft.newly_clued = false; }));
-
-			for (const player of hypo_game.allPlayers)
-				player.updateThoughts(o, (draft) => { draft.newly_clued = false; });
-		}
+		let hypo_game = this.simulateClean();
 
 		const old_global_game = Utils.globals.game;
 		Utils.globalModify({ game: hypo_game });
 
-		logger.wrapLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR, () => {
-			hypo_game.interpret_clue(action);
-		});
+		const last_level = logger.level;
+		logger.setLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR);
 
+		hypo_game = hypo_game.interpret_clue(action);
+
+		logger.setLevel(last_level);
 		Utils.globalModify({ game: old_global_game });
 
 		hypo_game.catchup = false;
@@ -490,35 +506,27 @@ export class Game {
 	 * @param {{enableLogs?: boolean}} options
 	 */
 	simulate_action(action, options = {}) {
-		const hypo_game = /** @type {this} */ (this.minimalCopy());
-		hypo_game.catchup = true;
-		hypo_game.rewind = () => undefined;
-
-		// Remove all existing newly clued notes
-		for (const o of this.state.hands.flat()) {
-			hypo_game.state.deck[o].newly_clued = false;
-
-			for (const player of hypo_game.allPlayers)
-				player.updateThoughts(o, (draft) => { draft.newly_clued = false; });
-		}
+		let hypo_game = this.simulateClean();
 
 		const old_global_game = Utils.globals.game;
 		Utils.globalModify({ game: hypo_game });
 
-		logger.wrapLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR, () => {
-			hypo_game.handle_action(action);
+		const last_level = logger.level;
+		logger.setLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR);
 
-			if (action.type === 'play' || action.type === 'discard') {
-				hypo_game.handle_action({ type: 'turn', num: hypo_game.state.turn_count, currentPlayerIndex: action.playerIndex });
+		hypo_game = hypo_game.handle_action(action);
 
-				if (hypo_game.state.cardsLeft > 0) {
-					const order = hypo_game.state.cardOrder + 1;
-					const { suitIndex, rank } = hypo_game.state.deck[order] ?? Object.freeze(new ActualCard(-1, -1, order, hypo_game.state.turn_count));
-					hypo_game.handle_action({ type: 'draw', playerIndex: action.playerIndex, order, suitIndex, rank });
-				}
+		if (action.type === 'play' || action.type === 'discard') {
+			hypo_game = hypo_game.handle_action({ type: 'turn', num: hypo_game.state.turn_count, currentPlayerIndex: action.playerIndex });
+
+			if (hypo_game.state.cardsLeft > 0) {
+				const order = hypo_game.state.cardOrder + 1;
+				const { suitIndex, rank } = hypo_game.state.deck[order] ?? Object.freeze(new ActualCard(-1, -1, order, hypo_game.state.turn_count));
+				hypo_game = hypo_game.handle_action({ type: 'draw', playerIndex: action.playerIndex, order, suitIndex, rank });
 			}
-		});
+		}
 
+		logger.setLevel(last_level);
 		Utils.globalModify({ game: old_global_game });
 
 		hypo_game.catchup = false;

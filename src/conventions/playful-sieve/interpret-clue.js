@@ -113,9 +113,9 @@ export function interpret_clue(game, action) {
 	const newGame = Basics.onClue(game, action);
 	Basics.mutate(game, newGame);
 
-	const { clued_resets, duplicate_reveal, newCommon } = checkFix(game, oldCommon.thoughts, action);
+	const { clued_resets, duplicate_reveal, newGame: nextGame } = checkFix(game, oldCommon.thoughts, action);
 
-	Object.assign(common, newCommon.good_touch_elim(state).refresh_links(state));
+	Object.assign(common, nextGame.common.good_touch_elim(state).refresh_links(state));
 
 	let fix = clued_resets.length > 0 || duplicate_reveal.length > 0;
 

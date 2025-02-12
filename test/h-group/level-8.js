@@ -190,6 +190,7 @@ describe('positional discards', () => {
 			clue_tokens: 0,
 			init: (game) => {
 				game.state.cardsLeft = 0;
+				game.state.endgameTurns = 4;
 				game.state.early_game = false;
 			}
 		});

@@ -96,8 +96,8 @@ describe('reverse finesse', () => {
 	it(`still doesn't try to self-prompt from a colour clue`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['p4', 'g1', 'y2', 'g4'],
-			['p3', 'y3', 'y4', 'b4'],
+			['r4', 'g1', 'y2', 'g4'],
+			['r3', 'y3', 'y4', 'b4'],
 			['i2', 'i3', 'b2', 'b3'],
 			['i1', 'b5', 'b1', 'g3']
 		], {

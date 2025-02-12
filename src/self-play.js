@@ -124,7 +124,7 @@ async function main() {
  * @param {Variant} variant
  */
 async function simulate_game(playerNames, deck, convention, level, variant) {
-	const games = playerNames.map((_, index) => {
+	let games = playerNames.map((_, index) => {
 		const game = new conventions[convention](-1, new State(playerNames, index, variant, {}), false, level);
 		game.catchup = true;
 		return game;
@@ -132,17 +132,20 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 
 	Utils.globalModify({ game: games[0], cache: new Map() });
 
-	for (const game of games) {
+	games = games.map(game => {
+		let newGame = game;
+
 		// Draw cards in starting hands
 		for (let playerIndex = 0; playerIndex < playerNames.length; playerIndex++) {
 			for (let i = 0; i < game.state.handSize; i++) {
-				const order = game.state.cardOrder + 1;
+				const order = newGame.state.cardOrder + 1;
 				const { suitIndex, rank } = playerIndex !== game.state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
 
-				game.handle_action({ type: 'draw', playerIndex, order, suitIndex, rank });
+				newGame = newGame.handle_action({ type: 'draw', playerIndex, order, suitIndex, rank });
 			}
 		}
-	}
+		return newGame;
+	});
 
 	let currentPlayerIndex = 0, turn = 0;
 
@@ -152,23 +155,21 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 	try {
 		while (games[0].state.endgameTurns !== 0 && games[0].state.strikes !== 3 && games[0].state.score !== games[0].state.maxScore) {
 			if (turn !== 0) {
-				for (let i = 0; i < games.length; i++) {
-					const game = games[i];
+				games = games.map((game, i) => {
 					logger.debug('Turn for', game.state.playerNames[i]);
 					Utils.globalModify({ game });
-					game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
-				}
+					return game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
+				});
 			}
 
 			const currentPlayerGame = games[currentPlayerIndex];
 			Utils.globalModify({ game: currentPlayerGame });
 
 			// @ts-ignore (one day static analysis will get better)
-			const performAction = await currentPlayerGame.take_action(currentPlayerGame);
+			const performAction = await currentPlayerGame.take_action();
 			actions.push(Utils.objPick(performAction, ['type', 'target', 'value'], { default: 0 }));
 
-			for (let gameIndex = 0; gameIndex < playerNames.length; gameIndex++) {
-				const game = games[gameIndex];
+			games = games.map((game, gameIndex) => {
 				const { state } = game;
 				const order = state.cardOrder + 1;
 				const action = Utils.performToAction(state, performAction, currentPlayerIndex, deck);
@@ -176,16 +177,17 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 				logger.debug('Action for', state.playerNames[gameIndex], action);
 
 				Utils.globalModify({ game });
-				game.handle_action(action);
+				let newGame = game.handle_action(action);
 
-				if (game.state.strikes === 3 || game.state.score === game.state.variant.suits.length * 5)
-					continue;
+				if (newGame.state.strikes === 3 || newGame.state.score === state.variant.suits.length * 5)
+					return newGame;
 
 				if ((action.type === 'play' || action.type === 'discard') && order < deck.length) {
-					const { suitIndex, rank } = currentPlayerIndex !== game.state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
-					game.handle_action({ type: 'draw', playerIndex: currentPlayerIndex, order, suitIndex, rank });
+					const { suitIndex, rank } = currentPlayerIndex !== state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
+					newGame = newGame.handle_action({ type: 'draw', playerIndex: currentPlayerIndex, order, suitIndex, rank });
 				}
-			}
+				return newGame;
+			});
 
 			currentPlayerIndex = (currentPlayerIndex + 1) % playerNames.length;
 			turn++;

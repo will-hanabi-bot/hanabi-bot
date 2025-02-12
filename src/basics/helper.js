@@ -76,9 +76,11 @@ export function team_elimP(game, good_touch = true) {
 }
 
 /**
- * @param {Game} game
+ * @template {Game} T
+ * @param {T} game
  * @param {Card[]} oldThoughts
  * @param {ClueAction} clueAction
+ * @returns {{ clued_resets: number[], duplicate_reveal: number[], rewinded: boolean, newGame: T }}
  */
 export function checkFix(game, oldThoughts, clueAction) {
 	const { clue, giver, list, target } = clueAction;
@@ -96,7 +98,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 				clue.type === CLUE.RANK && clue.value !== 1);
 
 		if (clued_reset) {
-			newCommon.thoughts = newCommon.thoughts.with(order, newCommon.reset_card(order));
+			newCommon.thoughts = newCommon.thoughts.with(order, newCommon.thoughts[order].reset_inferences());
 			clue_resets.add(order);
 		}
 	}
@@ -124,7 +126,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 
 			if (newGame !== undefined) {
 				newGame.notes = newGame.updateNotes();
-				return { rewinded: true, newGame };
+				return { clued_resets: [], duplicate_reveal: [], rewinded: true, newGame };
 			}
 		}
 
@@ -175,7 +177,9 @@ export function checkFix(game, oldThoughts, clueAction) {
 		return copy !== undefined;
 	});
 
-	return { clued_resets, duplicate_reveal, newCommon };
+	const newGame = game.shallowCopy();
+	newGame.common = newCommon;
+	return { clued_resets, duplicate_reveal, rewinded: false, newGame };
 }
 
 /**

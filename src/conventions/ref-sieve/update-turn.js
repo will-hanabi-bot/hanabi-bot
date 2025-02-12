@@ -1,5 +1,4 @@
 import { team_elimP } from '../../basics/helper.js';
-import * as Basics from '../../basics.js';
 
 import logger from '../../tools/logger.js';
 import { logCard, logConnection } from '../../tools/log.js';
@@ -74,7 +73,7 @@ function remove_finesse_conns(common, waiting_connection) {
 		newCommon = newCommon.withThoughts(focus, (draft) => { draft.inferred = newCommon.thoughts[focus].inferred.subtract(inference); });
 
 	if (newCommon.thoughts[focus].inferred.length === 0 && !newCommon.thoughts[focus].reset)
-		newCommon.thoughts = newCommon.thoughts.with(focus, newCommon.reset_card(focus));
+		newCommon.thoughts = newCommon.thoughts.with(focus, newCommon.thoughts[focus].reset_inferences());
 
 	return newCommon;
 }
@@ -235,7 +234,6 @@ export function update_turn(game, action) {
 			const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: 0, order, inference }]);
 			if (new_game) {
 				new_game.notes = new_game.updateNotes();
-				Object.assign(game, new_game);
 				return new_game;
 			}
 
@@ -262,6 +260,5 @@ export function update_turn(game, action) {
 	newGame.common = newGame.common.good_touch_elim(state).update_hypo_stacks(state);
 	newGame = team_elimP(newGame);
 
-	Basics.mutate(game, newGame);
 	return newGame;
 }

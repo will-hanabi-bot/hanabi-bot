@@ -5,6 +5,7 @@ import * as Utils from '../../tools/util.js';
 import logger from '../../tools/logger.js';
 import { logAction, logCard, logClue } from '../../tools/log.js';
 import { cardValue } from '../../basics/hanabi-util.js';
+import { produce } from '../../StateProxy.js';
 
 
 /**
@@ -72,8 +73,7 @@ function best_value(new_game, i, value) {
 	}
 
 	if (common.thinksLocked(state, playerIndex) || (i === 1 && state.clue_tokens === 8)) {
-		const next_game = new_game.minimalCopy();
-		next_game.state.clue_tokens--;
+		const next_game = produce(new_game, (draft) => { draft.state.clue_tokens--; });
 
 		const diff = (state.clue_tokens === 0) ? -10 : (sieving_trash() ? -10 : -0.25);
 		const new_value = value + mult(diff);

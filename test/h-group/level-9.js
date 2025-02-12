@@ -358,7 +358,7 @@ describe('double discard avoidance', async () => {
 		takeTurn(game, 'Donald discards r3', 'p3'); // Ends early game
 
 		// A discard of a useful card means common knowledge is Alice is in a DDA situation.
-		ExAsserts.objHasProperties(state.dda, {suitIndex: COLOUR.RED, rank: 3});
+		ExAsserts.objHasProperties(game.state.dda, {suitIndex: COLOUR.RED, rank: 3});
 
 		// However, since Alice can see the other r3, Alice can discard.
 		const action = await game.take_action();
@@ -382,7 +382,7 @@ describe('double discard avoidance', async () => {
 		takeTurn(game, 'Donald discards r3', 'p3'); // Ends early game
 
 		// A discard of a useful card means common knowledge is Alice is in a DDA situation.
-		ExAsserts.objHasProperties(state.dda, {suitIndex: COLOUR.RED, rank: 3});
+		ExAsserts.objHasProperties(game.state.dda, {suitIndex: COLOUR.RED, rank: 3});
 
 		// Alice gives a fill-in clue as the highest priority stall clue.
 		const action = await game.take_action();
