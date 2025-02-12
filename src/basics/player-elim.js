@@ -43,7 +43,7 @@ export function card_elim(state) {
 	const idMap = new Map();
 
 	/** @type {{ order: number, playerIndex: number }[]} */
-	const candidates = [];
+	const cross_elim_candidates = [];
 
 	let all_identities = state.base_ids;
 	for (const order of state.hands.flat()) {
@@ -62,8 +62,8 @@ export function card_elim(state) {
 			if (id !== undefined)
 				Utils.mapInsertArr(certain_map, logCard(id), { order, unknown_to });
 
-			if (card.possible.length > 1)
-				candidates.push({ order, playerIndex });
+			if (card.possible.length > 1 && card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length < 5 || card.clued))
+				cross_elim_candidates.push({ order, playerIndex });
 
 			for (const p of card.possible)
 				Utils.mapInsertArr(idMap, logCard(p), { order, playerIndex });
@@ -120,7 +120,7 @@ export function card_elim(state) {
 
 					Utils.mapInsertArr(certain_map, logCard(recursive_id), { order, unknown_to: [] });
 					recursive_ids.push(recursive_id);
-					candidates.splice(candidates.findIndex(c => c.order === order), 1);
+					cross_elim_candidates.splice(cross_elim_candidates.findIndex(c => c.order === order), 1);
 				}
 				return false;
 			});
@@ -142,11 +142,6 @@ export function card_elim(state) {
 	const cross_elim = () => {
 		uncertain_ids = state.base_ids;
 		uncertain_map = new Map();
-
-		const cross_elim_candidates = candidates.filter(({ order }) => {
-			const card = getThoughts(order);
-			return card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length < 5 || card.clued);
-		});
 
 		if (cross_elim_candidates.length <= 1)
 			return;
@@ -199,60 +194,42 @@ export function card_elim(state) {
 			return changed;
 		};
 
-		const gen_gray_code = function* () {
-			let i = 2;
-			while (true) {
-				yield 0; yield 1; yield 0; yield i;
-				i++;
+		/**
+		 * @param {{order: number, playerIndex: number}[]} contained
+		 * @param {IdentitySet} acc_ids
+		 * @param {number} nextIndex
+		 */
+		const gen_subset = (contained = [], acc_ids = state.base_ids, nextIndex = 0) => {
+			const multiplicity = total_multiplicity(acc_ids);
+
+			// Impossible to reach multiplicity
+			if (multiplicity > contained.length + (cross_elim_candidates.length - nextIndex))
+				return false;
+
+			if (contained.length >= 2 && multiplicity === contained.length) {
+				const changed = perform_elim(contained, acc_ids);
+				if (changed)
+					return true;
 			}
+
+			if (nextIndex < cross_elim_candidates.length) {
+				// Check all remaining subsets that contain the next item
+				const item = cross_elim_candidates[nextIndex];
+				const included = gen_subset(contained.concat(item), acc_ids.union(getThoughts(item.order).possible), nextIndex + 1);
+				if (included)
+					return true;
+
+				// Check all remaining subsets that skip the next item
+				return gen_subset(contained, acc_ids, nextIndex + 1);
+			}
+			return false;
 		};
 
-		let changed = false;
-
-		do {
-			/** @type {Map<string, number>} */
-			const crossIDMap = new Map();
-			const contained = Array.from({ length: cross_elim_candidates.length }, _ => false);
-			let groupSize = 0, multiplicity = 0;
-			const gray_code = gen_gray_code();
-
-			let nextFlip = /** @type {number} */ (gray_code.next().value);
-			changed = false;
-
-			while (nextFlip < cross_elim_candidates.length) {
-				const { order } = cross_elim_candidates[nextFlip];
-				const adding = !contained[nextFlip];
-
-				for (const p of getThoughts(order).possible) {
-					const hash = logCard(p);
-					const newVal = (crossIDMap.get(hash) ?? 0) + (adding ? 1 : -1);
-					crossIDMap.set(hash, newVal);
-
-					if (adding && newVal === 1)
-						multiplicity += cardCount(state.variant, p) - state.baseCount(p);
-
-					if (!adding && newVal === 0)
-						multiplicity -= cardCount(state.variant, p) - state.baseCount(p);
-				}
-
-				groupSize = groupSize + (adding ? 1 : -1);
-				contained[nextFlip] = !contained[nextFlip];
-
-				if (groupSize > 1 && multiplicity === groupSize) {
-					const subset = cross_elim_candidates.filter((_, i) => contained[i]);
-					const acc_ids = subset.reduce((a, { order }) => a.union(getThoughts(order).possible), state.base_ids);
-
-					changed = perform_elim(subset, acc_ids);
-					if (changed)
-						break;
-				}
-				nextFlip = /** @type {number} */ (gray_code.next().value);
-			}
-		} while (changed);
+		return gen_subset();
 	};
 
 	basic_elim(all_identities.array);
-	cross_elim();
+	while (cross_elim());
 
 	const { all_possible, all_inferred } = this;
 	const newAP = all_possible.subtract(eliminated);
