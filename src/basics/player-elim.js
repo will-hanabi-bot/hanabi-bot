@@ -169,9 +169,9 @@ export function card_elim(state) {
 				if (group.length < total_multiplicity(state.base_ids.union(id)))
 					continue;
 
-				for (const { order } of entries) {
+				for (const { order, playerIndex } of entries) {
 					// Players can't elim if one of their cards is part of it
-					if (group.some(e => e.order === order) || !getThoughts(order).possible.has(id))
+					if (group.some(e => e.playerIndex === playerIndex) || !getThoughts(order).possible.has(id))
 						continue;
 
 					const { possible, inferred } = getThoughts(order);

@@ -181,7 +181,7 @@ export function onPlay(game, action) {
 	const newState = produce(state, (draft) => {
 		draft.hands[playerIndex].splice(state.hands[playerIndex].indexOf(order), 1);
 
-		if (suitIndex !== undefined && rank !== undefined) {
+		if (suitIndex !== -1 && rank !== -1) {
 			draft.play_stacks[suitIndex] = rank;
 			draft.deck[order] = produce(state.deck[order], Utils.assignId({ suitIndex, rank }));
 		}
@@ -194,7 +194,7 @@ export function onPlay(game, action) {
 			draft.clue_tokens++;
 	});
 
-	if (suitIndex !== undefined && rank !== undefined) {
+	if (suitIndex !== -1 && rank !== -1) {
 		const { possible, inferred } = common.thoughts[order];
 
 		const newCommon = common.withThoughts(order, (draft) => {

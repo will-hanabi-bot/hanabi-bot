@@ -401,8 +401,9 @@ export async function take_action(game) {
 		// better cards on chop.
 		if (!state.inEndgame() && !state.early_game && state.clue_tokens < 4 && chop !== undefined) {
 			// Remove critical and playable identities from our chop
-			const modified_me = me.withThoughts(chop, (draft) =>
-				draft.possible = me.thoughts[chop].possible.intersect(me.thoughts[chop].possible.filter(i => !state.isCritical(i))), false);
+			const modified_me = me.withThoughts(chop, (draft) => {
+				draft.possible = me.thoughts[chop].possible.intersect(me.thoughts[chop].possible.filter(i => !state.isCritical(i)));
+			}, false);
 			const our_chop_value = cardValue(state, modified_me, state.deck[chop], chop);
 
 			for (const clue of consider_clues) {

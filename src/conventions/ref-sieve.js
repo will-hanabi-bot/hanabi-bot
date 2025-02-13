@@ -118,9 +118,4 @@ export default class RefSieve extends Game {
 	get lastMove() {
 		return this.moveHistory.at(-1)?.move ?? CLUE_INTERP.NONE;
 	}
-
-	/** @param {INTERP} interp */
-	interpretMove(interp) {
-		this.moveHistory.push({ turn: this.state.turn_count, move: interp });
-	}
 }
