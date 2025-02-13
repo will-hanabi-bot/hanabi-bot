@@ -158,9 +158,6 @@ export function cardTouched(card, variant, clue) {
 		if (variantRegexes.rainbowish.test(suit))
 			return true;
 
-		if (variantRegexes.prism.test(suit))
-			return ((rank - 1) % colourableSuits.length) === value;
-
 		if (rank === variant.specialRank) {
 			if (variant.specialRankAllClueColors)
 				return true;
@@ -168,11 +165,15 @@ export function cardTouched(card, variant, clue) {
 				return false;
 		}
 
+		if (variantRegexes.prism.test(suit))
+			return ((rank - 1) % colourableSuits.length) === value;
+
 		return variant.suits[suitIndex] === colourableSuits[value];
 	}
 	else if (type === CLUE.RANK) {
 		if (rank === -1 || variantRegexes.brownish.test(suit))
 			return false;
+
 		if (rank === variant.specialRank) {
 			if (variant.specialRankAllClueRanks)
 				return rank != value;
