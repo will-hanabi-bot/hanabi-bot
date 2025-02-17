@@ -132,50 +132,53 @@ export function find_own_finesses(game, identity, giver, target, unknown) {
 	while (next_rank !== rank) {
 		const next_identity = { suitIndex, rank: next_rank };
 		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
-		const connecting = find_connecting(game, next_identity, playerIndex, connections.map(c => c.order), unknown && playerIndex === target, ignoreOrders);
+		const looksDirect = (unknown && playerIndex === target) || (playerIndex === giver);
+		const connecting = find_connecting(game, next_identity, playerIndex, connections.map(c => c.order), looksDirect, ignoreOrders);
 
 		if (connecting !== undefined) {
 			next_rank++;
 			connections.push(connecting);
 			looped_around = false;
 		}
-		// Try to connect on us
-		else if (playerIndex === state.ourPlayerIndex || inBetween(state.numPlayers, state.ourPlayerIndex, playerIndex, state.nextPlayerIndex(target))) {
-			/** @returns {Connection | undefined} */
-			const find_own_connecting = () => {
-				const playable = state.ourHand.find(o => ((card = me.thoughts[o]) =>
-					(card.finessed || card.called_to_play || card.inferred.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(next_identity)))());
-
-				if (playable !== undefined && !ignoreOrders.includes(playable))
-					return { type: 'playable', reacting: state.ourPlayerIndex, order: playable, identities: [next_identity] };
-
-				if (unknown && state.ourPlayerIndex === target)
-					return;
-
-				const prompt = common.find_prompt(state, state.ourPlayerIndex, next_identity, connections.map(c => c.order));
-
-				if (prompt !== undefined && !ignoreOrders.includes(prompt))
-					return { type: 'prompt', reacting: state.ourPlayerIndex, order: prompt, identities: [next_identity] };
-
-				const finesse = common.find_finesse(state, state.ourPlayerIndex, connections.map(c => c.order));
-
-				if (finesse !== undefined && !ignoreOrders.includes(finesse))
-					return { type: 'finesse', reacting: state.ourPlayerIndex, order: finesse, identities: [next_identity] };
-			};
-
-			const own_connecting = find_own_connecting();
-
-			if (own_connecting !== undefined) {
-				next_rank++;
-				connections.push(own_connecting);
-
-				// Jump straight ahead to us
-				playerIndex = state.ourPlayerIndex;
-				looped_around = false;
-			}
-		}
 
 		if (playerIndex === target) {
+			// Try to connect on us
+			if (!unknown || inBetween(state.numPlayers, state.ourPlayerIndex, giver, target)) {
+				/** @returns {Connection | undefined} */
+				const find_own_connecting = () => {
+					const playable = state.ourHand.find(o => ((card = me.thoughts[o]) =>
+						(card.finessed || card.called_to_play || card.inferred.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(next_identity)))());
+
+					if (playable !== undefined && !ignoreOrders.includes(playable))
+						return { type: 'playable', reacting: state.ourPlayerIndex, order: playable, identities: [next_identity] };
+
+					if (unknown && state.ourPlayerIndex === target)
+						return;
+
+					const prompt = common.find_prompt(state, state.ourPlayerIndex, next_identity, connections.map(c => c.order));
+
+					if (prompt !== undefined && !ignoreOrders.includes(prompt))
+						return { type: 'prompt', reacting: state.ourPlayerIndex, order: prompt, identities: [next_identity] };
+
+					const finesse = common.find_finesse(state, state.ourPlayerIndex, connections.map(c => c.order));
+
+					if (finesse !== undefined && !ignoreOrders.includes(finesse))
+						return { type: 'finesse', reacting: state.ourPlayerIndex, order: finesse, identities: [next_identity] };
+				};
+
+				const own_connecting = find_own_connecting();
+
+				if (own_connecting !== undefined) {
+					next_rank++;
+					connections.push(own_connecting);
+
+					// Jump straight to after us
+					playerIndex = state.nextPlayerIndex(state.ourPlayerIndex);
+					looped_around = false;
+					continue;
+				}
+			}
+
 			if (unknown)
 				break;
 

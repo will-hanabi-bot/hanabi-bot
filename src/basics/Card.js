@@ -270,10 +270,13 @@ export class Card extends ActualCard {
 		if (this.possible.length === 1)
 			return this.possible.array[0];
 
-		else if (this.suitIndex !== -1 && this.rank !== -1 && !options.symmetric)
+		if (this.suitIndex !== -1 && this.rank !== -1 && !options.symmetric)
 			return new BasicCard(this.suitIndex, this.rank);
 
-		else if (options.infer && this.inferred.length === 1)
+		if (this.info_lock?.length === 1)
+			return this.info_lock.array[0];
+
+		if (options.infer && this.inferred.length === 1)
 			return this.inferred.array[0];
 	}
 

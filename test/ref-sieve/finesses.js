@@ -45,7 +45,7 @@ describe('finesses', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
 	});
 
-	it('plays into a finesse', () => {
+	it('plays into an unknown finesse', () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r2', 'r4', 'g4', 'p4', 'g4'],

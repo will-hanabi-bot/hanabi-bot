@@ -318,10 +318,10 @@ export function good_touch_elim(state, only_self = false) {
 		for (const order of state.hands[i]) {
 			addToMaps(order, i);
 
-			if (newPlayer.thoughts[order].trash)
-				continue;
-
 			const card = newPlayer.thoughts[order];
+
+			if (card.trash || card.identity({ symmetric: true }) !== undefined)
+				continue;
 
 			if (card.inferred.length > 0 && card.possible.some(inf => !state.isBasicTrash(inf)) && !card.certain_finessed) {
 				// Touched cards always elim

@@ -115,7 +115,7 @@ export async function take_action(game) {
 
 	if (common.thinksLoaded(state, partner) ||
 		partner_hand.some(o => common.thoughts[o].called_to_discard) ||
-		(chop_away === 0 && this.turn_count !== 1 && !sarcastic_chop)
+		(chop_away === 0 && state.turn_count !== 1 && !sarcastic_chop)
 	) {
 		if (common.thinksLoaded(state, partner)) {
 			const playables = common.thinksPlayables(state, partner);

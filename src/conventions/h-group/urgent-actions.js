@@ -330,7 +330,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 			const scream_available = !finessed_card &&
 				!state.inEndgame() &&
 				game.level >= LEVEL.LAST_RESORTS &&
-				playable_priorities.some(p => p.length > 0) &&
+				common.thinksPlayables(state, state.ourPlayerIndex).length > 0 &&
 				target === state.nextPlayerIndex(state.ourPlayerIndex) &&
 				!me.thinksLoaded(state, target);
 

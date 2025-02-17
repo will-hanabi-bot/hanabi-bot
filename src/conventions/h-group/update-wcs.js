@@ -170,7 +170,8 @@ export function resolve_card_retained(game, waiting_connection) {
 		// Didn't play into a self-connection
 		if (!bluff && (reacting === target || reacting === state.ourPlayerIndex)) {
 			const alternate_conn = common.waiting_connections.find(wc =>
-				wc.focus === focus && wc.connections.every(conn => conn.order !== order));
+				wc.focus === focus && wc.connections.every(conn => conn.order !== order) &&
+				!(wc.symmetric && reacting === state.ourPlayerIndex));
 
 			if (alternate_conn !== undefined) {
 				logger.warn(`${state.playerNames[reacting]} didn't play into ${type} but alternate conn [${alternate_conn.connections.map(logConnection).join(' -> ')}] exists not using this card`);
@@ -179,7 +180,9 @@ export function resolve_card_retained(game, waiting_connection) {
 
 			if (!selfPassback) {
 				// Find all waiting connections using this order and merge their possible identities
-				const linked_ids = common.waiting_connections.filter(wc => wc.focus === focus).flatMap(wc => wc.connections.find((conn, i) => i >= wc.conn_index && conn.order === order)?.identities);
+				const linked_ids = common.waiting_connections.filter(wc => wc.focus === focus)
+					.flatMap(wc => wc.connections.find((conn, i) => i >= wc.conn_index && conn.order === order)?.identities)
+					.filter(i => i !== undefined);
 
 				/** @param {number} finesse */
 				const allowable_hesitation = (finesse) => {

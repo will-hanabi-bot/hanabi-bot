@@ -594,8 +594,9 @@ export function interpret_clue(game, action) {
 	const pink_trash_fix = state.includesVariant(variantRegexes.pinkish) &&
 		!positional && clue.type === CLUE.RANK &&
 		list.every(o => !state.deck[o].newly_clued && knownAs(game, o, variantRegexes.pinkish)) &&
-		state.variant.suits.every((suit, i) =>
-			!variantRegexes.pinkish.test(suit) || state.isBasicTrash({ suitIndex: i, rank: clue.value }));
+		state.variant.suits.every((suit, suitIndex) =>
+			!variantRegexes.pinkish.test(suit) ||
+			isTrash(state, common, { suitIndex, rank: clue.value }, focus, { infer: true }));
 
 	if (pink_trash_fix) {
 		logger.info('pink trash fix!');
@@ -742,7 +743,19 @@ export function interpret_clue(game, action) {
 			common.updateThoughts(focus, (draft) => { draft.reset = true; });
 			// If it's in our hand, we have no way of knowing what the card is - default to good touch principle
 			if (target === state.ourPlayerIndex) {
-				logger.info('no inference on card (self), defaulting to gtp - ', common.thoughts[focus].inferred.map(logCard));
+				if (state.includesVariant(variantRegexes.pinkish) && clue.type === CLUE.RANK) {
+					const { inferred, possible, info_lock } = common.thoughts[focus];
+					let new_info_lock = info_lock?.intersect(possible.filter(i => i.rank === clue.value));
+
+					if (new_info_lock === undefined || info_lock.length === 0)
+						new_info_lock = state.base_ids.union(possible.filter(i => i.rank === clue.value));
+
+					common.updateThoughts(focus, (draft) => {
+						draft.inferred = inferred.intersect(inferred.filter(i => i.rank === clue.value));
+						draft.info_lock = new_info_lock;
+					});
+				}
+				logger.info('no inference on card (self), defaulting to gtp/pink promise - ', common.thoughts[focus].inferred.map(logCard));
 			}
 			// If it's not in our hand, we should adjust our interpretation to their interpretation (to know if we need to fix)
 			else {

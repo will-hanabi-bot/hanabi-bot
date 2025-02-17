@@ -71,7 +71,7 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 			unknown_own.push(order);
 	}
 
-	timeout = Date.now() + 10*1000;
+	timeout = Date.now() + 20*1000;
 
 	const total_unknown = state.cardsLeft + unknown_own.length;
 	logger.info('unknown_own', unknown_own, 'cards left', state.cardsLeft);

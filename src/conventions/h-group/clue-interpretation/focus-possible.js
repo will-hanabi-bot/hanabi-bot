@@ -297,7 +297,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall) {
 
 			if (type === 'finesse') {
 				// A finesse proves that this is not direct
-				looksDirect = focus_thoughts.identity() === undefined && looksSave;
+				looksDirect = focus_thoughts.identity() === undefined && (looksSave || positional);
 
 				if (bluff)
 					bluffed = true;

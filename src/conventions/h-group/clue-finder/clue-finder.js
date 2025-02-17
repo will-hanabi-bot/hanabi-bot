@@ -387,6 +387,10 @@ export function find_clues(game, options = {}) {
 				case CLUE_INTERP.POSITIONAL:
 					play_clues[target].push(new_clue);
 					break;
+
+				case CLUE_INTERP.NONE:
+					stall_clues[STALL_INDICES[CLUE_INTERP.STALL_BURN]].push(new_clue);
+					break;
 			}
 		}
 
