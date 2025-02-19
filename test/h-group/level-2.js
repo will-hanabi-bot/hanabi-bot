@@ -756,16 +756,15 @@ describe(`occam's razor`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b3', 'y3', 'p4', 'g1'],
-			['r3', 'p3', 'b1', 'r5'],
+			['g1', 'r3', 'p3', 'r5'],
 			['b1', 'g3', 'y2', 'p4'],
 		], {
 			level: { min: 2 },
-			starting: PLAYER.BOB
+			play_stacks: [0, 0, 0, 1, 0],
+			starting: PLAYER.DONALD
 		});
 
-		takeTurn(game, 'Bob clues 1 to Cathy');
-		takeTurn(game, 'Cathy plays b1', 'g1');
-		takeTurn(game, 'Donald clues 2 to Alice (slots 1,3)');		// g1 reverse finesse on Cathy
+		takeTurn(game, 'Donald clues 2 to Alice (slots 1,3)');		// g1 reverse finesse on Cathy (could be b2)
 		takeTurn(game, 'Alice clues 5 to Cathy');
 
 		takeTurn(game, 'Bob clues 3 to Donald');			// g3 delayed play (could look like b3 if we have b2 clued)

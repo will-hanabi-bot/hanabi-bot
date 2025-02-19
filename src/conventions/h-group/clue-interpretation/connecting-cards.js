@@ -48,7 +48,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 			const ineligible = ignoreOrders.includes(order) ||
 				!common.thoughts[order].touched ||
 				!state.deck[order].matches(identity, { assume: true }) ||
-				possibly_fake(order) ||
+				(common.thoughts[order].uncertain && possibly_fake(order)) ||	// May appear uncertain even though we know a finesse is occuring, since we don't know who it's on
 				common.linkedOrders(state).has(order);
 
 			if (ineligible)
@@ -112,7 +112,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 				card.touched &&
 				card.inferred.has(identity) &&
 				(card.inferred.every(c => state.isPlayable(c)) || common.hypo_plays.has(order) || card.finessed) &&
-				!possibly_fake(order);
+				!card.uncertain;
 		});
 		const match = playables.find(o => state.deck[o].matches(identity));
 
@@ -400,8 +400,12 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 		// The final card must not be hidden
 		if (connections.length > 0 && !connections.at(-1).hidden) {
 			state.play_stacks = old_play_stacks.slice();
-			if (playerIndex === target && looksDirect)
+			if (playerIndex === target && looksDirect) {
+				if (playerIndex === state.ourPlayerIndex)
+					return [];
+
 				logger.warn('looks direct to us, trusting that we have missing cards');
+			}
 
 			return connections;
 		}

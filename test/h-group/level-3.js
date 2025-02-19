@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import HGroup from '../../src/conventions/h-group.js';
@@ -94,8 +94,45 @@ describe('playing 1s in the correct order', () => {
 		const list = game.state.clueTouched(game.state.hands[PLAYER.CATHY], clue);
 		const { focus } = determine_focus(game, game.state.hands[PLAYER.CATHY], game.common, list, clue);
 
-		// The focus of the clue is Cathy's slot 3.
+		// The focus of the clue is Cathy's slot 4.
 		assert.equal(focus, game.state.hands[PLAYER.CATHY][3]);
+	});
+
+	it('orders 1s correctly when cluing chop moved cards', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'b1', 'r4', 'y4', 'g1']
+		], {
+			init: (game) => {
+				// Bob's slot 5 is chop moved.
+				game.common.updateThoughts(game.state.hands[PLAYER.BOB][4], (draft) => { draft.chop_moved = true; });
+			}
+		});
+
+		takeTurn(game, 'Alice clues 1 to Bob');
+
+		const ordered_1s = order_1s(game.state, game.common, game.state.hands[PLAYER.BOB]);
+		assert.deepEqual(ordered_1s, [8, 9, 5]);
+	});
+
+	it('orders 1s correctly when only cluing chop moved cards', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y4', 'b4', 'r4', 'i1', 'i2']
+		], {
+			play_stacks: [1, 1, 1, 1, 0],
+			variant: VARIANTS.PINK,
+			init: (game) => {
+				// Bob's slots 4 and 5 are chop moved.
+				for (const i of [3,4])
+					game.common.updateThoughts(game.state.hands[PLAYER.BOB][i], (draft) => { draft.chop_moved = true; });
+			}
+		});
+
+		takeTurn(game, 'Alice clues 1 to Bob');
+
+		// Bob's slot 4 should be i1.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['i1']);
 	});
 });
 

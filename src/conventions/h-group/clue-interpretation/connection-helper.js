@@ -211,21 +211,22 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
  * 
  * Impure! (modifies common and game.finesses_while_finessed)
  * @param {Game} game
- * @param {Omit<FocusPossibility, 'interp'>[]} inf_possibilities
+ * @param {Omit<FocusPossibility, 'interp'>[]} simplest_poss
+ * @param {Omit<FocusPossibility, 'interp'>[]} all_poss
  * @param {ClueAction} action
  * @param {ActualCard} focused_card
  */
-export function assign_all_connections(game, inf_possibilities, action, focused_card) {
+export function assign_all_connections(game, simplest_poss, all_poss, action, focused_card) {
 	const { common, state, me } = game;
 	const { giver, clue, target } = action;
 	const focus = focused_card.order;
 
 	// Find the cards used as a 'playable' in every bluff connection. If any bluff connection exists that doesn't use it, no notes should be written.
-	const bluff_fps = inf_possibilities.filter(fp => fp.connections[0]?.bluff);
+	const bluff_fps = simplest_poss.filter(fp => fp.connections[0]?.bluff);
 	const bluff_playables = bluff_fps.map(fp => fp.connections.filter(conn => conn.type === 'playable').flatMap(conn => conn.order));
 	const must_bluff_playables = bluff_playables[0]?.filter(o => bluff_playables.every(os => os.includes(o))) ?? [];
 
-	for (const { connections, suitIndex, rank, save } of inf_possibilities) {
+	for (const { connections, suitIndex, rank, save } of simplest_poss) {
 		const inference = { suitIndex, rank };
 		const matches = focused_card.matches(inference, { assume: true }) && game.players[target].thoughts[focus].possible.has(inference);
 
@@ -244,7 +245,10 @@ export function assign_all_connections(game, inf_possibilities, action, focused_
 			logger.info('assigning connection', logConnection(conn));
 
 			const playable_identities = hypo_stacks
-				.map((stack_rank, index) => ({ suitIndex: index, rank: stack_rank + 1 }))
+				.map((stack_rank, index) => {
+					const contained_i = common.hypo_map[index]?.findIndex(o => o === order) ?? -1;
+					return { suitIndex: index, rank: contained_i === -1 ? stack_rank + 1 : contained_i };
+				})
 				.filter(id => id.rank <= state.max_ranks[id.suitIndex] && !isTrash(state, common, id, order, { infer: true }));
 
 			const currently_playable_identities = state.play_stacks
@@ -294,7 +298,7 @@ export function assign_all_connections(game, inf_possibilities, action, focused_
 					draft.superposition = true;
 
 				const uncertain = (() => {
-					if (card.uncertain || giver === state.ourPlayerIndex)
+					if (card.uncertain || giver === state.ourPlayerIndex || card.rewinded)
 						return false;
 
 					if (reacting === state.ourPlayerIndex)
@@ -302,7 +306,7 @@ export function assign_all_connections(game, inf_possibilities, action, focused_
 						return type !== 'known' && identities.some(i => state.ourHand.some(o => o !== order && me.thoughts[o].possible.has(i)));
 
 					// We are uncertain if the connection is a finesse that could be ambiguous
-					const uncertain_conn = type === 'finesse' ||
+					const uncertain_conn = (type === 'finesse' && all_poss.length > 1) ||
 						(type === 'prompt' && me.thoughts[focus].possible.some(p => p.suitIndex !== identities[0].suitIndex));
 
 					return uncertain_conn && (!(identities.every(i => state.isCritical(i)) && focused_card.matches(inference)) ||
@@ -311,7 +315,7 @@ export function assign_all_connections(game, inf_possibilities, action, focused_
 				})();
 
 				if (uncertain) {
-					logger.info('writing uncertain', order, identities.map(logCard));
+					logger.info('writing uncertain', order, identities.map(logCard), new_inferred.map(logCard));
 					const self_playable_identities = state.ourHand.reduce((stacks, order) => {
 						const card = common.thoughts[order];
 						const id = card.identity({ infer: true });
@@ -375,19 +379,17 @@ export function connection_score(focus_possibility, playerIndex) {
 	const { connections } = focus_possibility;
 
 	const asymmetric_penalty = connections.filter(conn => conn.asymmetric).length * 10;
-	const first_self = connections.findIndex(conn => conn.type !== 'known' && conn.type !== 'playable');
+	const first_unknown = connections.findIndex(conn => conn.type !== 'known' && conn.type !== 'playable');
 
 	// Starts on someone else
-	if (connections[first_self]?.reacting !== playerIndex)
+	if (connections[first_unknown]?.reacting !== playerIndex)
 		return asymmetric_penalty;
 
 	let blind_plays = 0, prompts = 0;
+	const first_self = connections.findIndex(conn => conn.type !== 'known' && conn.type !== 'playable' && conn.reacting === playerIndex);
 
 	for (let i = first_self; i < connections.length; i++) {
 		const conn = connections[i];
-
-		if (conn.reacting !== playerIndex)
-			continue;
 
 		if (conn.type === 'finesse')
 			blind_plays++;
@@ -401,24 +403,76 @@ export function connection_score(focus_possibility, playerIndex) {
 
 /**
  * @template {Pick<FocusPossibility, 'suitIndex'| 'rank' | 'connections'>} T
+ * @param {T} fp1
+ * @param {T} fp2
+ * @param {number} playerIndex
+ */
+export function isSimpler(fp1, fp2, playerIndex) {
+	const { connections: conns1 } = fp1;
+	const { connections: conns2 } = fp2;
+
+	// Requires asymmetric info
+	const [asym1, asym2] = [conns1, conns2].map(conns => conns.filter(conn => conn.asymmetric).length);
+	if (asym1 !== asym2)
+		return asym1 - asym2;
+
+	/** @param {Connection[]} conns */
+	const first_unknown = (conns) => conns.findIndex(conn => conn.type !== 'known' && conn.type !== 'playable');
+	const [fconns1, fconns2] = [conns1, conns2].map(conns => {
+		const index = first_unknown(conns);
+		return index === -1 ? [] : conns.slice(first_unknown(conns));
+	});
+
+	// First unknown connection is on self
+	const [self1, self2] = [fconns1, fconns2].map(conns => conns[0]?.reacting === playerIndex);
+
+	if (self1 !== self2)
+		return self1 ? 1 : -1;
+
+	// Both have first unknown connection on someone other than self
+	if (!self1)
+		return 0;
+
+	// Both have first unknown connection on self
+
+	const [truth1, truth2] = [fconns1, fconns2].map(conns => conns.every(conn => !conn.bluff));
+
+	if (truth1 !== truth2)
+		return truth1 ? -1 : 1;
+
+	const [finesses1, finesses2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.type === 'finesse').length);
+
+	if (finesses1 !== finesses2)
+		return finesses1 - finesses2;
+
+	const [prompts1, prompts2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.type === 'prompt').length);
+
+	return prompts1 - prompts2;
+}
+
+/**
+ * @template {Pick<FocusPossibility, 'suitIndex'| 'rank' | 'connections'>} T
  * @param {Game} game
  * @param {T[]} focus_possibilities
  * @param {number} playerIndex
  * @param {number} focused_order
  */
 export function occams_razor(game, focus_possibilities, playerIndex, focused_order) {
-	const connection_scores = focus_possibilities.map(fp => connection_score(fp, playerIndex));
+	const sorted = focus_possibilities.toSorted((a, b) => isSimpler(a, b, playerIndex));
 
-	logger.debug('occams razor', focus_possibilities.map(logCard), connection_scores);
+	logger.debug('occams razor', focus_possibilities.map(fp => logConnections(fp.connections, fp)), sorted.map(fp => logConnections(fp.connections, fp)));
 
-	const min_score = connection_scores.reduce((min, curr, i) => {
-		const fp = focus_possibilities[i];
+	let i = sorted.findIndex(fp => game.players[playerIndex].thoughts[focused_order].possible.has(fp));
 
-		if (!game.players[playerIndex].thoughts[focused_order].possible.has(fp))
-			return min;
+	if (i === -1)
+		return sorted;
 
-		return Math.min(min, curr);
-	}, Infinity);
+	const simplest = sorted.slice(0, i + 1);
 
-	return focus_possibilities.filter((_, i) => connection_scores[i] <= min_score);
+	while (i + 1 < sorted.length && isSimpler(sorted[i], sorted[i + 1], playerIndex) === 0) {
+		simplest.push(sorted[i + 1]);
+		i++;
+	}
+
+	return simplest;
 }

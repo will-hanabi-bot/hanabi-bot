@@ -127,25 +127,26 @@ function important_finesse(state, action, inf_possibilities) {
  * @param {Game} old_game
  * @param {ClueAction} action
  * @param {FocusResult} focusResult
- * @param {FocusPossibility[]} inf_possibilities
+ * @param {FocusPossibility[]} simplest_poss
+ * @param {FocusPossibility[]} all_poss
  * @param {ActualCard} focused_card
  */
-function resolve_clue(game, old_game, action, focusResult, inf_possibilities, focused_card) {
+function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_poss, focused_card) {
 	const { common, state } = game;
 	const { giver, target } = action;
 	const focus = focused_card.order;
 	const old_inferred = old_game.common.thoughts[focus].inferred;
 
-	common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].inferred.intersect(inf_possibilities); });
+	common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].inferred.intersect(simplest_poss); });
 
-	if (important_finesse(state, action, inf_possibilities)) {
+	if (important_finesse(state, action, simplest_poss)) {
 		logger.highlight('yellow', 'action is important!');
 		action.important = true;
 	}
 
-	assign_all_connections(game, inf_possibilities, action, focused_card);
+	assign_all_connections(game, simplest_poss, all_poss, action, focused_card);
 
-	for (const { connections, suitIndex, rank } of inf_possibilities) {
+	for (const { connections, suitIndex, rank } of simplest_poss) {
 		const inference = { suitIndex, rank };
 		const matches = focused_card.matches(inference, { assume: true }) && game.players[target].thoughts[focus].possible.has(inference);
 
@@ -165,16 +166,16 @@ function resolve_clue(game, old_game, action, focusResult, inf_possibilities, fo
 		}
 	}
 
-	const correct_match = inf_possibilities.find(p => focused_card.matches(p));
+	const correct_match = simplest_poss.find(p => focused_card.matches(p));
 
 	if (target !== state.ourPlayerIndex && !correct_match?.save) {
-		const selfRanks = Array.from(new Set(inf_possibilities.flatMap(({ connections }) =>
+		const selfRanks = Array.from(new Set(simplest_poss.flatMap(({ connections }) =>
 			connections.filter(conn => conn.type === 'finesse' && conn.reacting === target && conn.identities.length === 1
 			).map(conn => conn.identities[0].rank))
 		));
 		const ownBlindPlays = correct_match?.connections.filter(conn => conn.type === 'finesse' && conn.reacting === state.ourPlayerIndex).length || 0;
-		const symmetric_fps = find_symmetric_connections(old_game, action, focusResult, inf_possibilities, selfRanks, ownBlindPlays);
-		const symmetric_connections = generate_symmetric_connections(state, symmetric_fps, inf_possibilities, focus, giver, target);
+		const symmetric_fps = find_symmetric_connections(old_game, action, focusResult, simplest_poss, selfRanks, ownBlindPlays);
+		const symmetric_connections = generate_symmetric_connections(state, symmetric_fps, simplest_poss, focus, giver, target);
 
 		if (correct_match?.connections[0]?.bluff) {
 			const { reacting } = correct_match.connections[0];
@@ -190,14 +191,14 @@ function resolve_clue(game, old_game, action, focusResult, inf_possibilities, fo
 			}
 		}
 
-		const simplest_symmetric_connections = occams_razor(game, symmetric_fps.filter(fp => !fp.fake).concat(inf_possibilities), target, focus);
+		const simplest_symmetric_connections = occams_razor(game, symmetric_fps.filter(fp => !fp.fake).concat(simplest_poss), target, focus);
 		if (giver === state.ourPlayerIndex && !simplest_symmetric_connections.some(fp => focused_card.matches(fp))) {
 			logger.warn(`invalid clue, simplest symmetric connections are ${simplest_symmetric_connections.map(logCard).join()}`);
 			game.interpretMove(CLUE_INTERP.NONE);
 			return;
 		}
 
-		for (const conn of symmetric_fps.concat(inf_possibilities).flatMap(fp => fp.connections)) {
+		for (const conn of symmetric_fps.concat(simplest_poss).flatMap(fp => fp.connections)) {
 			if (conn.type === 'playable') {
 				const existing_link = common.play_links.find(pl => Utils.setEquals(new Set(pl.orders), new Set(conn.linked)) && pl.connected === focus);
 
@@ -218,7 +219,7 @@ function resolve_clue(game, old_game, action, focusResult, inf_possibilities, fo
 		common.updateThoughts(focus, (draft) => { draft.inferred = new_inferences; });
 	}
 
-	const interp = inf_possibilities.some(p => p.save) ? CLUE_INTERP.SAVE : CLUE_INTERP.PLAY;
+	const interp = simplest_poss.some(p => p.save) ? CLUE_INTERP.SAVE : CLUE_INTERP.PLAY;
 	game.interpretMove(interp);
 
 	// If a save clue was given to the next player after a scream, then the discard was actually for generation.
@@ -566,7 +567,7 @@ export function interpret_clue(game, action) {
 				const { possible } = common.thoughts[order];
 				const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
 
-				common.updateThoughts(focus, (draft) => {
+				common.updateThoughts(order, (draft) => {
 					draft.inferred = new_inferred;
 					draft.info_lock = new_inferred;
 					draft.trash = true;
@@ -627,11 +628,11 @@ export function interpret_clue(game, action) {
 			if (!simplest_symmetric_connections.some(fp => focused_card.matches(fp)))
 				game.interpretMove(CLUE_INTERP.NONE);
 			else
-				resolve_clue(game, old_game, action, focusResult, matched_inferences, focused_card);
+				resolve_clue(game, old_game, action, focusResult, matched_inferences, matched_inferences, focused_card);
 		}
 		else {
 			common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].inferred.intersect(focus_possible.filter(p => !p.illegal)); });
-			resolve_clue(game, old_game, action, focusResult, matched_inferences, focused_card);
+			resolve_clue(game, old_game, action, focusResult, matched_inferences, matched_inferences, focused_card);
 		}
 	}
 	else if (action.hypothetical) {
@@ -645,10 +646,13 @@ export function interpret_clue(game, action) {
 		/** @type {FocusPossibility[]} */
 		let all_connections = [];
 
+		/** @type {FocusPossibility[]} */
+		let simplest_connections = [];
+
 		const looksDirect = common.thoughts[focus].identity() === undefined && (					// Focused card must be unknown AND
 			clue.type === CLUE.COLOUR ||
 			rankLooksPlayable(game, clue.value, giver, target, focus) ||		// Looks like a play
-			focus_possible.some(fp => !fp.illegal && game.players[target].thoughts[focus].possible.has(fp) &&
+			focus_possible.some(fp => !fp.illegal && game.players[target].thoughts[focus].inferred.has(fp) &&
 				fp.connections.every(conn => conn.type === 'known' || (conn.type === 'playable' && conn.reacting !== state.ourPlayerIndex))));	// Looks like an existing possibility
 
 		// We are the clue target, so we need to consider all the (sensible) possibilities of the card
@@ -702,7 +706,7 @@ export function interpret_clue(game, action) {
 				}
 			}
 
-			all_connections = occams_razor(game, all_connections, state.ourPlayerIndex, focus);
+			simplest_connections = occams_razor(game, all_connections, state.ourPlayerIndex, focus);
 		}
 		// Someone else is the clue target, so we know exactly what card it is
 		else if (!state.isBasicTrash(focused_card)) {
@@ -734,9 +738,10 @@ export function interpret_clue(game, action) {
 				else
 					throw error;
 			}
+			simplest_connections = all_connections;
 		}
 
-		const finalized_connections = finalize_connections(all_connections);
+		const finalized_connections = finalize_connections(simplest_connections);
 
 		// No inference, but a finesse isn't possible
 		if (finalized_connections.length === 0) {
@@ -774,7 +779,7 @@ export function interpret_clue(game, action) {
 		else {
 			logger.info('selecting inferences', finalized_connections.map(logCard));
 
-			resolve_clue(game, old_game, action, focusResult, finalized_connections, focused_card);
+			resolve_clue(game, old_game, action, focusResult, finalized_connections, all_connections, focused_card);
 		}
 	}
 	logger.highlight('blue', `final inference on focused card ${common.thoughts[focus].inferred.map(logCard).join(',')} (${game.lastMove}), order ${focus}`);

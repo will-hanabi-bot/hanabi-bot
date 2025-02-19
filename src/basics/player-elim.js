@@ -404,7 +404,9 @@ export function good_touch_elim(state, only_self = false) {
 					continue;
 
 				const self_elim = this.playerIndex !== -1 && matches_arr.length > 0 && matches_arr.every(o =>
-					state.hands[playerIndex].includes(o) && newPlayer.thoughts[o].identity({ infer: true, symmetric: true }) !== identity);
+					state.hands[playerIndex].includes(o) &&
+					!newPlayer.thoughts[o].identity({ infer: true, symmetric: true })?.matches(identity));
+
 				if (self_elim)
 					continue;
 
@@ -553,7 +555,7 @@ export function find_links(state, hand = state.hands[this.playerIndex]) {
 		const focused_orders = orders.filter(o => this.thoughts[o].focused);
 
 		if (focused_orders.length === 1 && identities.length === 1) {
-			logger.info('eliminating link with inferences', identities.map(logCard), 'from focus! final', focused_orders[0]);
+			logger.info('eliminating link with inferences', identities.map(logCard), 'from focus! original', orders, 'final', focused_orders[0]);
 			for (const order of orders) {
 				const op = (order === focused_orders[0]) ? 'intersect' : 'subtract';
 				newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].inferred = newPlayer.thoughts[order].inferred[op](identities.array[0]); });
@@ -631,7 +633,7 @@ export function refresh_links(state) {
 		const focused_orders = orders.filter(o => newPlayer.thoughts[o].focused);
 
 		if (focused_orders.length === 1 && identities.length === 1) {
-			logger.info('eliminating link with inferences', identities.map(logCard), 'from focus! final', focused_orders[0]);
+			logger.info('eliminating link with inferences', identities.map(logCard), 'from focus! original', orders, 'final', focused_orders[0]);
 			for (const order of orders) {
 				const op = (order === focused_orders[0]) ? 'intersect' : 'subtract';
 				newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].inferred = newPlayer.thoughts[order].inferred[op](identities[0]); });

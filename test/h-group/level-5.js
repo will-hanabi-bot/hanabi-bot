@@ -251,7 +251,7 @@ describe('ambiguous clues', () => {
 	it(`recognizes a potential self fake finesse after a skipped finesse`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['p4', 'r1', 'g4', 'p4'],
+			['p4', 'r1', 'g4', 'g4'],
 			['p4', 'b2', 'b3', 'y4'],
 			['r1', 'y2', 'r4', 'g5']
 		], {
@@ -291,6 +291,48 @@ describe('ambiguous clues', () => {
 		// Alice's slot 1 should not be finessed for g1.
 		const a_slot1 = game.state.hands[PLAYER.ALICE][0];
 		assert.equal(game.common.thoughts[a_slot1].finessed, false);
+	});
+
+	it(`correctly recognizes uncertain finessed cards`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r1', 'y4', 'g4', 'b4'],
+			['r4', 'y4', 'g4', 'b4'],
+			['r4', 'g5', 'p4', 'p4']
+		], {
+			level: { min: 5 },
+			starting: PLAYER.DONALD
+		});
+
+		takeTurn(game, 'Donald clues 2 to Alice (slot 2)');
+
+		// Bob might be finessed for r1.
+		assert.equal(game.common.waiting_connections.some(conn =>
+			conn.connections[0]?.reacting == PLAYER.BOB &&
+			conn.connections[0].order == game.state.hands[PLAYER.BOB][0]), true);
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].uncertain, true);
+	});
+
+	it(`correctly recognizes certainly finessed cards`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r1', 'r2', 'g4', 'b4'],
+			['r4', 'y4', 'g4', 'b4'],
+			['r4', 'g5', 'p4', 'p4']
+		], {
+			level: { min: 5 },
+			starting: PLAYER.DONALD
+		});
+
+		takeTurn(game, 'Donald clues 3 to Alice (slots 1,2,3,4)');
+
+		// Bob must be finessed for r1.
+		assert.equal(game.common.waiting_connections.some(conn =>
+			conn.connections[0]?.reacting == PLAYER.BOB &&
+			conn.connections[0].order == game.state.hands[PLAYER.BOB][0]), true);
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].uncertain, false);
 	});
 });
 

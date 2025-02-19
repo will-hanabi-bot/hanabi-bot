@@ -319,7 +319,7 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 			logger.highlight('yellow', 'failed to connect with true finesse');
 		}
 
-		throw new IllegalInterpretation(`unable to connect`);
+		throw new IllegalInterpretation(`unable to connect to ${logCard(identity)}`);
 	}
 
 	return connections;
@@ -399,7 +399,7 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 	logger.debug('finesse in slot', finesse ? state.ourHand.findIndex(o => o === finesse) + 1 : '-1');
 
 	if (finesse === undefined)
-		throw new IllegalInterpretation(`no finesse slot (ignoring ${ignoreOrders})`);
+		throw new IllegalInterpretation(`no finesse slot on self${ignoreOrders.length > 0 ? `(ignoring ${ignoreOrders})` : ''}`);
 
 	const card = me.thoughts[finesse];
 	const actual_card = state.deck[finesse];

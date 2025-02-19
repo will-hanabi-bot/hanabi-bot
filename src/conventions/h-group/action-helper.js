@@ -79,7 +79,7 @@ export function order_1s(state, player, orders, options = { no_filter: false }) 
 		if (c2.finessed)
 			return 1;
 
-		if (c1.was_cm && c2.was_cm)
+		if ((c1.chop_moved || c1.was_cm) && (c2.chop_moved || c2.was_cm))
 			return order2 - order1;
 
 		if (c1.was_cm)

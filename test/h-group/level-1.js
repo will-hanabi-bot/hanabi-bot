@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { ACTION, CLUE } from '../../src/constants.js';
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
@@ -185,6 +185,41 @@ describe('save clue', () => {
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.CATHY, value: 5 });
 	});
+
+	// Might need to be tweaked.
+	it(`doesn't give saves to cards in front of finessed positions`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p4', 'y4', 'g4', 'b4'],
+			['r3', 'r4', 'y4', 'g4', 'b4'],
+			['y3', 'y3', 'g3', 'g3', 'b3'],
+			['r2', 'p4', 'y5', 'g5', 'b5']
+		], {
+			level: { min: 1 },
+			starting: PLAYER.DONALD,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Bob's r1 is known.
+				preClue(game, game.state.hands[PLAYER.BOB][0], [
+					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE },
+					{ type: CLUE.RANK, value: 1, giver: PLAYER.ALICE }
+				]);
+
+				// Emily has three clued 5s.
+				for (const i of [2,3,4])
+					preClue(game, game.state.hands[PLAYER.EMILY][i], [{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }]);
+			}
+		});
+
+		takeTurn(game, 'Donald clues red to Cathy');				// r3, finessing Emily's r2
+		takeTurn(game, 'Emily discards p4', 'p5');
+
+		const { save_clues } = find_clues(game);
+
+		// We should not give a 5 clue to Emily.
+		assert.equal(save_clues[PLAYER.EMILY], undefined);
+	});
 });
 
 describe('early game', () => {
@@ -243,7 +278,7 @@ describe('sacrifice discards', () => {
 	it('discards a non-critical card when locked with no clues', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['g4', 'r2', 'r4', 'p4', 'b3'],
+			['g4', 'r2', 'b4', 'p4', 'b3'],
 			['r3', 'b4', 'r2', 'y4', 'y2'],
 		], {
 			level: { min: 1 },

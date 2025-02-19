@@ -46,6 +46,7 @@ export class Player {
 	 * @param {IdentitySet} all_inferred
 	 * @param {number[]} hypo_stacks
 	 * @param {Set<number>} [hypo_plays]
+	 * @param {number[][]} [hypo_map]
 	 * @param {Card[]} [thoughts]
 	 * @param {Link[]} [links]
 	 * @param {{ orders: number[], prereqs: Identity[], connected: number}[]} [play_links]
@@ -54,7 +55,7 @@ export class Player {
 	 * @param {Map<string, number[]>} [elims]
 	 * @param {Map<number, Patch[]>} patches
 	 */
-	constructor(playerIndex, all_possible, all_inferred, hypo_stacks, hypo_plays = new Set(), thoughts = [], links = [], play_links = [], unknown_plays = new Set(), waiting_connections = [], elims = new Map(), patches = new Map()) {
+	constructor(playerIndex, all_possible, all_inferred, hypo_stacks, hypo_plays = new Set(), hypo_map = [], thoughts = [], links = [], play_links = [], unknown_plays = new Set(), waiting_connections = [], elims = new Map(), patches = new Map()) {
 		this.playerIndex = playerIndex;
 
 		this.thoughts = thoughts;
@@ -63,6 +64,7 @@ export class Player {
 
 		this.hypo_stacks = hypo_stacks;
 		this.hypo_plays = hypo_plays;
+		this.hypo_map = hypo_map;
 		this.all_possible = all_possible;
 		this.all_inferred = all_inferred;
 
@@ -83,6 +85,7 @@ export class Player {
 			IdentitySet.fromJSON(json.all_inferred),
 			json.hypo_stacks.slice(),
 			new Set(json.hypo_plays),
+			Utils.objClone(json.hypo_map),
 			json.thoughts.map(Card.fromJSON),
 			json.links.map(Utils.objClone),
 			json.play_links.map(Utils.objClone),
@@ -98,6 +101,7 @@ export class Player {
 			this.all_inferred,
 			this.hypo_stacks.slice(),
 			new Set(this.hypo_plays),
+			this.hypo_map.map(stack => stack.slice()),
 			this.thoughts.map(infs => infs.clone()),
 			this.links.map(link => Utils.objClone(link)),
 			this.play_links.map(link => Utils.objClone(link)),
@@ -114,6 +118,7 @@ export class Player {
 			this.all_inferred,
 			this.hypo_stacks,
 			this.hypo_plays,
+			this.hypo_map,
 			this.thoughts,
 			this.links,
 			this.play_links,
@@ -360,6 +365,9 @@ export class Player {
 		const unknown_plays = new Set();
 		const already_played = new Set();
 
+		/** @type {number[][]} */
+		const card_map = Array.from({ length: state.variant.suits.length, }, _ => []);
+
 		let found_new_playable = true;
 		let good_touch_elim = new IdentitySet(state.variant.suits.length, 0);
 
@@ -460,6 +468,7 @@ export class Player {
 					good_touch_elim = good_touch_elim.union(id);
 					found_new_playable = true;
 					already_played.add(order);
+					card_map[suitIndex][rank] = order;
 				}
 			}
 		}
@@ -468,6 +477,7 @@ export class Player {
 			draft.hypo_stacks = hypo_stacks;
 			draft.unknown_plays = unknown_plays;
 			draft.hypo_plays = already_played;
+			draft.hypo_map = card_map;
 		});
 
 		if (ignoreOrders === undefined) {

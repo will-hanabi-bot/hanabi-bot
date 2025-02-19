@@ -12,6 +12,7 @@ import { produceC } from '../src/StateProxy.js';
  * @typedef {import('../src/basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../src/types.js').Action} Action
  * @typedef {import('../src/types.js').BaseClue} BaseClue
+ * @typedef {import('../src/types.js').Identity} Identity
  * @typedef {import('../src/variants.js').Variant} Variant
  * 
  * @typedef SetupOptions

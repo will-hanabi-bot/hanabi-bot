@@ -21,6 +21,7 @@ export class RS_Player extends Player {
 			IdentitySet.fromJSON(json.all_inferred),
 			json.hypo_stacks.slice(),
 			new Set(json.hypo_plays),
+			Utils.objClone(json.hypo_map),
 			json.thoughts.map(Card.fromJSON),
 			json.links.map(Utils.objClone),
 			json.play_links.map(Utils.objClone),

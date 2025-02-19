@@ -41,7 +41,7 @@ const objectTraps = {
 	set: (state, prop, value) => {
 		if (!state.modified) {
 			// No change
-			if (state.base[prop] === value || state.proxies[prop] === value)
+			if ((state.proxies[prop] ?? state.base[prop]) === value)
 				return true;
 
 			// This state and all parents have now been modified

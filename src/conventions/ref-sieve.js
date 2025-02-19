@@ -64,10 +64,10 @@ export default class RefSieve extends Game {
 		super(tableID, state, in_progress);
 
 		this.players = this.players.map(p =>
-			new RS_Player(p.playerIndex, p.all_possible, p.all_inferred, p.hypo_stacks, p.hypo_plays, p.thoughts, p.links, p.play_links, p.unknown_plays, p.waiting_connections, p.elims));
+			new RS_Player(p.playerIndex, p.all_possible, p.all_inferred, p.hypo_stacks, p.hypo_plays, p.hypo_map, p.thoughts, p.links, p.play_links, p.unknown_plays, p.waiting_connections, p.elims));
 
 		const c = this.common;
-		this.common = new RS_Player(c.playerIndex, c.all_possible, c.all_inferred, c.hypo_stacks, c.hypo_plays, c.thoughts, c.links, c.play_links, c.unknown_plays, c.waiting_connections, c.elims);
+		this.common = new RS_Player(c.playerIndex, c.all_possible, c.all_inferred, c.hypo_stacks, c.hypo_plays, c.hypo_map, c.thoughts, c.links, c.play_links, c.unknown_plays, c.waiting_connections, c.elims);
 	}
 
 	/** @param {RefSieve} json */

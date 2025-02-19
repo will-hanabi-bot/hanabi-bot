@@ -249,6 +249,11 @@ export function get_clue_interp(game, clue, giver, options) {
 				}
 			}
 
+			if (chop && hand.some(o => o < focus && common.thoughts[o].finessed)) {
+				logger.warn('giving a save to a card in front of a finessed card!');
+				return;
+			}
+
 			save_clue = Object.assign(clue, { game: hypo_game, result, playable: playables.length > 0, cm: chop_moved, safe });
 			break;
 

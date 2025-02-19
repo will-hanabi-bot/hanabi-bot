@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 
-import { COLOUR, PLAYER, expandShortCard, setup, takeTurn } from '../../test-utils.js';
+import { COLOUR, PLAYER, expandShortCard, preClue, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 
 import HGroup from '../../../src/conventions/h-group.js';
@@ -220,6 +220,47 @@ describe('hidden finesse', () => {
 		// Alice's slot 2 should still be finessed as y3.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y3']);
+	});
+
+	it('correctly resolves an ambiguous hidden finesse', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r1', 'y1', 'g1', 'g3'],
+			['b3', 'y1', 'g1', 'b1'],
+			['p1', 'p1', 'r2', 'y2']
+
+		], {
+			level: { min: 5 },
+			play_stacks: [5, 5, 1, 1, 5],
+			starting: PLAYER.CATHY,
+			init: (game) => {
+				// Alice has [g2, b2] in slot 2 (actually b2).
+				const a_slot2 = game.state.hands[PLAYER.ALICE][1];
+				preClue(game, a_slot2, [{ type: CLUE.RANK, value: 2, giver: PLAYER.BOB }]);
+				game.common.thoughts[a_slot2].inferred = game.common.thoughts[a_slot2].inferred.intersect(['g2', 'b2'].map(expandShortCard));
+			}
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Bob');		// Looks like either g3 delayed play or g2 hidden finesse
+		takeTurn(game, 'Donald clues 4 to Alice (slot 4)');
+
+		// Can connect as b4 (if g2 hidden, then Cathy finesse) or g4
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['g4', 'b4']);
+
+		takeTurn(game, 'Alice plays b2 (slot 2)');		// revealing hidden finesse
+
+		// Alice's slot 2 (was slot 1) should be g2
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['g2']);
+
+		takeTurn(game, 'Bob discards g1', 'p2');
+		takeTurn(game, 'Cathy plays b3', 'r3'); 		// proving b4
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['b4']);
+
+		takeTurn(game, 'Donald discards y2', 'y3');
+
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] });
 	});
 
 	it(`doesn't give bad hidden finesses`, () => {

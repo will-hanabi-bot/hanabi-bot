@@ -129,6 +129,11 @@ export function interpret_5cm(game, target, focus_order, clue) {
 export function interpret_tccm(game, oldCommon, target, list, focused_card) {
 	const { common, state } = game;
 
+	if (state.inEndgame()) {
+		logger.info('in endgame, not tccm');
+		return [];
+	}
+
 	logger.info('checking tccm: old score', oldCommon.hypo_stacks, oldCommon.unknown_plays, 'new score', common.hypo_stacks, common.unknown_plays);
 
 	// Some hypo stacks went down, assume fix
