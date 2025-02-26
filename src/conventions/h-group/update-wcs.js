@@ -147,7 +147,7 @@ export function resolve_card_retained(game, waiting_connection) {
 
 			if (game.level >= LEVEL.INTERMEDIATE_FINESSES && last_reacting_action.important) {
 				if (bluff || possibly_bluff) {
-					logger.warn(`${state.playerNames[reacting]} not allowed to defer a potential bluff`);
+					logger.warn(`${state.playerNames[reacting]} not allowed to defer a ${bluff ? 'bluff' : 'potential bluff'}`);
 				} else {
 					logger.warn(`allowing ${state.playerNames[reacting]} to defer a finesse for an important clue`);
 					return { remove: false };
@@ -230,21 +230,25 @@ export function resolve_card_retained(game, waiting_connection) {
 		}
 
 		// Check if the card could be superpositioned on a finesse that is not yet playable.
-		const unplayable_connections = common.waiting_connections.filter(wc =>
-			wc.conn_index !== -1 &&
-			wc !== waiting_connection &&
-			!(wc.symmetric && reacting === state.ourPlayerIndex) &&		// We can't defer if we know that this finesse is symmetric
-			wc.connections.some((conn, index) =>
-				index >= conn_index && conn.order === order && conn.identities.some(i => state.playableAway(i) > 0)) &&
-			// The reacting player has to wait for someone else, or they already tried to play
-			(wc.connections[wc.conn_index].reacting !== reacting || last_reacting_action?.type === 'play'));
+		for (const wc of common.waiting_connections) {
+			// We can't defer if we know that this finesse is symmetric
+			if (wc.conn_index === -1 || wc === waiting_connection || (wc.symmetric && reacting === state.ourPlayerIndex))
+				continue;
 
-		if (unplayable_connections.length > 0) {
-			logger.warn(last_reacting_action?.type, 'but not all possibilities playable', unplayable_connections.map(wc =>
-				`${wc.connections.map(logConnection).join(' -> ')}  (${wc.connections.find((conn, index) =>
-					index >= conn_index && conn.order === order && conn.identities.some(i => state.playableAway(i) > 0)
-				).identities.map(logCard).join()})`));
-			return { remove: false };
+			// We can only allow a defer if the reacting player has to wait for someone else, or they already tried to play
+			if (!(wc.connections[wc.conn_index].reacting !== reacting || last_reacting_action?.type === 'play'))
+				continue;
+
+			const unplayable_conn = wc.connections.find((conn, index) =>
+				index >= conn_index && conn.order === order &&
+				conn.identities.some(i =>
+					state.playableAway(i) > 0 ||
+					(last_reacting_action?.type === 'play' && last_reacting_action.suitIndex === i.suitIndex && last_reacting_action.rank === i.rank - 1)));
+
+			if (unplayable_conn !== undefined) {
+				logger.warn(`${last_reacting_action?.type} but not all possibilities playable ${wc.connections.map(logConnection).join(' -> ')} ${unplayable_conn.identities.map(logCard).join()}`);
+				return { remove: false };
+			}
 		}
 
 		const attempted_bomb = last_reacting_action?.type === 'discard' && last_reacting_action.failed &&

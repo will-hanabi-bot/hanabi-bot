@@ -93,6 +93,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 	for (const order of state.hands[target]) {
 		const clued_reset = (oldThoughts[order].inferred.length > 0 && newCommon.thoughts[order].inferred.length === 0) ||
 			(list.includes(order) && state.includesVariant(variantRegexes.pinkish) &&
+				common.hypo_stacks.some(stack => stack === 0) &&
 				!oldThoughts[order].focused &&		// Do not allow pink fix on focused cards
 				unknown_1(oldThoughts[order]) &&
 				clue.type === CLUE.RANK && clue.value !== 1);
@@ -163,6 +164,10 @@ export function checkFix(game, oldThoughts, clueAction) {
 
 	const duplicate_reveal = list.filter(order => {
 		const card = newCommon.thoughts[order];
+
+		// No new eliminations
+		if (card.possible.length === common.thoughts[order].possible.length)
+			return false;
 
 		if (newCommon.thoughts[order].identity() === undefined || card.clues.filter(clue => clue.type === card.clues.at(-1).type && clue.value === card.clues.at(-1).value ).length > 1)
 			return false;

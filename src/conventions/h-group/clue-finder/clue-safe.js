@@ -202,7 +202,7 @@ export function safe_situation(game, player) {
 	const safe = !chopUnsafe(game, player, next_discard) || has_early_clue;
 	const discard = possible_discard(game, player, state.hands[next_discard], potential_cluers >= 1);
 
-	logger.info(`next discard may come from ${state.playerNames[next_discard]}, chop ${safe ? 'safe' : 'unsafe'} ${discard !== undefined ? logCard(state.deck[discard]) : '(locked)'}, ${potential_cluers} potential cluers`);
+	logger.info(`next discard may come from ${state.playerNames[next_discard]}, chop ${safe ? 'safe' : 'unsafe'} ${discard !== undefined ? logCard(state.deck[discard]) : `(won't discard)`}, ${potential_cluers} potential cluers`);
 
 	if (safe || potential_cluers >= 1)
 		return { safe: true, discard: has_early_clue ? undefined : discard };
@@ -222,7 +222,7 @@ export function safe_situation(game, player) {
 	const safe2 = !chopUnsafe(game, player, next_discard) || has_early_clue;
 	const discard2 = possible_discard(game, player, state.hands[next_discard], potential_cluers >= 1);
 
-	logger.info(`next next discard may come from ${state.playerNames[next_discard]}, chop ${safe2 ? 'safe' : 'unsafe'} ${discard2 ? logCard(state.deck[discard2]) : '(locked)'}, ${potential_cluers} potential cluers`);
+	logger.info(`next next discard may come from ${state.playerNames[next_discard]}, chop ${safe2 ? 'safe' : 'unsafe'} ${discard2 !== undefined ? logCard(state.deck[discard2]) : `(won't discard)`}, ${potential_cluers} potential cluers`);
 
 	return { safe: safe2 || potential_cluers >= 1, discard: has_early_clue2 ? undefined : discard2 };
 }

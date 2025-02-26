@@ -53,7 +53,7 @@ function isStall(game, action, focusResult, severity, prev_game) {
 		return;
 
 	// Play clue, not a stall
-	if (common.thoughts[focus].inferred.every(i => state.isPlayable(i)))
+	if (focused_card.newly_clued && common.thoughts[focus].inferred.every(i => state.isPlayable(i)))
 		return;
 
 	const trash = target !== state.ourPlayerIndex ?
@@ -69,7 +69,10 @@ function isStall(game, action, focusResult, severity, prev_game) {
 		return CLUE_INTERP.STALL_5;
 	}
 
-	const clue_result = get_result(prev_game, game, Object.assign({}, action, { clue: Object.assign({}, clue, { target }), hypothetical: true }), { list });
+	const new_game = game.shallowCopy();
+	new_game.common = new_game.common.update_hypo_stacks(state);
+
+	const clue_result = get_result(prev_game, new_game, Object.assign({}, action, { clue: Object.assign({}, clue, { target }), hypothetical: true }), { list });
 	const { new_touched, playables, elim } = clue_result;
 
 	if (severity >= 2) {

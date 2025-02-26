@@ -107,7 +107,7 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall) {
 
 		// Note that a colour clue always looks direct
 		const ignoreOrders = getIgnoreOrders(game, next_rank - old_play_stacks[suitIndex] - 1, suitIndex);
-		const looksDirect = focus_thoughts.identity() === undefined;
+		const looksDirect = focus_thoughts.identity({ symmetric: true }) === undefined;
 
 		const connect_options = { knownOnly: action.hypothetical ? [state.ourPlayerIndex] : [], bluffed };
 		const connecting = find_connecting(game, action, identity, looksDirect, thinks_stall, already_connected, ignoreOrders, connect_options);
@@ -258,7 +258,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall) {
 		let bluffed = false;
 
 		state.play_stacks = old_play_stacks.slice();
-		let looksDirect = focus_thoughts.identity() === undefined && (looksSave || rankLooksPlayable(game, rank, giver, target, focus) || positional);
+		let looksDirect = focus_thoughts.identity({ symmetric: true }) === undefined && (looksSave || rankLooksPlayable(game, rank, giver, target, focus) || positional);
 
 		// Try looking for all connecting cards
 		while (next_rank <= rank) {

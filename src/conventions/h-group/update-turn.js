@@ -49,9 +49,11 @@ export function find_impossible_conn(game, connections) {
 function update_wc(game, waiting_connection, lastPlayerIndex) {
 	const { common, state, me } = game;
 	const { connections, conn_index, focus, inference } = waiting_connection;
-	const { type, reacting, order, identities } = connections[conn_index];
+	const { type, reacting, order, identities, bluff } = connections[conn_index];
 	const card = state.deck[order];
-	logger.info(`waiting for connecting ${logCard(card)} ${type} ${order} as ${identities.map(logCard)} (${state.playerNames[reacting]}) for inference ${logCard(inference)} ${focus}${waiting_connection.symmetric ? ' (symmetric)' : ''}`);
+
+	const logType = type !== 'finesse' ? type : (bluff ? 'bluff' : 'finesse');
+	logger.info(`waiting for connecting ${logCard(card)} ${logType} ${order} as ${identities.map(logCard)} (${state.playerNames[reacting]}) for inference ${logCard(inference)} ${focus}${waiting_connection.symmetric ? ' (symmetric)' : ''}`);
 
 	const impossible_conn = find_impossible_conn(game, connections.slice(conn_index));
 	if (impossible_conn !== undefined) {
