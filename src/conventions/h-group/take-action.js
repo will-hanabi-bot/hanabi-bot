@@ -700,7 +700,7 @@ export async function take_action(game) {
 		return urgent_actions[actionPrioritySize * 2][0];
 
 	// Stalling situations
-	if (state.clue_tokens > 0 && actual_severity > 0 && common_severity > 0) {
+	if (state.clue_tokens > 0 && ((actual_severity > 0 && common_severity > 0) || state.pace <= 0)) {
 		best_play_clue ??= saved_clue;
 
 		const valid_play_clue = best_play_clue && (state.turn_count === 1 ||
@@ -713,8 +713,8 @@ export async function take_action(game) {
 
 		const validStall = best_stall_clue(stall_clues, common_severity, valid_play_clue ? best_play_clue : undefined);
 
-		// 8 clues, must stall
-		if (state.clue_tokens === 8) {
+		// 8 clues or pace 0, must stall
+		if (state.clue_tokens === 8 || state.pace == 0) {
 			if (validStall)
 				return Utils.clueToAction(validStall, tableID);
 
