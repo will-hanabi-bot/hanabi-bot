@@ -3,7 +3,7 @@ import { IdentitySet } from '../basics/IdentitySet.js';
 import { Player } from '../basics/Player.js';
 import { cardValue } from '../basics/hanabi-util.js';
 import { CLUE } from '../constants.js';
-import { cardTouched, colourableSuits, variantRegexes } from '../variants.js';
+import { cardTouched, variantRegexes } from '../variants.js';
 import { older_queued_finesse } from './h-group/hanabi-logic.js';
 
 import * as Utils from '../tools/util.js';
@@ -168,8 +168,10 @@ export class HGroup_Player extends Player {
 				(inferred.length !== 1 || inferred.array[0]?.matches(identity)) && 		// must not be information-locked on a different identity
 				clues.some(clue => cardTouched(identity, state.variant, clue)) &&				// at least one clue matches
 				(!variantRegexes.pinkish.test(state.variant.suits[identity.suitIndex]) || forcePink ||	// pink rank match
-					!(clues.every(c1 => clues.every(c2 => c1.type === c2.type && c1.value === c2.value)) && clues.length > 0 && clues[0].type === CLUE.RANK && clues[0].value !== identity.rank) ||
-					clues.some(clue => clue.type === CLUE.COLOUR && variantRegexes.pinkish.test(colourableSuits(state.variant)[clue.value])));
+					possible.every(p => variantRegexes.pinkish.test(state.variant.suits[p.suitIndex])) ||
+					!(clues.every(c1 => clues.every(c2 => c1.type === c2.type && c1.value === c2.value)) &&
+						clues.length > 0 &&
+						clues[0].type === CLUE.RANK && clues[0].value !== identity.rank));
 		});
 
 		return (order !== undefined && !ignoreOrders.includes(order)) ? order : undefined;

@@ -394,6 +394,35 @@ describe('self-finesse', () => {
 		// The finesse is revealed to be yellow.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['y3']);
 	});
+
+	it('understands a fake self-finesse', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y2', 'r5', 'b4', 'y3', 'r1'],
+			['r4', 'g5', 'p4', 'g3', 'b5']
+		], {
+			level: { min: 2 },
+			starting: PLAYER.CATHY,
+			play_stacks: [0, 1, 1, 0, 0],
+			init: (game) => {
+				// Bob's slot 5 is clued with 1.
+				preClue(game, game.state.hands[PLAYER.BOB][4], [{ type: CLUE.RANK, value: 1, giver: PLAYER.ALICE }]);
+				game.common = game.common.good_touch_elim(game.state);
+			}
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Bob');		// Self-finessing y2
+
+		// Bob's 3 can be r3, y3 or g3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r3', 'y3', 'g3']);
+
+		takeTurn(game, 'Alice clues 5 to Cathy');
+		takeTurn(game, 'Bob plays r1', 'b3');
+
+		// Bob needs to play r1 first to respect r3. We should not be finessed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+	});
+
 });
 
 describe('direct clues', () => {

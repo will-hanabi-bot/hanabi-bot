@@ -359,7 +359,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 
 		// Clue receiver won't find known prompts/finesses in their hand unless it doesn't look direct
 		// Also disallow prompting/finessing a player when they may need to prove a finesse to us
-		if (playerIndex === giver || options.knownOnly?.includes(playerIndex) || (giver === state.ourPlayerIndex && playerIndex === target && looksDirect) ||
+		if (playerIndex === giver || options.knownOnly?.includes(playerIndex) || ([giver,target].some(i => i === state.ourPlayerIndex) && playerIndex === target && looksDirect) ||
 			thinks_stall.has(playerIndex) ||
 			(giver === state.ourPlayerIndex && common.waiting_connections.some(wc =>
 				wc.target === state.ourPlayerIndex && wc.connections.some((conn, index) =>

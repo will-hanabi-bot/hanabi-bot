@@ -222,7 +222,7 @@ export async function take_action(game) {
 	let trash_orders = me.thinksTrash(state, state.ourPlayerIndex).filter(o => common.thoughts[o].saved);
 
 	// Discards must be inferred, playable, trash, and not duplicated in our hand
-	const discards = playable_orders.filter(order => {
+	const discards = state.pace <= 0 ? [] : playable_orders.filter(order => {
 		const card = me.thoughts[order];
 		const id = card.identity({ infer: true });
 

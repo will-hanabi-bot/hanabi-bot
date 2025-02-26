@@ -174,11 +174,17 @@ export function card_elim(state) {
 					if (group.some(e => e.playerIndex === playerIndex) || !getThoughts(order).possible.has(id))
 						continue;
 
-					const { possible, inferred } = getThoughts(order);
+					const { possible, inferred, reset } = getThoughts(order);
 					updateThoughts(order, (draft) => {
 						draft.possible = possible.subtract(id);
 						draft.inferred = inferred.intersect(possible);
 					});
+
+					const updated_card = getThoughts(order);
+
+					if (updated_card.inferred.length === 0 && !reset)
+						newThoughts.set(order, updated_card.reset_inferences());
+
 					changed = true;
 				}
 			}
@@ -558,7 +564,14 @@ export function find_links(state, hand = state.hands[this.playerIndex]) {
 			logger.info('eliminating link with inferences', identities.map(logCard), 'from focus! original', orders, 'final', focused_orders[0]);
 			for (const order of orders) {
 				const op = (order === focused_orders[0]) ? 'intersect' : 'subtract';
-				newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].inferred = newPlayer.thoughts[order].inferred[op](identities.array[0]); });
+				const new_inferred = newPlayer.thoughts[order].inferred[op](identities.array[0]);
+
+				newPlayer = produce(newPlayer, (draft) => {
+					if (new_inferred.length === 0 && !newPlayer.thoughts[order].reset)
+						draft.thoughts[order] = newPlayer.thoughts[order].reset_inferences();
+					else
+						draft.thoughts[order].inferred = new_inferred;
+				});
 			}
 			continue;
 		}
@@ -636,7 +649,14 @@ export function refresh_links(state) {
 			logger.info('eliminating link with inferences', identities.map(logCard), 'from focus! original', orders, 'final', focused_orders[0]);
 			for (const order of orders) {
 				const op = (order === focused_orders[0]) ? 'intersect' : 'subtract';
-				newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].inferred = newPlayer.thoughts[order].inferred[op](identities[0]); });
+				const new_inferred = newPlayer.thoughts[order].inferred[op](identities[0]);
+
+				newPlayer = produce(newPlayer, (draft) => {
+					if (new_inferred.length === 0 && !newPlayer.thoughts[order].reset)
+						draft.thoughts[order] = newPlayer.thoughts[order].reset_inferences();
+					else
+						draft.thoughts[order].inferred = new_inferred;
+				});
 			}
 			continue;
 		}

@@ -3,7 +3,7 @@ import { CLUE_INTERP, LEVEL } from '../h-constants.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { interpret_tcm, interpret_5cm, interpret_tccm, perform_cm } from './interpret-cm.js';
 import { stalling_situation } from './interpret-stall.js';
-import { determine_focus, getRealConnects, rankLooksPlayable, stall_severity, unknown_1 } from '../hanabi-logic.js';
+import { determine_focus, getRealConnects, rankLooksPlayable, unknown_1 } from '../hanabi-logic.js';
 import { find_focus_possible } from './focus-possible.js';
 import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score } from './connection-helper.js';
@@ -649,7 +649,7 @@ export function interpret_clue(game, action) {
 		/** @type {FocusPossibility[]} */
 		let simplest_connections = [];
 
-		const looksDirect = common.thoughts[focus].identity() === undefined && (					// Focused card must be unknown AND
+		const looksDirect = common.thoughts[focus].identity({ symmetric: true }) === undefined && (					// Focused card must be unknown AND
 			clue.type === CLUE.COLOUR ||
 			rankLooksPlayable(game, clue.value, giver, target, focus) ||		// Looks like a play
 			focus_possible.some(fp => !fp.illegal && game.players[target].thoughts[focus].inferred.has(fp) &&
@@ -792,7 +792,7 @@ export function interpret_clue(game, action) {
 		if (ordered_1s.length > 0) {
 			const missing_1s = Utils.range(0, state.variant.suits.length)
 				.map(suitIndex => ({ suitIndex, rank: 1 }))
-				.filter(i => !visibleFind(state, common, i, { infer: true }).some(o => !ordered_1s.includes(o)));
+				.filter(i => !state.isBasicTrash(i) && !visibleFind(state, game.players[target], i, { infer: true }).some(o => !ordered_1s.includes(o)));
 
 			if (missing_1s.length > 0) {
 				for (const order of ordered_1s.slice(0, missing_1s.length))
@@ -817,7 +817,7 @@ export function interpret_clue(game, action) {
 				logger.warn('not valuable tempo clue but no chop!');
 				game.interpretMove(CLUE_INTERP.NONE);
 			}
-			else if (stall_severity(state, common, giver) <= 1) {
+			else if (stall === undefined || thinks_stall.size === 0) {
 				perform_cm(state, common, cm_orders);
 				game.interpretMove(CLUE_INTERP.CM_TEMPO);
 			}

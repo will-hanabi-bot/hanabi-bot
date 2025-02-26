@@ -273,11 +273,13 @@ export class Card extends ActualCard {
 		if (this.suitIndex !== -1 && this.rank !== -1 && !options.symmetric)
 			return new BasicCard(this.suitIndex, this.rank);
 
-		if (this.info_lock?.length === 1)
-			return this.info_lock.array[0];
+		if (options.infer) {
+			if (this.info_lock?.length === 1)
+				return this.info_lock.array[0];
 
-		if (options.infer && this.inferred.length === 1)
-			return this.inferred.array[0];
+			if (this.inferred.length === 1)
+				return this.inferred.array[0];
+		}
 	}
 
 	/**

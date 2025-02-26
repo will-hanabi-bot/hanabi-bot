@@ -74,8 +74,7 @@ function connect(game, action, identity, looksDirect, connected, ignoreOrders, i
 	const our_hand = state.ourHand;
 
 	// First, see if someone else has the connecting card
-	const conn_options = { ...options, knownOnly: [ignorePlayer] };
-	const other_connecting = find_connecting(game, action, identity, looksDirect, new Set(), connected, ignoreOrders, conn_options);
+	const other_connecting = find_connecting(game, action, identity, looksDirect, new Set(), connected, ignoreOrders, options);
 	if (other_connecting.length > 0 && other_connecting[0].type !== 'terminate')
 		return other_connecting;
 

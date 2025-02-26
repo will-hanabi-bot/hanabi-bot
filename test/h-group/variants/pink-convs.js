@@ -452,6 +452,48 @@ describe('pink choice tempo clues', () => {
 		// 4 to Bob is not a valid self-prompt.
 		assert.ok(!play_clues[PLAYER.BOB].some(clue => clue.type === CLUE.RANK && clue.value === 4));
 	});
+
+	it(`doesn't try to self-prompt using a rewinded pink positional`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['o3', 'r4', 'y4', 'g4', 'b4'],
+			['o4', 'r4', 'y4', 'g4', 'b4']
+		], {
+			level: { min: 3 },
+			clue_tokens: 7,
+			play_stacks: [0, 0, 0, 0, 1],
+			starting: PLAYER.CATHY,
+			variant: VARIANTS.OMNI,
+			init: (game) => {
+				// ALice's slots 4 and 5 are known omni.
+				for (const s of [3, 4]) {
+					preClue(game, game.state.hands[PLAYER.ALICE][s], [
+						{ type: CLUE.RANK, value: 1, giver: PLAYER.CATHY },
+						{ type: CLUE.RANK, value: 5, giver: PLAYER.CATHY }
+					]);
+				}
+			}
+		});
+
+		takeTurn(game, 'Cathy clues 4 to Alice (slots 4,5)');		// positional on o2
+		takeTurn(game, 'Alice clues yellow to Cathy');				// selfish finesse i4
+		takeTurn(game, 'Bob discards b4', 'r1');
+
+		takeTurn(game, 'Cathy clues red to Alice (slots 1,4,5)');		// reverse finesse on r2
+		takeTurn(game, 'Alice plays o2 (slot 4)');
+		takeTurn(game, 'Bob plays o3', 'y1');						// Bob plays into older finesse first
+
+		takeTurn(game, 'Cathy plays o4', 'g1');
+
+		// Alice's red card can be either r1 or r2.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r1', 'r2']);
+
+		takeTurn(game, 'Alice bombs o2 (slot 5)');					// trying to play o5 from good touch
+		takeTurn(game, 'Bob plays r1 (slot 2)', 'b1');
+
+		// Alice's red card is now confirmed to be r2.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r2']);
+	});
 });
 
 describe('pink fixes', () => {

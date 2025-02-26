@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
@@ -70,6 +70,58 @@ describe('stalling', () => {
 		// Can't be a hard burn, because filling in r5 is available.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+	});
+
+	it('understands a tempo clue when there are better clues available', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b3', 'r1', 'g2', 'b4', 'g4'],
+			['y4', 'y4', 'r3', 'y2', 'g4']
+		], {
+			level: { min: 9 },
+			play_stacks: [2, 0, 0, 0, 0],
+			clue_tokens: 6,
+			starting: PLAYER.CATHY,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Cathy's slot 3 is clued red.
+				preClue(game, game.state.hands[PLAYER.CATHY][2], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }]);
+			}
+		});
+
+		takeTurn(game, 'Cathy discards g4', 'p4');
+		takeTurn(game, 'Alice clues red to Cathy');		// g4 save to bob, y2 save to Cathy, so this can't be a stall
+
+		// Cathy's red card should be known r3, and y2 should be chop moved from TCCM.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]], ['r3']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, true);
+	});
+
+	it('understands a tempo clue stall', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b3', 'r1', 'g2', 'b4', 'g3'],
+			['y4', 'y4', 'r3', 'y2', 'g4']
+		], {
+			level: { min: 9 },
+			play_stacks: [2, 0, 0, 0, 0],
+			clue_tokens: 6,
+			starting: PLAYER.CATHY,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Cathy's slot 3 is clued red.
+				preClue(game, game.state.hands[PLAYER.CATHY][2], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }]);
+			}
+		});
+
+		takeTurn(game, 'Cathy discards g4', 'p4');
+		takeTurn(game, 'Alice clues 3 to Cathy');		// no play clues or 5 stalls to give, so tempo clue stall
+
+		// Cathy's red card should be known r3, but no TCCM.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]], ['r3']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, false);
 	});
 
 	it('understands a play clue when not in stalling situation', () => {

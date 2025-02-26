@@ -1,5 +1,6 @@
 import { CLUE } from '../../../constants.js';
-import { isTrash } from '../../../basics/hanabi-util.js';
+import { isTrash, knownAs } from '../../../basics/hanabi-util.js';
+import { variantRegexes } from '../../../variants.js';
 import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
@@ -131,6 +132,11 @@ export function interpret_tccm(game, oldCommon, target, list, focused_card) {
 
 	if (state.inEndgame()) {
 		logger.info('in endgame, not tccm');
+		return [];
+	}
+
+	if ([variantRegexes.brownish, variantRegexes.pinkish].some(variant => knownAs(game, focused_card.order, variant))) {
+		logger.info('pinkish/brownish is always valuable, not tccm');
 		return [];
 	}
 

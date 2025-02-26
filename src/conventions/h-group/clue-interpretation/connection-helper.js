@@ -167,7 +167,7 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 			continue;
 		}
 
-		const looksDirect = focused_card.identity() === undefined && (		// Focus must be unknown AND
+		const looksDirect = focused_card.identity({ symmetric: true }) === undefined && (		// Focus must be unknown AND
 			inf_possibilities.some(fp => !fp.illegal && game.players[target].thoughts[focus].possible.has(fp) &&	// looks like a possibility
 				fp.connections.every(conn => conn.type === 'known' || (conn.type === 'playable' && conn.reacting !== state.ourPlayerIndex))));
 

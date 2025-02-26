@@ -16,6 +16,7 @@ import { produce } from '../../StateProxy.js';
 /**
  * @typedef {import('../h-group.js').default} Game
  * @typedef {import('../../basics/State.js').State} State
+ * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../types.js').Clue} Clue
  * @typedef {import('../../types.js').SaveClue} SaveClue
@@ -86,7 +87,7 @@ function find_play_over_save(game, target, all_play_clues, save_clue) {
 			return false;
 
 		// Check if the play clue touches all the cards that need to be saved
-		if (save_clue !== undefined) {
+		if (save_clue !== undefined && clue.target === target) {
 			if (save_clue.cm?.length > 0) {
 				if (save_clue.cm.every(o => cardTouched(state.deck[o], state.variant, clue)))
 					return true;
@@ -199,7 +200,7 @@ export function find_gd(game, target) {
  * @param {number} [finessed_order]
  */
 export function find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities, finessed_order = -1) {
-	const { common, me, state, tableID } = game;
+	const { common, state, tableID } = game;
 	const prioritySize = Object.keys(PRIORITY).length;
 	const urgent_actions = /** @type {PerformAction[][]} */ (Array.from({ length: prioritySize * 2 + 1 }, _ => []));
 	const urgent_clues = /** @type {Clue[][]} */ (Array.from({ length: prioritySize * 2 + 1 }, _ => []));
@@ -265,171 +266,19 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 		// [other, save only] [other, play/trash fix over save] [all other fixes]
 		// (give play if < 2 clues) [early saves]
 		if (save !== undefined) {
-			const hand = state.hands[target];
-
 			if (save_clues[target] === undefined)
 				logger.highlight('yellow', 'treating play clue', logClue(save), 'as save!');
 
-			// They already have a playable or trash (i.e. early save)
-			if (common.thinksLoaded(state, target, {assume: false})) {
-				urgent_clues[prioritySize * 2].push(save);
-				continue;
+			const result = save_urgency(game, save, nextPriority, potential_cluers, early_expected_clue, play_clues, fix_clues, stall_clues, playable_priorities, finessed_card);
+
+			if (result !== undefined) {
+				const { urgency, clue, action } = result;
+
+				if (clue !== undefined)
+					urgent_clues[urgency].push(clue);
+				else
+					urgent_actions[urgency].push(action);
 			}
-
-			// Try to see if they have a playable card that connects directly through our hand
-			// Although this is only optimal for the next player, it is often a "good enough" action for future players.
-			const unlock_order = find_unlock(game, target);
-			if (unlock_order !== undefined && (!finessed_card || finessed_card.order == unlock_order)) {
-				urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: unlock_order });
-				continue;
-			}
-
-			if (!state.inEndgame() && game.level >= LEVEL.SPECIAL_DISCARDS) {
-				const gd_target = find_gd(game, target);
-
-				if (gd_target !== undefined) {
-					urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.DISCARD, target: gd_target });
-					continue;
-				}
-			}
-
-			const list = state.clueTouched(hand, save);
-
-			// Give them a fix clue with known trash if possible (TODO: Re-examine if this should only be urgent fixes)
-			const trash_fixes = fix_clues[target].filter(clue => clue.trash);
-			if (state.clue_tokens > 0 && !finessed_card && trash_fixes.length > 0) {
-				const trash_fix = Utils.maxOn(trash_fixes, ({ result }) => find_clue_value(result));
-				urgent_clues[PRIORITY.TRASH_FIX + nextPriority].push(trash_fix);
-				continue;
-			}
-
-			// Check if Order Chop Move is available - they must be 1s, and this cannot be a playable save
-			if (!finessed_card && game.level >= LEVEL.BASIC_CM && !save.playable) {
-				const ordered_1s = order_1s(state, common, playable_priorities[4]);
-				const distance = (target + state.numPlayers - state.ourPlayerIndex) % state.numPlayers;
-
-				// If we want to OCM the next player (distance 1), we need at least two unknown 1s.
-				if (ordered_1s.length > distance) {
-					// Temporarily chop move the chop card
-					const chop = me.chop(hand);
-					const old_chop_value = cardValue(state, me, state.deck[chop]);
-					const new_chop_value = me.withThoughts(chop, (draft) => { draft.chop_moved = true; }).chopValue(state, target);
-
-					// Make sure the old chop is equal or better than the new one
-					if (old_chop_value >= new_chop_value) {
-						urgent_actions[PRIORITY.ONLY_SAVE + nextPriority].push({
-							tableID,
-							type: ACTION.PLAY,
-							target: ordered_1s[distance]
-						});
-						continue;
-					}
-				}
-			}
-
-			const scream_available = !finessed_card &&
-				!state.inEndgame() &&
-				game.level >= LEVEL.LAST_RESORTS &&
-				common.thinksPlayables(state, state.ourPlayerIndex).length > 0 &&
-				target === state.nextPlayerIndex(state.ourPlayerIndex) &&
-				!me.thinksLoaded(state, target);
-
-			if (scream_available) {
-				const trash = me.thinksTrash(state, state.ourPlayerIndex).filter(o =>
-					state.deck[o].clued && me.thoughts[o].inferred.every(i => state.isBasicTrash(i)));
-
-				if (trash.length > 0) {
-					urgent_actions[PRIORITY.PLAY_OVER_SAVE + nextPriority].push({ tableID, type: ACTION.DISCARD, target: trash[0] });
-					continue;
-				}
-
-				// As a last resort, only scream discard if it is playable or critical.
-				const save_card = state.deck[game.players[target].chop(state.hands[target])];
-				const chop = common.chop(state.ourHand);
-
-				const screamed_player = game.players[target].withThoughts(save_card.order, (draft) => { draft.chop_moved = true; });
-
-				const valid_scream = (state.isCritical(save_card) || me.hypo_stacks[save_card.suitIndex] + 1 === save_card.rank) &&
-					(state.clue_tokens === 0 || (state.clue_tokens === 1 && screamed_player.thinksLocked(state, target))) &&
-					chop !== undefined;
-
-				if (valid_scream) {
-					urgent_actions[PRIORITY.PLAY_OVER_SAVE + nextPriority].push({ tableID, type: ACTION.DISCARD, target: chop });
-					continue;
-				}
-			}
-
-			if (state.clue_tokens === 0)
-				continue;
-
-			// Check if TCCM is available
-			if (game.level >= LEVEL.TEMPO_CLUES && state.numPlayers > 2 && (!save.playable || state.clue_tokens === 1)) {
-				const tccm = Utils.maxOn(stall_clues[1].filter(clue => clue.target === target), clue => {
-					const { playables, focus } = clue.result;
-					const { tempo, valuable } = valuable_tempo_clue(game, clue, playables, focus);
-					const chop = common.chop(state.hands[target]);
-
-					return (tempo && !valuable && clue.result.safe && !state.isPlayable(state.deck[chop])) ? find_clue_value(clue.result) : -1;
-				}, 0);
-
-				if (tccm) {
-					urgent_clues[PRIORITY.PLAY_OVER_SAVE + nextPriority].push(tccm);
-					continue;
-				}
-			}
-
-			const action = /** @type {const} */ ({ type: 'clue', giver: state.ourPlayerIndex, list, clue: save, target });
-			const hypo_game = game.simulate_clue(action);
-			const { common: hypo_common, me: hypo_me, state: hypo_state } = hypo_game;
-
-			const all_play_clues = play_clues.flat();
-
-			// Save clue reveals a play
-			if (hypo_common.thinksPlayables(hypo_state, target).length > 0)
-				all_play_clues.push(Object.assign({}, save, { result: get_result(game, hypo_game, action )}));
-
-			// Try to give a play clue involving them
-			const play_over_save = find_play_over_save(game, target, all_play_clues, save);
-			if (play_over_save.length > 0) {
-				for (const clue of play_over_save)
-					urgent_clues[PRIORITY.PLAY_OVER_SAVE + nextPriority].push(clue);
-
-				continue;
-			}
-
-			const bad_save = hypo_me.thinksLocked(hypo_state, target) ?
-				me.chopValue(state, target) < cardValue(state, hypo_me, state.deck[hypo_common.lockedDiscard(hypo_state, hypo_state.hands[target])]) :
-				me.chopValue(state, target) < hypo_me.chopValue(hypo_state, target, { afterClue: true });
-
-			// Do not save at 1 clue if new chop or sacrifice discard are better than old chop
-			if (state.clue_tokens === 1 && save.cm.length === 0 && bad_save)
-				continue;
-
-			const hypo_chop = state.deck[hypo_me.chop(hypo_state.hands[target], { afterClue: true })];
-
-			const only_save = save.result.interp !== CLUE_INTERP.CM_TRASH &&
-				!hypo_me.thinksLocked(hypo_state, target) &&
-				(hypo_chop !== undefined && (state.isCritical(hypo_chop) || save2(state, hypo_me, hypo_chop))) &&
-				potential_cluers > 0 && state.clue_tokens > 1;
-
-			if (only_save) {
-				const urgent = !early_expected_clue && potential_cluers === 1;
-
-				if (urgent)
-					logger.info('setting up double save!', logCard(state.deck[hypo_me.chop(hypo_state.hands[target], { afterClue: true })]));
-
-				urgent_clues[PRIORITY.ONLY_SAVE + (urgent ? 0 : prioritySize)].push(save);
-				continue;
-			}
-
-			// Do not save if unsafe
-			if (!save.safe) {
-				logger.info('save clue', logClue(save), 'is unsafe, not giving');
-				continue;
-			}
-
-			// No alternative, have to give save
-			urgent_clues[PRIORITY.ONLY_SAVE + nextPriority].push(save);
 		}
 
 		// They require a fix clue
@@ -462,4 +311,165 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 	}
 
 	return urgent_actions;
+}
+
+/**
+ * @param {Game} game
+ * @param {SaveClue} save
+ * @param {number} nextPriority
+ * @param {number} potential_cluers
+ * @param {boolean} early_expected_clue
+ * @param {Clue[][]} play_clues
+ * @param {FixClue[][]} fix_clues
+ * @param {Clue[][]} stall_clues
+ * @param {number[][]} playable_priorities
+ * @param {ActualCard | undefined} finessed_card
+ * @returns {{ urgency: number, action?: PerformAction, clue?: Clue }}
+ */
+function save_urgency(game, save, nextPriority, potential_cluers, early_expected_clue, play_clues, fix_clues, stall_clues, playable_priorities, finessed_card) {
+	const { common, me, state, tableID } = game;
+	const { target } = save;
+	const hand = state.hands[target];
+	const prioritySize = Object.keys(PRIORITY).length;
+
+	// They already have a playable or trash (i.e. early save)
+	if (common.thinksLoaded(state, target, {assume: false}))
+		return { urgency: prioritySize * 2, clue: save };
+
+	// Try to see if they have a playable card that connects directly through our hand
+	// Although this is only optimal for the next player, it is often a "good enough" action for future players.
+	const unlock_order = find_unlock(game, target);
+	if (unlock_order !== undefined && (!finessed_card || finessed_card.order == unlock_order))
+		return { urgency: PRIORITY.UNLOCK + nextPriority, action: { tableID, type: ACTION.PLAY, target: unlock_order }};
+
+	if (!state.inEndgame() && game.level >= LEVEL.SPECIAL_DISCARDS) {
+		const gd_target = find_gd(game, target);
+
+		if (gd_target !== undefined)
+			return { urgency: PRIORITY.UNLOCK + nextPriority, action: { tableID, type: ACTION.DISCARD, target: gd_target } };
+	}
+
+	const list = state.clueTouched(hand, save);
+
+	// Give them a fix clue with known trash if possible (TODO: Re-examine if this should only be urgent fixes)
+	const trash_fixes = fix_clues[target].filter(clue => clue.trash);
+	if (state.clue_tokens > 0 && !finessed_card && trash_fixes.length > 0) {
+		const trash_fix = Utils.maxOn(trash_fixes, ({ result }) => find_clue_value(result));
+		return { urgency: PRIORITY.TRASH_FIX + nextPriority, clue: trash_fix };
+	}
+
+	// Check if Order Chop Move is available - they must be 1s, and this cannot be a playable save
+	if (!finessed_card && game.level >= LEVEL.BASIC_CM && !save.playable) {
+		const ordered_1s = order_1s(state, common, playable_priorities[4]);
+		const distance = (target + state.numPlayers - state.ourPlayerIndex) % state.numPlayers;
+
+		// If we want to OCM the next player (distance 1), we need at least two unknown 1s.
+		if (ordered_1s.length > distance) {
+			// Temporarily chop move the chop card
+			const chop = me.chop(hand);
+			const old_chop_value = cardValue(state, me, state.deck[chop]);
+			const new_chop_value = me.withThoughts(chop, (draft) => { draft.chop_moved = true; }).chopValue(state, target);
+
+			// Make sure the old chop is equal or better than the new one
+			if (old_chop_value >= new_chop_value) {
+				return {
+					urgency: PRIORITY.ONLY_SAVE + nextPriority,
+					action: { tableID, type: ACTION.PLAY, target: ordered_1s[distance] }
+				};
+			}
+		}
+	}
+
+	const scream_available = !finessed_card &&
+		!state.inEndgame() &&
+		game.level >= LEVEL.LAST_RESORTS &&
+		common.thinksPlayables(state, state.ourPlayerIndex).length > 0 &&
+		target === state.nextPlayerIndex(state.ourPlayerIndex) &&
+		!me.thinksLoaded(state, target);
+
+	if (scream_available) {
+		const trash = me.thinksTrash(state, state.ourPlayerIndex).filter(o =>
+			state.deck[o].clued && me.thoughts[o].inferred.every(i => state.isBasicTrash(i)));
+
+		if (trash.length > 0)
+			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { tableID, type: ACTION.DISCARD, target: trash[0] } };
+
+		// As a last resort, only scream discard if it is playable or critical.
+		const save_card = state.deck[game.players[target].chop(state.hands[target])];
+		const chop = common.chop(state.ourHand);
+
+		const screamed_player = game.players[target].withThoughts(save_card.order, (draft) => { draft.chop_moved = true; });
+
+		const valid_scream = (state.isCritical(save_card) || me.hypo_stacks[save_card.suitIndex] + 1 === save_card.rank) &&
+			(state.clue_tokens === 0 || (state.clue_tokens === 1 && screamed_player.thinksLocked(state, target))) &&
+			chop !== undefined;
+
+		if (valid_scream)
+			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { tableID, type: ACTION.DISCARD, target: chop } };
+	}
+
+	if (state.clue_tokens === 0)
+		return;
+
+	// Check if TCCM is available
+	if (game.level >= LEVEL.TEMPO_CLUES && state.numPlayers > 2 && (!save.playable || state.clue_tokens === 1)) {
+		const tccm = Utils.maxOn(stall_clues[1].filter(clue => clue.target === target), clue => {
+			const { playables, focus } = clue.result;
+			const { tempo, valuable } = valuable_tempo_clue(game, clue, playables, focus);
+			const chop = common.chop(state.hands[target]);
+
+			return (tempo && !valuable && clue.result.safe && !state.isPlayable(state.deck[chop])) ? find_clue_value(clue.result) : -1;
+		}, 0);
+
+		if (tccm)
+			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, clue: tccm };
+	}
+
+	const action = /** @type {const} */ ({ type: 'clue', giver: state.ourPlayerIndex, list, clue: save, target });
+	const hypo_game = game.simulate_clue(action);
+	const { common: hypo_common, me: hypo_me, state: hypo_state } = hypo_game;
+
+	const all_play_clues = play_clues.flat();
+
+	// Save clue reveals a play
+	if (hypo_common.thinksPlayables(hypo_state, target).length > 0)
+		all_play_clues.push(Object.assign({}, save, { result: get_result(game, hypo_game, action )}));
+
+	// Try to give a play clue involving them
+	const play_over_save = find_play_over_save(game, target, all_play_clues, save);
+	if (play_over_save.length > 0)
+		return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, clue: Utils.maxOn(play_over_save, (clue) => find_clue_value(clue.result)) };
+
+	const bad_save = hypo_me.thinksLocked(hypo_state, target) ?
+		me.chopValue(state, target) < cardValue(state, hypo_me, state.deck[hypo_common.lockedDiscard(hypo_state, hypo_state.hands[target])]) :
+		me.chopValue(state, target) < hypo_me.chopValue(hypo_state, target, { afterClue: true });
+
+	// Do not save at 1 clue if new chop or sacrifice discard are better than old chop
+	if (state.clue_tokens === 1 && save.cm.length === 0 && bad_save)
+		return;
+
+	const hypo_chop = state.deck[hypo_me.chop(hypo_state.hands[target], { afterClue: true })];
+
+	const only_save = save.result.interp !== CLUE_INTERP.CM_TRASH &&
+		!hypo_me.thinksLocked(hypo_state, target) &&
+		(hypo_chop !== undefined && (state.isCritical(hypo_chop) || save2(state, hypo_me, hypo_chop))) &&
+		potential_cluers > 0 && state.clue_tokens > 1;
+
+	if (only_save) {
+		const urgent = !early_expected_clue && potential_cluers === 1;
+
+		if (urgent)
+			logger.info('setting up double save!', logCard(state.deck[hypo_me.chop(hypo_state.hands[target], { afterClue: true })]));
+
+		return { urgency: PRIORITY.ONLY_SAVE + (urgent ? 0 : prioritySize), clue: save };
+	}
+
+	// Do not save if unsafe
+	if (!save.safe) {
+		logger.info('save clue', logClue(save), 'is unsafe, not giving');
+		return;
+	}
+
+	// No alternative, have to give save
+	return { urgency: PRIORITY.ONLY_SAVE + nextPriority, clue: save };
 }
