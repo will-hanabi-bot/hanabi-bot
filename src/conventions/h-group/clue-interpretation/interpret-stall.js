@@ -64,7 +64,7 @@ function isStall(game, action, focusResult, severity, prev_game) {
 		return;
 
 	// 5 Stall given
-	if (severity >= 1 && clue.type === CLUE.RANK && clue.value === 5 && focused_card.newly_clued && !focus_thoughts.chop_moved && !chop) {
+	if (severity >= 1 && severity != 5 && clue.type === CLUE.RANK && clue.value === 5 && focused_card.newly_clued && !focus_thoughts.chop_moved && !chop) {
 		logger.info('5 stall!');
 		return CLUE_INTERP.STALL_5;
 	}
@@ -83,12 +83,12 @@ function isStall(game, action, focusResult, severity, prev_game) {
 		}
 
 		// Fill-in given
-		if (new_touched.length === 0 && elim > 0) {
+		if (new_touched.length === 0 && elim > 0 && severity != 5) {
 			logger.info('fill in stall!');
 			return CLUE_INTERP.STALL_FILLIN;
 		}
 
-		if (severity >= 3) {
+		if (severity >= 3 && severity != 5) {
 			// Locked hand stall given, not locked
 			if (chop && !common.thinksLocked(state, target)) {
 				logger.info('locked hand stall!');
