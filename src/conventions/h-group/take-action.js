@@ -711,7 +711,13 @@ export async function take_action(game) {
 		if (valid_play_clue && find_clue_value({ ...best_play_clue.result, avoidable_dupe: 0 }) >= minimum_clue_value(state))
 			return Utils.clueToAction(best_play_clue, tableID);
 		if (state.pace == 0) {
-			const endgameStall = stall_clues[1][0] ?? stall_clues[5].find(clue => (state.deck[clue.result.focus].rank <= common.hypo_stacks[state.deck[clue.result.focus].suitIndex] || state.isBasicTrash(state.deck[clue.result.focus]))) ?? random clue
+			for (let i = 1; i < state.numPlayers; i++) {
+				const playerIndex = (state.ourPlayerIndex + i) % state.numPlayers;
+				const valid_clues = state.allValidClues(playerIndex);
+
+				logger.warn('unable to find any good clue, giving any valid clue!');
+			}
+			const endgameStall = stall_clues[1][0] ?? stall_clues[5].find(clue => (state.deck[clue.result.focus].rank <= common.hypo_stacks[state.deck[clue.result.focus].suitIndex] || state.isBasicTrash(state.deck[clue.result.focus]))) ?? valid_clues[0]
 			return Utils.clueToAction(endgameStall);
 		}
 		const validStall = best_stall_clue(stall_clues, common_severity, valid_play_clue ? best_play_clue : undefined);
