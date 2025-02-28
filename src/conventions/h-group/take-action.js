@@ -6,7 +6,6 @@ import { find_clues } from './clue-finder/clue-finder.js';
 import { find_sarcastics } from '../shared/sarcastic.js';
 import { inBetween, minimum_clue_value, older_queued_finesse, stall_severity, unknown_1 } from './hanabi-logic.js';
 import { cardValue, isTrash } from '../../basics/hanabi-util.js';
-import { void_players } from '../shared/endgame-helper.js';
 
 import logger from '../../tools/logger.js';
 import { logCard, logClue, logHand, logPerformAction } from '../../tools/log.js';
@@ -701,6 +700,8 @@ export async function take_action(game) {
 		return urgent_actions[actionPrioritySize * 2][0];
 
 	// Stalling situations
+	const void_players = Utils.range(0, state.numPlayers).filter(i =>
+		state.hands[i].every(o => ((c = state.deck[o]) => c.identity() === undefined || state.isBasicTrash(c))()));
 	if (state.clue_tokens > 0 && ((actual_severity > 0 && common_severity > 0) || state.pace == void_players.length)) {
 		best_play_clue ??= saved_clue;
 
