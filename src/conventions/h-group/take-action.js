@@ -701,7 +701,7 @@ export async function take_action(game) {
 
 	// Stalling situations
 	const void_players = Utils.range(0, state.numPlayers).filter(i =>
-		state.hands[i].every(o => ((c = state.deck[o]) => c.identity() === undefined || state.isBasicTrash(c))()));
+		i !== state.ourPlayerIndex && state.hands[i].every(o => ((c = state.deck[o]) => c.identity() === undefined || state.isBasicTrash(c))()));
 	if (state.clue_tokens > 0 && ((actual_severity > 0 && common_severity > 0) || state.pace == void_players.length)) {
 		best_play_clue ??= saved_clue;
 
