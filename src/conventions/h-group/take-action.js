@@ -119,7 +119,7 @@ function best_stall_clue(stall_clues, severity, best_play_clue) {
 	if (stall_clues[1].length > 0)
 		return Utils.maxOn(stall_clues[1], clue => find_clue_value(clue.result));
 
-	const precedence4_levels = [null, null, [2], [2, 3], [2, 3, 4], [3]];
+	const precedence4_levels = [null, null, [2], [2, 3], [2, 3, 4], []];
 	const allowed_stalls = precedence4_levels[severity].reduce((acc, i) => acc.concat(stall_clues[i]), []);
 
 	const precedence4_stall = Utils.maxOn(allowed_stalls, clue => find_clue_value(clue.result));
