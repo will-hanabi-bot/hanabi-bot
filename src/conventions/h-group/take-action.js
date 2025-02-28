@@ -6,6 +6,7 @@ import { find_clues } from './clue-finder/clue-finder.js';
 import { find_sarcastics } from '../shared/sarcastic.js';
 import { inBetween, minimum_clue_value, older_queued_finesse, stall_severity, unknown_1 } from './hanabi-logic.js';
 import { cardValue, isTrash } from '../../basics/hanabi-util.js';
+import { void_players } from '../shared/endgame-helper.js';
 
 import logger from '../../tools/logger.js';
 import { logCard, logClue, logHand, logPerformAction } from '../../tools/log.js';
@@ -700,7 +701,7 @@ export async function take_action(game) {
 		return urgent_actions[actionPrioritySize * 2][0];
 
 	// Stalling situations
-	if (state.clue_tokens > 0 && ((actual_severity > 0 && common_severity > 0) || state.pace <= 0)) {
+	if (state.clue_tokens > 0 && ((actual_severity > 0 && common_severity > 0) || state.pace == void_players.length)) {
 		best_play_clue ??= saved_clue;
 
 		const valid_play_clue = best_play_clue && (state.turn_count === 1 ||
@@ -710,7 +711,7 @@ export async function take_action(game) {
 		// Give play clue even if possibly duping or someone else has a better chop
 		if (valid_play_clue && find_clue_value({ ...best_play_clue.result, avoidable_dupe: 0 }) >= minimum_clue_value(state))
 			return Utils.clueToAction(best_play_clue, tableID);
-		if (state.pace == 0) {
+		if (state.pace == void_players.length) {
 			const playerIndex = (state.ourPlayerIndex + 1) % state.numPlayers;
 			const valid_clues = state.allValidClues(playerIndex);
 			const endgameStall = stall_clues[1][0] ?? stall_clues[5].find(clue => (state.deck[clue.result.focus].rank <= common.hypo_stacks[state.deck[clue.result.focus].suitIndex] || state.isBasicTrash(state.deck[clue.result.focus]))) ?? valid_clues[0];
