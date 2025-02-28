@@ -717,7 +717,7 @@ export async function take_action(game) {
 			if (endgameStall !== undefined) {
 				return Utils.clueToAction(endgameStall);
 			} else {
-				take_discard(game, state.ourPlayerIndex, trash_orders);
+				return take_discard(game, state.ourPlayerIndex, trash_orders);
 			}
 		}
 		const validStall = best_stall_clue(stall_clues, common_severity, valid_play_clue ? best_play_clue : undefined);
