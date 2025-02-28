@@ -96,8 +96,6 @@ export function stall_severity(state, player, giver, new_player = player) {
 	// Use player after clue, because the clue may have given information about the dd card.
 	if (state.screamed_at || (state.dda !== undefined && chop !== undefined && new_player.thoughts[chop].possible.has(state.dda)))
 		return 2;
-	if (state.pace <= 0)
-		return 5;
 	if (state.early_game)
 		return 1;
 
