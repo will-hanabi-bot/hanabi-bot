@@ -714,7 +714,11 @@ export async function take_action(game) {
 			const playerIndex = (state.ourPlayerIndex + 1) % state.numPlayers;
 			const valid_clues = state.allValidClues(playerIndex);
 			const endgameStall = stall_clues[1][0] ?? stall_clues[5].find(clue => (state.deck[clue.result.focus].rank <= common.hypo_stacks[state.deck[clue.result.focus].suitIndex] || state.isBasicTrash(state.deck[clue.result.focus]))) ?? valid_clues[0];
-			return Utils.clueToAction(endgameStall);
+			if (endgameStall !== undefined) {
+				return Utils.clueToAction(endgameStall);
+			} else {
+				take_discard(game, state.ourPlayerIndex, trash_orders);
+			}
 		}
 		const validStall = best_stall_clue(stall_clues, common_severity, valid_play_clue ? best_play_clue : undefined);
 
