@@ -255,6 +255,36 @@ describe('stalling', () => {
 		const { stall_clues } = find_clues(game);
 		assert.ok(!stall_clues[1].some(clue => clue.target === PLAYER.BOB && clue.type === CLUE.COLOUR && clue.value === COLOUR.RED));
 	});
+
+	it('gives stalls at pace 0, even if endgame unsolved', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'y4', 'g4', 'b4', 'p5']
+		], {
+			level: { min: 9 },
+			play_stacks: [0, 0, 0, 0, 4],
+			clue_tokens: 7,
+			init: (game) => {
+				// 4 score + 19 cards left + 2 players - 25 max = 0 pace
+				game.state.cardsLeft = 19;
+				game.state.early_game = false;
+
+				// Bob's p5 is fully known.
+				preClue(game, game.state.hands[PLAYER.BOB][4], [
+					{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE },
+					{ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.ALICE }
+				]);
+
+				game.common = game.common.update_hypo_stacks(game.state);
+			}
+		});
+
+		const action = await game.take_action();
+
+		// Alice should hard burn on Bob's p5.
+		assert.ok((action.type === ACTION.RANK && action.value === 5) || (action.type === ACTION.COLOUR && action.value === COLOUR.PURPLE),
+			`Expected (5 to Bob) or (purple to Bob), got ${logPerformAction(action)}`);
+	});
 });
 
 describe('anxiety plays', () => {

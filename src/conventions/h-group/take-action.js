@@ -702,6 +702,7 @@ export async function take_action(game) {
 	// Stalling situations
 	const void_players = Utils.range(0, state.numPlayers).filter(i =>
 		i !== state.ourPlayerIndex && state.hands[i].every(o => ((c = state.deck[o]) => c.identity() === undefined || state.isBasicTrash(c))()));
+
 	if (state.clue_tokens > 0 && ((actual_severity > 0 && common_severity > 0) || state.pace == void_players.length)) {
 		best_play_clue ??= saved_clue;
 
@@ -712,15 +713,16 @@ export async function take_action(game) {
 		// Give play clue even if possibly duping or someone else has a better chop
 		if (valid_play_clue && find_clue_value({ ...best_play_clue.result, avoidable_dupe: 0 }) >= minimum_clue_value(state))
 			return Utils.clueToAction(best_play_clue, tableID);
+
 		if (state.pace == void_players.length) {
 			const playerIndex = (state.ourPlayerIndex + 1) % state.numPlayers;
 			const valid_clues = state.allValidClues(playerIndex);
 			const endgameStall = stall_clues[1][0] ?? stall_clues[5].find(clue => (state.deck[clue.result.focus].rank <= common.hypo_stacks[state.deck[clue.result.focus].suitIndex]+1 || state.isBasicTrash(state.deck[clue.result.focus]))) ?? valid_clues[0];
-			if (endgameStall !== undefined) {
-				return Utils.clueToAction(endgameStall);
-			} else {
+
+			if (endgameStall !== undefined)
+				return Utils.clueToAction(endgameStall, tableID);
+			else
 				return take_discard(game, state.ourPlayerIndex, trash_orders);
-			}
 		}
 		const validStall = best_stall_clue(stall_clues, common_severity, valid_play_clue ? best_play_clue : undefined);
 
