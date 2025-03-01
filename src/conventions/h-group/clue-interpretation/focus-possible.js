@@ -56,7 +56,7 @@ export function colour_save(game, identity, action, focus) {
 	}
 
 	// Don't consider loaded save with brown
-	if (/Brown/.test(state.variant.suits[suitIndex]) && common.thinksLoaded(state, target))
+	if (/Brown|Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && common.thinksLoaded(state, target))
 		return false;
 
 	if (state.includesVariant(/Dark Rainbow|Dark Prism/) && /Dark Rainbow|Dark Prism/.test(state.variant.suits[suitIndex])) {
