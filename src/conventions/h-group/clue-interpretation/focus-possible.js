@@ -68,8 +68,11 @@ export function colour_save(game, identity, action, focus) {
 			return false;
 	}
 	
-	// Don't save muddy or cocoa rainbow cards with anything other than red
-	if (state.includesVariant(/Muddy Rainbow|Cocoa Rainbow/) && /Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== 0) {
+	// Don't save muddy or cocoa rainbow cards with anything other than red, unless it is a critical muddy 2, 3, or 4
+	if (state.includesVariant(/Muddy Rainbow/) && /Muddy Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== 0 && !(state.isCritical({ suitIndex, rank }) && [2,3,4].inclues(rank))) {
+		return false;
+	}
+	if (state.includesVariant(/Cocoa Rainbow/) && /Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== 0) {
 		return false;
 	}
 	
