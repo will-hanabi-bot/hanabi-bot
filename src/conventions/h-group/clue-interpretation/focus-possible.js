@@ -38,7 +38,7 @@ export function colour_save(game, identity, action, focus) {
 
 	// Skip 5 possibility if the focused card does not include a brownish variant. (ex. No Variant games or a negative Brown card)
 	// OR if the clue given is not black.
-	if (rank === 5 && state.variant.suits[suitIndex] !== 'Black' && !/Brown/.test(state.variant.suits[suitIndex]))
+	if (rank === 5 && state.variant.suits[suitIndex] !== 'Black' && !/Brown|Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits[suitIndex]))
 		return false;
 
 	// Determine if possible save on k2, k5 with colour
