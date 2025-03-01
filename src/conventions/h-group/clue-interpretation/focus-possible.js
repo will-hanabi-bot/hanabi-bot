@@ -77,7 +77,7 @@ export function colour_save(game, identity, action, focus) {
 	}
 	
 	// Check if identity is critical or a brown 2
-	return state.isCritical({ suitIndex, rank }) || (/Brown/.test(state.variant.suits[suitIndex]) && rank === 2);
+	return state.isCritical({ suitIndex, rank }) || (/Brown|Muddy Rainbow/.test(state.variant.suits[suitIndex]) && rank === 2);
 }
 
 /**
