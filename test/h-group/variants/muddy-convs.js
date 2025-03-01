@@ -1,9 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { ACTION } from '../../../src/constants.js';
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../../test-utils.js';
-import * as ExAsserts from '../../extra-asserts.js';
+import { PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../../test-utils.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
 import logger from '../../../src/tools/logger.js';
@@ -26,7 +24,7 @@ describe('save clue interpretation', () => {
 		assert.ok(['m2', 'm3', 'm4', 'm5'].every(id =>
 			game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has(expandShortCard(id))));
 	});
-  it('does not interpret other colors as saves', () => {
+	it('does not interpret other colors as saves', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['g2', 'b1', 'r2', 'r3', 'g5'],
