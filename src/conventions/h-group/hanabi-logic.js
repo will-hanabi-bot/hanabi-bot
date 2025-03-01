@@ -64,7 +64,15 @@ export function determine_focus(game, hand, player, list, clue) {
 			return { focus: ordered_1s[0], chop: false, positional: false };
 	}
 
-	const sorted_list = list.toSorted((a, b) => b - a);
+	var sorted_list = list.toSorted((a, b) => b - a);
+
+	// 5 stalls in pinkish variants have the focus as the rightmost unclued 5
+	if (clue.type === CLUE.RANK && clue.value === 5 && state.includesVariant(variantRegexes.pinkish)) {
+		if (stall_severity(state, common, state.ourPlayerIndex) > 0) {
+			sorted_list = list.toSorted((a, b) => a - b);
+		}
+	}
+	
 	const focus =
 		sorted_list.find(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// leftmost newly clued
 		sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
