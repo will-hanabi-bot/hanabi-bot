@@ -67,7 +67,12 @@ export function colour_save(game, identity, action, focus) {
 		if (!completed_suit && !saved_crit)
 			return false;
 	}
-
+	
+	// Don't save muddy or cocoa rainbow cards with anything other than red
+	if (state.includesVariant(/Muddy Rainbow|Cocoa Rainbow/) && /Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== 0) {
+		return false;
+	}
+	
 	// Check if identity is critical or a brown 2
 	return state.isCritical({ suitIndex, rank }) || (/Brown/.test(state.variant.suits[suitIndex]) && rank === 2);
 }
