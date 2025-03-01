@@ -67,12 +67,13 @@ export function colour_save(game, identity, action, focus) {
 		if (!completed_suit && !saved_crit)
 			return false;
 	}
-	
+	const is_there_a_dark_color = state.includesVariant(/Black|Dark Brown|Dark Pink/);
 	// Don't save muddy or cocoa rainbow cards with anything other than red, unless it is a critical muddy 2, 3, or 4
-	if (state.includesVariant(/Muddy Rainbow/) && /Muddy Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== 0 && !(state.isCritical({ suitIndex, rank }) && [2,3,4].includes(rank))) {
+	// If there is a dark color, save with that instead of red.
+	if (state.includesVariant(/Muddy Rainbow/) && /Muddy Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== (is_there_a_dark_color ? state.variant.suits.length-2 : 0) && !(state.isCritical({ suitIndex, rank }) && [2,3,4].includes(rank))) {
 		return false;
 	}
-	if (state.includesVariant(/Cocoa Rainbow/) && /Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== 0) {
+	if (state.includesVariant(/Cocoa Rainbow/) && /Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== (is_there_a_dark_color ? state.variant.suits.length-2 : 0)) {
 		return false;
 	}
 	
