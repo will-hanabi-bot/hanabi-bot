@@ -312,7 +312,7 @@ export class Card extends ActualCard {
 		let note;
 		if (this.inferred.length === 0)
 			note = '??';
-		else if (this.inferred.length <= 3)
+		else if (this.inferred.length <= 6)
 			note = this.inferred.map(logCard).join(',');
 		else
 			note = '...';
