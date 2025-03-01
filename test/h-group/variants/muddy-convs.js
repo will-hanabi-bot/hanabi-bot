@@ -46,7 +46,7 @@ describe('save clue interpretation', () => {
 		], {
 			level: { min: 1 },
 			starting: PLAYER.BOB,
-			variant: VARIANTS.MUDDY_RAINBOW
+			variant: VARIANTS.COCOA_RAINBOW
 		});
 
 		takeTurn(game, 'Bob clues green to Alice (slot 5)');
