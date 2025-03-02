@@ -64,8 +64,7 @@ describe('pink promise', () => {
 		takeTurn(game, 'Bob clues 5 to Alice (slots 1,2,3,5)');
 
 		// Slot 3 should be known as a 5.
-		assert.ok(['i1', 'i2', 'i3', 'i4'].every(id =>
-			!game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].inferred.has(expandShortCard(id))));
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r5', 'y5', 'g5', 'b5', 'i5'])
 	});
 
 	it('understands pink trash cms', () => {
