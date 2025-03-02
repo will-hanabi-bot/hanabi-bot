@@ -54,11 +54,13 @@ describe('save clue interpretation', () => {
 		assert.ok(['m2', 'm3', 'm4', 'm5'].every(id =>
 			!game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has(expandShortCard(id))));
 	});
+});
+describe('muddy tempo clues', () => {
 	it('interprets mud clues correctly', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'm3', 'm1', 'm5'],
+			['y1', 'r5', 'm3', 'm1', 'm5'],
 			['g2', 'b1', 'r2', 'r3', 'g5'],
-			['g2', 'b1', 'r2', 'r3', 'g5'],
+			['g2', 'b1', 'r2', 'r3', 'y5'],
 		], {
 			level: { min: 1 },
 			starting: PLAYER.ALICE,
