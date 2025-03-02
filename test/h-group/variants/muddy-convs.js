@@ -67,8 +67,8 @@ describe('muddy tempo clues', () => {
 			variant: VARIANTS.MUDDY_RAINBOW
 		});
 
-		takeTurn(game, 'Bob clues red to Alice');
-		takeTurn(game, 'Cathy clues green to Alice');
+		takeTurn(game, 'Bob clues red to Alice (slots 2,3,4,5)');
+		takeTurn(game, 'Cathy clues green to Alice (slots 3,4,5)');
 
 		assert.ok(['m1'].every(id =>
 			game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].inferred.has(expandShortCard(id))));
