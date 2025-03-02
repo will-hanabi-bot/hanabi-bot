@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import * as ExAsserts from '../../extra-asserts.js';
 
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../../test-utils.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
@@ -64,7 +64,7 @@ describe('pink promise', () => {
 		takeTurn(game, 'Bob clues 5 to Alice (slots 1,2,3,5)');
 
 		// Slot 3 should be known as a 5.
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r5', 'y5', 'g5', 'b5', 'i5'])
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r5', 'y5', 'g5', 'b5', 'i5']);
 	});
 
 	it('understands pink trash cms', () => {
