@@ -21,8 +21,7 @@ describe('save clue interpretation', () => {
 
 		takeTurn(game, 'Bob clues red to Alice (slot 5)');
 
-		assert.ok(['m2', 'm5'].every(id =>
-			game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has(expandShortCard(id))));
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['m2', 'm5']);
 	});
 	it('understands red saves in cocoa rainbow', () => {
 		const game = setup(HGroup, [
@@ -58,7 +57,7 @@ describe('save clue interpretation', () => {
 describe('muddy tempo clues', () => {
 	it('interprets mud clues correctly', () => {
 		const game = setup(HGroup, [
-			['y1', 'r5', 'm3', 'm1', 'm5'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['g2', 'b1', 'r2', 'r3', 'g5'],
 			['g2', 'b1', 'r2', 'r3', 'y5'],
 		], {
@@ -77,7 +76,7 @@ describe('muddy tempo clues', () => {
 	});
 	it('wraps around', () => {
 		const game = setup(HGroup, [
-			['g1', 'g1', 'm1', 'm5', 'y1'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['g2', 'b1', 'r2', 'r3', 'g5'],
 			['g2', 'b1', 'r2', 'r3', 'y5'],
 		], {
@@ -96,9 +95,9 @@ describe('muddy tempo clues', () => {
 	});
 	it('skips over known non-muddy cards', () => {
 		const game = setup(HGroup, [
-			['m3', 'm1', 'b5', 'g1'],
+			['xx', 'xx', 'xx', 'xx'],
 			['b1', 'r2', 'r3', 'g5'],
-			['b1', 'r2', 'r3', 'y5'],
+			['b1', 'g2', 'g3', 'r5'],
 			['b1', 'r2', 'r3', 'y5'],
 		], {
 			level: { min: 1 },
