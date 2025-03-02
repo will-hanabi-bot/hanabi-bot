@@ -1,15 +1,15 @@
-import { strict as assert } from 'node:assert';
+// import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { /* COLOUR, */PLAYER, /*VARIANTS, expandShortCard, */setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { ACTION, CLUE } from '../../src/constants.js';
-import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { team_elim } from '../../src/basics/helper.js';
+// import { ACTION, CLUE } from '../../src/constants.js';
+// import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
+// import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
-import { produce } from '../../src/StateProxy.js';
+// import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
