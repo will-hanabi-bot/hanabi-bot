@@ -10,6 +10,7 @@ export const LEVEL = /** @type {const} */ ({
 	SPECIAL_DISCARDS: 10,
 	BLUFFS: 11,
 	CONTEXT: 12,
+	INTERMEDIATE_BLUFFS: 13,
 });
 
 export const ACTION_PRIORITY = /** @type {const} */ ({
