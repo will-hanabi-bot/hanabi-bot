@@ -56,6 +56,17 @@ export function determine_focus(game, hand, player, list, clue) {
 	if (brown_tempo)
 		return { focus: hand.findLast(o => list.includes(o)), chop: false, positional: true };
 
+	const muddy_tempo = clue.type === CLUE.COLOUR && /Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits) &&
+		list.every(o => state.deck[o].clued)
+
+	if (muddy_tempo) {
+		const reclued_cards = hand.filter(o => list.includes(o));
+		const card_amt = reclued_cards.length;
+		const colors_available_amt = colourableSuits(state.variant).length;
+		const focus_index = (clue.value - colors_available_amt) % card_amt - 1;
+		return { focus: reclued_cards[focus_index < 0 ? focus_index + card_amt : focus_index], chop: false, positional: true };
+	}
+	
 	if (clue.type === CLUE.RANK && clue.value === 1) {
 		const unknown_1s = list.filter(o => unknown_1(state.deck[o], true));
 		const ordered_1s = order_1s(state, common, unknown_1s, { no_filter: true });

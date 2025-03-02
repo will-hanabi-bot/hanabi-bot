@@ -54,4 +54,23 @@ describe('save clue interpretation', () => {
 		assert.ok(['m2', 'm3', 'm4', 'm5'].every(id =>
 			!game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has(expandShortCard(id))));
 	});
+	it('interprets mud clues correctly', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'm3', 'm1', 'm5'],
+			['g2', 'b1', 'r2', 'r3', 'g5'],
+			['g2', 'b1', 'r2', 'r3', 'g5'],
+		], {
+			level: { min: 1 },
+			starting: PLAYER.ALICE,
+			variant: VARIANTS.MUDDY_RAINBOW
+		});
+
+		takeTurn(game, 'Bob clues red to Alice');
+		takeTurn(game, 'Cathy clues green to Alice');
+
+		assert.ok(['m1'].every(id =>
+			game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].inferred.has(expandShortCard(id))));
+		assert.ok(['m2', 'm5'].every(id =>
+			!game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].inferred.has(expandShortCard(id))));
+	});
 });
