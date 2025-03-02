@@ -60,34 +60,13 @@ export function determine_focus(game, hand, player, list, clue) {
 		list.every(o => state.deck[o].clued);
 
 	if (muddy_tempo) {
-		const muddy_suit_index = Math.max(state.variant.suits.indexOf('Muddy Rainbow'), state.variant.suits.indexOf('Cocoa Rainbow'));
-		// please refactor this code, I just did the first thing I figured out that possibly worked
-		const muddy_identity_array = [{
-			suitIndex: muddy_suit_index,
-			rank: 1
-		},
-		{
-			suitIndex: muddy_suit_index,
-			rank: 2
-		},
-		{
-			suitIndex: muddy_suit_index,
-			rank: 3
-		},
-		{
-			suitIndex: muddy_suit_index,
-			rank: 4
-		},
-		{
-			suitIndex: muddy_suit_index,
-			rank: 5
-		}];
-		const possible_muddy_cards = list.filter(o => common.thoughts[o].inferred.intersect(muddy_identity_array).length > 0);
+		const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
+		const possible_muddy_cards = list.filter(o => common.thoughts[o].inferred.some(i => i.suitIndex === muddy_suit_index));
 		const card_amt = possible_muddy_cards.length;
 		if (card_amt >= 0) {
 			const colors_available_amt = colourableSuits(state.variant).length;
-			const focus_index = (clue.value - colors_available_amt) % card_amt;
-			return { focus: list[focus_index < 0 ? focus_index + card_amt : focus_index], chop: false, positional: true };
+			const focus_index = (clue.value - colors_available_amt + card_amt) % card_amt;
+			return { focus: list[focus_index], chop: false, positional: true };
 		}
 		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
 	}
