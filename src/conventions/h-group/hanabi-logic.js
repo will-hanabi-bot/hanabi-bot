@@ -82,7 +82,7 @@ export function determine_focus(game, hand, player, list, clue) {
 		{
 			suitIndex: muddy_suit_index,
 			rank: 5
-		}]
+		}];
 		const possible_muddy_cards = reclued_cards.filter(o => common.thoughts[o].inferred.intersect(muddy_identity_array).length > 0);
 		const card_amt = possible_muddy_cards.length;
 		if (card_amt >= 0) {
@@ -92,7 +92,7 @@ export function determine_focus(game, hand, player, list, clue) {
 		}
 		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
 	}
-	
+
 	if (clue.type === CLUE.RANK && clue.value === 1) {
 		const unknown_1s = list.filter(o => unknown_1(state.deck[o], true));
 		const ordered_1s = order_1s(state, common, unknown_1s, { no_filter: true });
