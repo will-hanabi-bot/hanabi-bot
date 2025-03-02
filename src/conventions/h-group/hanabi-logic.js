@@ -64,9 +64,9 @@ export function determine_focus(game, hand, player, list, clue) {
 		const possible_muddy_cards = list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
 		const card_amt = possible_muddy_cards.length;
 
-		if (card_amt >= 0) {
+		if (card_amt > 0) {
 			const colors_available_amt = colourableSuits(state.variant).length;
-			const focus_index = (clue.value - colors_available_amt + card_amt) % card_amt;
+			const focus_index = (clue.value - colors_available_amt + 2*card_amt) % card_amt;
 			return { focus: list[focus_index], chop: false, positional: true };
 		}
 		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
