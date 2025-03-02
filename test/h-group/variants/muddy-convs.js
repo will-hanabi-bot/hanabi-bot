@@ -63,7 +63,7 @@ describe('muddy tempo clues', () => {
 			['g2', 'b1', 'r2', 'r3', 'y5'],
 		], {
 			level: { min: 1 },
-			starting: PLAYER.ALICE,
+			starting: PLAYER.BOB,
 			variant: VARIANTS.MUDDY_RAINBOW
 		});
 
