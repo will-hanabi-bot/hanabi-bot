@@ -77,7 +77,7 @@ describe('muddy tempo clues', () => {
 	});
 	it('wraps around', () => {
 		const game = setup(HGroup, [
-			['g1', 'g1', 'g1', 'm1', 'm5'],
+			['g1', 'g1', 'm1', 'm5', 'y1'],
 			['g2', 'b1', 'r2', 'r3', 'g5'],
 			['g2', 'b1', 'r2', 'r3', 'y5'],
 		], {
@@ -86,13 +86,13 @@ describe('muddy tempo clues', () => {
 			variant: VARIANTS.MUDDY_RAINBOW
 		});
 
-		takeTurn(game, 'Bob clues red to Alice (slots 4,5)');
-		takeTurn(game, 'Cathy clues yellow to Alice (slots 4,5)');
+		takeTurn(game, 'Bob clues yellow to Alice (slots 3,4,5)');
+		takeTurn(game, 'Cathy clues red to Alice (slots 3,4)');
 
 		assert.ok(['m1'].every(id =>
-			game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].inferred.has(expandShortCard(id))));
+			game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].inferred.has(expandShortCard(id))));
 		assert.ok(['m2', 'm3', 'm4', 'm5'].every(id =>
-			!game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].inferred.has(expandShortCard(id))));
+			!game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].inferred.has(expandShortCard(id))));
 	});
 	it('skips over known non-muddy cards', () => {
 		const game = setup(HGroup, [
