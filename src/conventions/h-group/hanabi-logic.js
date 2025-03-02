@@ -63,7 +63,7 @@ export function determine_focus(game, hand, player, list, clue) {
 		const reclued_cards = hand.filter(o => list.includes(o));
 		const card_amt = reclued_cards.length;
 		const colors_available_amt = colourableSuits(state.variant).length;
-		const focus_index = (clue.value - colors_available_amt) % card_amt - 1;
+		const focus_index = (clue.value - colors_available_amt) % card_amt;
 		return { focus: reclued_cards[focus_index < 0 ? focus_index + card_amt : focus_index], chop: false, positional: true };
 	}
 	
