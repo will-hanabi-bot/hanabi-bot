@@ -23,6 +23,7 @@ describe('save clue interpretation', () => {
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r1', 'm1', 'm2', 'm5']);
 	});
+
 	it('understands red saves in cocoa rainbow', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -37,6 +38,7 @@ describe('save clue interpretation', () => {
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r1', 'm1', 'm2', 'm3', 'm4', 'm5']);
 	});
+
 	it('does not interpret other colors as saves', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -53,6 +55,7 @@ describe('save clue interpretation', () => {
 			!game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has(expandShortCard(id))));
 	});
 });
+
 describe('muddy tempo clues', () => {
 	it('interprets mud clues correctly', () => {
 		const game = setup(HGroup, [
@@ -70,6 +73,7 @@ describe('muddy tempo clues', () => {
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['m1']);
 	});
+
 	it('wraps around', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -86,6 +90,7 @@ describe('muddy tempo clues', () => {
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['m1']);
 	});
+
 	it('skips over known non-muddy cards', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
@@ -101,7 +106,6 @@ describe('muddy tempo clues', () => {
 		takeTurn(game, 'Bob clues 5 to Alice (slot 3)');
 		takeTurn(game, 'Cathy clues green to Alice (slots 1,2,4)');
 		takeTurn(game, 'Donald clues blue to Alice (slots 1,2,3)');
-		
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['m1']);
 	});
