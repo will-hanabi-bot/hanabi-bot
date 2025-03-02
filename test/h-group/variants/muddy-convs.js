@@ -21,7 +21,7 @@ describe('save clue interpretation', () => {
 
 		takeTurn(game, 'Bob clues red to Alice (slot 5)');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['m2', 'm5']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r1', 'm1', 'm2', 'm5']);
 	});
 	it('understands red saves in cocoa rainbow', () => {
 		const game = setup(HGroup, [
