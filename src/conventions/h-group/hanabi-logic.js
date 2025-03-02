@@ -61,7 +61,7 @@ export function determine_focus(game, hand, player, list, clue) {
 
 	if (muddy_tempo) {
 		const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
-		const possible_muddy_cards = list.filter(o => common.thoughts[o].inferred.some(i => i.suitIndex === muddy_suit_index));
+		const possible_muddy_cards = list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
 		const card_amt = possible_muddy_cards.length;
 		if (card_amt >= 0) {
 			const colors_available_amt = colourableSuits(state.variant).length;
