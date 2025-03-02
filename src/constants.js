@@ -1,7 +1,7 @@
 import { find_all_clues as h_find, find_all_discards as h_dc } from './conventions/h-group/take-action.js';
 import { find_all_clues as rs_find, find_all_discards as rs_dc } from './conventions/ref-sieve/take-action.js';
 
-export const MAX_H_LEVEL = 11;
+export const MAX_H_LEVEL = 13;
 export const BOT_VERSION = '1.9.9';
 
 export const ACTION =  /** @type {const} */ ({
