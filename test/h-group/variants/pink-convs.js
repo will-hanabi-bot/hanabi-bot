@@ -48,6 +48,24 @@ describe('pink promise', () => {
 		assert.ok(!play_clues[PLAYER.BOB].some(clue => clue.type === CLUE.RANK && clue.value !== 1));
 	});
 
+	it('pink promises rightmost 5 in a 5 stall', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['i1', 'b1', 'r2', 'r3', 'g5'],
+		], {
+			level: { min: 1 },
+			clue_tokens: 8,
+			starting: PLAYER.BOB,
+			variant: VARIANTS.PINK
+		});
+
+		takeTurn(game, 'Bob clues 5 to Alice (slots 1,2,3)');
+
+		// Slot 3 should be known as a 5.
+		assert.ok(['i1', 'i2', 'i3', 'i4'].every(id =>
+			!game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].inferred.has(expandShortCard(id))));
+	});
+
 	it('understands pink trash cms', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
