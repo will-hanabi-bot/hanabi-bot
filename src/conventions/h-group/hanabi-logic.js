@@ -75,7 +75,7 @@ export function determine_focus(game, hand, player, list, clue) {
 	if (clue.type === CLUE.RANK && clue.value === 5 && state.includesVariant(variantRegexes.pinkish)) {
 		if (stall_severity(state, common, state.ourPlayerIndex) > 0) {
 			focus =
-				sorted_list.findLast(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// rightmost newly clued
+				sorted_list.findLast(o => !player.thoughts[o].known && !state.deck[o].clued && !player.thoughts[o].chop_moved) ??	// rightmost newly clued
 				sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
 				sorted_list[0];															// leftmost reclued
 		}
