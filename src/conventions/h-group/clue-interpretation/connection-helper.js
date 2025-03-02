@@ -60,7 +60,8 @@ export function valid_bluff(game, action, identity, reacting, connected, symmetr
 
 	return game.level >= LEVEL.BLUFFS &&
 		state.nextPlayerIndex(giver) === reacting &&					// must be bluff seat
-		connected.length === 1 &&											// must not be delayed
+		(connected.length === 1 || (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connected.length === 2 &&
+			target.rank === 3)) &&			// must not be delayed
 		(symmetric || (clue.type === CLUE.RANK && clue.value !== nextCard.rank) ||
 			identity.rank === state.base_ids.maxStackRank ||
 			!game.common.thoughts[connected[0]].possible.has(nextCard)) &&	// must disconnect
