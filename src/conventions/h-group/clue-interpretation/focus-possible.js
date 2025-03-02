@@ -38,7 +38,7 @@ export function colour_save(game, identity, action, focus) {
 
 	// Skip 5 possibility if the focused card does not include a brownish variant. (ex. No Variant games or a negative Brown card)
 	// OR if the clue given is not black.
-	if (rank === 5 && state.variant.suits[suitIndex] !== 'Black' && !/Brown|Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits[suitIndex]))
+	if (rank === 5 && state.variant.suits[suitIndex] !== 'Black' && !/Brown|Muddy|Cocoa/.test(state.variant.suits[suitIndex]))
 		return false;
 
 	// Determine if possible save on k2, k5 with colour
@@ -56,7 +56,7 @@ export function colour_save(game, identity, action, focus) {
 	}
 
 	// Don't consider loaded save with brown
-	if (/Brown|Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && common.thinksLoaded(state, target))
+	if (/Brown|Muddy|Cocoa/.test(state.variant.suits[suitIndex]) && common.thinksLoaded(state, target))
 		return false;
 
 	if (state.includesVariant(/Dark Rainbow|Dark Prism/) && /Dark Rainbow|Dark Prism/.test(state.variant.suits[suitIndex])) {
@@ -67,18 +67,19 @@ export function colour_save(game, identity, action, focus) {
 		if (!completed_suit && !saved_crit)
 			return false;
 	}
-	const is_there_a_dark_color = state.includesVariant(/Black|Dark Brown|Dark Pink/);
+	const muddy_save_color = state.includesVariant(/Black|Dark Brown|Dark Pink/) ? state.variant.suits.length-2 : 0;
 	// Don't save muddy or cocoa rainbow cards with anything other than red, unless it is a critical muddy 2, 3, or 4
 	// If there is a dark color, save with that instead of red.
-	if (state.includesVariant(/Muddy Rainbow/) && /Muddy Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== (is_there_a_dark_color ? state.variant.suits.length-2 : 0) && !(state.isCritical({ suitIndex, rank }) && [2,3,4].includes(rank))) {
+	if (state.includesVariant(/Muddy/) && /Muddy/.test(state.variant.suits[suitIndex]) && clue.value !== muddy_save_color &&
+	    !(state.isCritical({ suitIndex, rank }) && [2,3,4].includes(rank))) {
 		return false;
 	}
-	if (state.includesVariant(/Cocoa Rainbow/) && /Cocoa Rainbow/.test(state.variant.suits[suitIndex]) && clue.value !== (is_there_a_dark_color ? state.variant.suits.length-2 : 0)) {
+	if (state.includesVariant(/Cocoa/) && /Cocoa/.test(state.variant.suits[suitIndex]) && clue.value !== muddy_save_color) {
 		return false;
 	}
 	
 	// Check if identity is critical or a brown 2
-	return state.isCritical({ suitIndex, rank }) || (/Brown|Muddy Rainbow/.test(state.variant.suits[suitIndex]) && rank === 2);
+	return state.isCritical({ suitIndex, rank }) || (/Brown|Muddy/.test(state.variant.suits[suitIndex]) && rank === 2);
 }
 
 /**
