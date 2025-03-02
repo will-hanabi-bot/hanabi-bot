@@ -59,7 +59,9 @@ describe('pink promise', () => {
 			variant: VARIANTS.PINK
 		});
 
-		takeTurn(game, 'Bob clues 5 to Alice (slots 1,2,3)');
+		game.common.updateThoughts(game.state.hands[PLAYER.ALICE][4], (draft) => { draft.chop_moved = true; });
+
+		takeTurn(game, 'Bob clues 5 to Alice (slots 1,2,3,5)');
 
 		// Slot 3 should be known as a 5.
 		assert.ok(['i1', 'i2', 'i3', 'i4'].every(id =>
