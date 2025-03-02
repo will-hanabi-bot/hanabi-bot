@@ -57,7 +57,7 @@ export function determine_focus(game, hand, player, list, clue) {
 		return { focus: hand.findLast(o => list.includes(o)), chop: false, positional: true };
 
 	const muddy_tempo = clue.type === CLUE.COLOUR && /Muddy Rainbow|Cocoa Rainbow/.test(state.variant.suits) &&
-		list.every(o => state.deck[o].clued)
+		list.every(o => state.deck[o].clued);
 
 	if (muddy_tempo) {
 		const reclued_cards = hand.filter(o => list.includes(o));
