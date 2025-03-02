@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-
+import * as ExAsserts from '../../extra-asserts.js';
 import { PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../../test-utils.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
