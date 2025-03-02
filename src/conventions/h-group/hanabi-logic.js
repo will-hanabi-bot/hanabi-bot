@@ -80,7 +80,7 @@ export function determine_focus(game, hand, player, list, clue) {
 				sorted_list[0];															// leftmost reclued
 		}
 	}
-	
+
 	if (focus === undefined) {
 		console.log('list', list, 'hand', hand.map(o => state.deck[o]), logClue(/** @type {Clue} */ (clue)));
 		throw new Error('No focus found!');
