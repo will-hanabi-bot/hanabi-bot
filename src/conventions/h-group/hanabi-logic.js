@@ -64,20 +64,23 @@ export function determine_focus(game, hand, player, list, clue) {
 			return { focus: ordered_1s[0], chop: false, positional: false };
 	}
 
-	var sorted_list = list.toSorted((a, b) => b - a);
-
-	// 5 stalls in pinkish variants have the focus as the rightmost unclued 5
-	if (clue.type === CLUE.RANK && clue.value === 5 && state.includesVariant(variantRegexes.pinkish)) {
-		if (stall_severity(state, common, state.ourPlayerIndex) > 0) {
-			sorted_list = list.toSorted((a, b) => a - b);
-		}
-	}
+	const sorted_list = list.toSorted((a, b) => b - a);
 	
-	const focus =
+	let focus =
 		sorted_list.find(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// leftmost newly clued
 		sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
 		sorted_list[0];															// leftmost reclued
 
+	// 5 stalls in pinkish variants have the focus as the rightmost unclued 5
+	if (clue.type === CLUE.RANK && clue.value === 5 && state.includesVariant(variantRegexes.pinkish)) {
+		if (stall_severity(state, common, state.ourPlayerIndex) > 0) {
+			focus =
+				sorted_list.findLast(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// rightmost newly clued
+				sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
+				sorted_list[0];															// leftmost reclued
+		}
+	}
+	
 	if (focus === undefined) {
 		console.log('list', list, 'hand', hand.map(o => state.deck[o]), logClue(/** @type {Clue} */ (clue)));
 		throw new Error('No focus found!');
