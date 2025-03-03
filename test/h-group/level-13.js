@@ -18,7 +18,7 @@ describe('3 bluffs', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['y1', 'y5', 'r5', 'g5', 'p2'],
-			['b3', 'r1', 'g1', 'g2', 'y4']
+			['b2', 'r1', 'g1', 'g2', 'y4']
 		], {
 			level: { min: 13 },
 			starting: PLAYER.ALICE
