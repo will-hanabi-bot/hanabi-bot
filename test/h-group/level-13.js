@@ -34,3 +34,25 @@ describe('3 bluffs', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b2', 'b3']);
 	});
 });
+
+describe('testing to see if the above test is written correctly', () => {
+	it(`writes notes correctly`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p1', 'y5', 'r5', 'g5', 'p2'],
+			['b2', 'r1', 'g1', 'g2', 'y4']
+		], {
+			level: { min: 11 },
+			starting: PLAYER.ALICE
+		});
+		takeTurn(game, 'Alice clues blue to Cathy (slot 1)');
+
+		// Cathy's slot 1 could be b1, b2.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b1', 'b2']);
+
+		takeTurn(game, 'Bob plays y1 (slot 1)');
+
+		// After Bob plays into it, Cathy writes b2 
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b2']);
+	});
+});
