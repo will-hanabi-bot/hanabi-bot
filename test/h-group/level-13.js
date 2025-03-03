@@ -28,7 +28,7 @@ describe('3 bluffs', () => {
 		// Cathy's slot 1 could be b1, b2 or b3.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b1', 'b2', 'b3']);
 
-		takeTurn(game, 'Bob plays y1 (slot 1)');
+		takeTurn(game, 'Bob plays y1 (slot 1)', 'b5');
 
 		// After Bob plays into it, Cathy writes b2, b3 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b2', 'b3']);
@@ -50,7 +50,7 @@ describe('testing to see if the above test is written correctly', () => {
 		// Cathy's slot 1 could be b1, b2.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b1', 'b2']);
 
-		takeTurn(game, 'Bob plays y1 (slot 1)');
+		takeTurn(game, 'Bob plays y1 (slot 1)', 'b5');
 
 		// After Bob plays into it, Cathy writes b2 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b2']);
