@@ -17,7 +17,7 @@ describe('3 bluffs', () => {
 	it(`writes notes on 3 bluffs correctly`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['p1', 'y5', 'r5', 'g5', 'p2'],
+			['y1', 'y5', 'r5', 'g5', 'p2'],
 			['b3', 'r1', 'g1', 'g2', 'y4']
 		], {
 			level: { min: 13 },
@@ -39,7 +39,7 @@ describe('testing to see if the above test is written correctly', () => {
 	it(`writes notes correctly`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['p1', 'y5', 'r5', 'g5', 'p2'],
+			['y1', 'y5', 'r5', 'g5', 'p2'],
 			['b2', 'r1', 'g1', 'g2', 'y4']
 		], {
 			level: { min: 11 },
