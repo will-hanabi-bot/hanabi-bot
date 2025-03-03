@@ -112,12 +112,15 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall) {
 		const connect_options = { knownOnly: action.hypothetical ? [state.ourPlayerIndex] : [], bluffed };
 		const connecting = find_connecting(game, action, identity, looksDirect, thinks_stall, already_connected, ignoreOrders, connect_options);
 
-		if (connecting.length === 0 || connecting[0].type === 'terminate')
+		if (connecting.length === 0 || connecting[0].type === 'terminate') {
 			break;
-
+		}
+		
 		const { type, order, layered, bluff } = connecting.at(-1);
 		const card = state.deck[order];
-
+		if (game.level >= 13 && next_rank == 3 && bluff) {
+			focus_possible.push({ suitIndex, rank: next_rank, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
+		}
 		if (type === 'known' && card.newly_clued && common.thoughts[order].possible.length > 1 && focus_thoughts.inferred.has(identity)) {
 			// Trying to use a newly 'known' connecting card, but the focused card could be that
 			// e.g. If 2 reds are clued with only r5 remaining, the focus should not connect to the other card as r6
