@@ -56,12 +56,21 @@ export function determine_focus(game, hand, player, list, clue) {
 	if (brown_tempo)
 		return { focus: hand.findLast(o => list.includes(o)), chop: false, positional: true };
 
+	if (clue.type === CLUE.RANK && clue.value === 1) {
+		const unknown_1s = list.filter(o => unknown_1(state.deck[o], true));
+		const ordered_1s = order_1s(state, common, unknown_1s, { no_filter: true });
+
+		if (ordered_1s.length > 0)
+			return { focus: ordered_1s[0], chop: false, positional: false };
+	}
+
+	const sorted_list = list.toSorted((a, b) => b - a);
 	const muddy_tempo = clue.type === CLUE.COLOUR && state.includesVariant(/Muddy|Cocoa/) &&
-		list.every(o => state.deck[o].clued);
+		sorted_list.every(o => state.deck[o].clued);
 
 	if (muddy_tempo) {
 		const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
-		const possible_muddy_cards = list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
+		const possible_muddy_cards = sorted_list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
 		const card_amt = possible_muddy_cards.length;
 
 		if (card_amt > 0) {
@@ -72,16 +81,6 @@ export function determine_focus(game, hand, player, list, clue) {
 		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
 	}
 
-	if (clue.type === CLUE.RANK && clue.value === 1) {
-		const unknown_1s = list.filter(o => unknown_1(state.deck[o], true));
-		const ordered_1s = order_1s(state, common, unknown_1s, { no_filter: true });
-
-		if (ordered_1s.length > 0)
-			return { focus: ordered_1s[0], chop: false, positional: false };
-	}
-
-	const sorted_list = list.toSorted((a, b) => b - a);
-	
 	let focus =
 		sorted_list.find(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// leftmost newly clued
 		sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
