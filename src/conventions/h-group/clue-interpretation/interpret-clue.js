@@ -631,9 +631,11 @@ export function interpret_clue(game, action) {
 				});
 			}
 
-			// to do: function for actually performing the push
-			common.updateThoughts(order, (draft) => {
-
+			const { possible } = common.thoughts[order_pushed];
+			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)));
+			common.updateThoughts(order_pushed, (draft) => {
+				draft.inferred = new_inferred;
+				draft.info_lock = new_inferred;
 			});
 
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
