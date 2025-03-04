@@ -66,7 +66,7 @@ export function determine_focus(game, hand, player, list, clue) {
 
 	const sorted_list = list.toSorted((a, b) => b - a);
 	const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
-	console.log(muddy_suit_index, state.deck[sorted_list[0]].suitindex);
+	console.log(muddy_suit_index, state.deck[sorted_list[0]].suitIndex);
 	const muddy_tempo = clue.type === CLUE.COLOUR && state.includesVariant(/Muddy|Cocoa/) &&
 		sorted_list.every(o => state.deck[o].clued) && state.deck[sorted_list[0]].suitIndex == muddy_suit_index;
 	
