@@ -932,10 +932,10 @@ function interpret_trash_push(game, action, focus_order) {
 
 		//find first unclued card to the left of oldest trash
 		for (let i = oldest_trash_index - 1; i > 0; i--) {
-		const order = state.hands[target][i];
+			const order = state.hands[target][i];
 
-		if (!state.deck[order].clued)
-			return order;
+			if (!state.deck[order].clued)
+				return order;
 		}
 	}
 }
