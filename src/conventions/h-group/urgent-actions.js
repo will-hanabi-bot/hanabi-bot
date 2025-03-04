@@ -82,10 +82,6 @@ function find_play_over_save(game, target, all_play_clues, save_clue) {
 		if (!clue.result.safe)
 			return false;
 
-		// Locked reduces needed clue value
-		if (find_clue_value(clue.result) < (save_clue === undefined ? 0 : 1))
-			return false;
-
 		// Check if the play clue touches all the cards that need to be saved
 		if (save_clue !== undefined && clue.target === target) {
 			if (save_clue.cm?.length > 0) {
@@ -96,6 +92,9 @@ function find_play_over_save(game, target, all_play_clues, save_clue) {
 				return true;
 			}
 		}
+		// Locked reduces needed clue value
+		if (find_clue_value(clue.result) < (save_clue === undefined ? 0 : 1))
+			return false;
 
 		const { playables } = clue.result;
 		const target_cards = playables.filter(({ playerIndex }) => playerIndex === target).map(p => p.card);
