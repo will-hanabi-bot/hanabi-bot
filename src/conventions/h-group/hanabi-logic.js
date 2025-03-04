@@ -65,11 +65,11 @@ export function determine_focus(game, hand, player, list, clue) {
 	}
 
 	const sorted_list = list.toSorted((a, b) => b - a);
+	const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
 	const muddy_tempo = clue.type === CLUE.COLOUR && state.includesVariant(/Muddy|Cocoa/) &&
-		sorted_list.every(o => state.deck[o].clued);
-
+		sorted_list.every(o => state.deck[o].clued) && state.deck[sorted_list[0]].suitIndex == muddy_suit_index;
+	
 	if (muddy_tempo) {
-		const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
 		const possible_muddy_cards = sorted_list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
 		const card_amt = possible_muddy_cards.length;
 
