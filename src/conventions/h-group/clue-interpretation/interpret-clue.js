@@ -632,7 +632,7 @@ export function interpret_clue(game, action) {
 			}
 
 			const { possible } = common.thoughts[order_pushed];
-			const focus_possible = find_focus_possible(game, action, order_pushed, thinks_stall);
+			const focus_possible = find_focus_possible(game, action, {order_pushed, false, false}, thinks_stall);
 			const new_inferred = possible.intersect(focus_possible.filter(p => !p.illegal && !p.save));
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
