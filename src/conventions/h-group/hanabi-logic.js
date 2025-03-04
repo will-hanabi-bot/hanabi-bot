@@ -67,7 +67,7 @@ export function determine_focus(game, hand, player, list, clue) {
 	const sorted_list = list.toSorted((a, b) => b - a);
 	const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
 	const muddy_tempo = clue.type === CLUE.COLOUR && state.includesVariant(/Muddy|Cocoa/) &&
-		sorted_list.every(o => state.deck[o].clued) && common.thoughts[sorted_list[0]].possible.every(i => i.suitIndex === muddy_suit_index);
+		sorted_list.every(o => state.deck[o].clued) && common.thoughts[sorted_list[0]].possible.some(i => i.suitIndex === muddy_suit_index);
 	// Mud clues should only work if the leftmost card is muddy. Otherwise it should be a normal tempo clue.
 
 	if (muddy_tempo) {
