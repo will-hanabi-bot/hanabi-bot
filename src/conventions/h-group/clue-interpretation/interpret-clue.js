@@ -613,7 +613,8 @@ export function interpret_clue(game, action) {
 
 	// check for trash push at level "99"
 	if (game.level === LEVEL.TRASH_PUSH) {
-		if (interpret_trash_push(game, action, focus) > -1) {
+		const order_pushed = interpret_trash_push(game, action, focus);
+		if (order_pushed > -1) {
 			logger.info('trash push!');
 			// mark all cards as trash
 			for (const order of list) {
@@ -631,6 +632,9 @@ export function interpret_clue(game, action) {
 			}
 
 			// to do: function for actually performing the push
+			common.updateThoughts(order, (draft) => {
+
+			});
 
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
 			team_elim(game);
