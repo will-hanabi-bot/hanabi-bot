@@ -670,8 +670,13 @@ export async function take_action(game) {
 			// Go through rest of actions in order of priority (except early save)
 			if (i !== actionPrioritySize * 2 && urgent_actions[i].length > 0) {
 				// should still give play clues over save clues in stalling situations if both would bad touch (see issue #1253)
-				if (best_clue_value > find_clue_value(urgent_actions[i][0].result))
-					return Utils.clueToAction(best_play_clue, tableID);
+				const all_clues = play_clues.flat().concat(save_clues.filter(clue => clue !== undefined && clue.safe));
+				for (const clue of all_clues) {
+					if (Utils.clueToAction(clue, tableID) == urgent_actions[i][0]) {
+						// this line of code makes it give a play clue if it's better than a bad urgent action
+						return Utils.clueToAction(best_play_clue, tableID);
+					}
+				}
 				return urgent_actions[i][0];
 			}
 		}
