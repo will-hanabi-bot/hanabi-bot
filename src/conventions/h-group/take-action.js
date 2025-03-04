@@ -672,7 +672,7 @@ export async function take_action(game) {
 				// should still give play clues over save clues in stalling situations if both would bad touch (see issue #1253)
 				const all_clues = play_clues.flat().concat(save_clues.filter(clue => clue !== undefined && clue.safe));
 				for (const clue of all_clues) {
-					if (Utils.clueToAction(clue, tableID) == urgent_actions[i][0]) {
+					if (Utils.clueToAction(clue, tableID) == urgent_actions[i][0] && Utils.clueToAction(clue, tableID).target == urgent_actions[i][0].target) {
 						// this line of code makes it give a play clue if it's better than a bad urgent action
 						return Utils.clueToAction(best_play_clue, tableID);
 					}
