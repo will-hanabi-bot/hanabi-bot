@@ -92,7 +92,7 @@ describe('muddy tempo clues', () => {
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['g2']);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['m1', 'm2', 'm3', 'm4', 'm5']);
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['m1', 'm2', 'm3', 'm4', 'm5']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['m1', 'm2', 'm5']);
 	});
 
 	it('wraps around', () => {
