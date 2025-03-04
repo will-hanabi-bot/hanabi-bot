@@ -611,6 +611,33 @@ export function interpret_clue(game, action) {
 		return game;
 	}
 
+	// check for trash push at level "99"
+	if (game.level === LEVEL.TRASH_PUSH) {
+		if (interpret_trash_push(game, action, focus) > -1) {
+			logger.info('trash push!');
+			// mark all cards as trash
+			for (const order of list) {
+				if (!state.deck[order].newly_clued)
+					continue;
+
+				const { possible } = common.thoughts[order];
+				const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+
+				common.updateThoughts(order, (draft) => {
+					draft.inferred = new_inferred;
+					draft.info_lock = new_inferred;
+					draft.trash = true;
+				});
+			}
+
+			// to do: function for actually performing the push
+
+			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
+			team_elim(game);
+			return game;
+		}
+	}
+
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
 
@@ -863,4 +890,52 @@ export function interpret_clue(game, action) {
 	}
 	team_elim(game);
 	return game;
+}
+
+// This function will return the order of the trash pushed card, or -1 if it's not a trash push.
+function interpret_trash_push(game, action, focus_order) {
+	const { common, state } = game;
+	const { clue, list, target } = action;
+	const focused_card = state.deck[focus_order];
+	const focus_thoughts = common.thoughts[focus_order];
+
+	if (!focused_card.newly_clued)
+		return -1;
+
+	let mod_common = common;
+
+	// Unclue all newly clued cards so that we can search for trash correctly
+	for (const order of list) {
+		if (state.deck[order].newly_clued) {
+			mod_common = mod_common.withThoughts(order, (draft) => {
+				draft.newly_clued = false;
+				draft.clued = false;
+			}, false);
+		}
+	}
+
+	if (clue.type === CLUE.RANK) {
+		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
+
+		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true })))
+			return -1;
+	}
+	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
+		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }))) {
+		return -1;
+	}
+	// at this point, we know all cards are trash. If it's not a trash chop move, it's a trash push.
+	if (interpret_tcm(game, action, focus_order).length === 0) {
+		const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
+
+		logger.info(`oldest trash card is ${logCard(state.deck[state.hands[target][oldest_trash_index]])}`);
+
+		//find first unclued card to the left of oldest trash
+		for (let i = oldest_trash_index - 1; i > 0; i--) {
+		const order = state.hands[target][i];
+
+		if (!state.deck[order].clued)
+			return order;
+		}
+	}
 }
