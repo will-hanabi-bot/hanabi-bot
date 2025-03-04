@@ -1,0 +1,51 @@
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
+
+import { ACTION, CLUE } from '../../src/constants.js';
+import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
+import * as ExAsserts from '../extra-asserts.js';
+import HGroup from '../../src/conventions/h-group.js';
+import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
+import { early_game_clue } from '../../src/conventions/h-group/urgent-actions.js';
+import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
+
+import logger from '../../src/tools/logger.js';
+import { logPerformAction } from '../../src/tools/log.js';
+import { produce } from '../../src/StateProxy.js';
+
+logger.setLevel(logger.LEVELS.ERROR);
+
+describe('trash push', () => {
+	it('interprets trash pushes', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g2', 'r4', 'r2', 'r5', 'b1']
+		], {
+			level: { min: 99 },
+			play_stacks: [4, 4, 4, 4, 4]
+		});
+
+		takeTurn(game, 'Alice clues 1 to Bob (slot 5)');
+
+		// Slot 4 should be a 5
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r5', 'y5', 'g5', 'b5', 'p5']);
+	});
+  
+  it('allows trash pushes through clued cards', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g2', 'r4', 'p2', 'g4', 'b1'],
+			['b2', 'y4', 'y2', 'r5', 'y1']
+		], {
+			level: { min: 99 },
+			play_stacks: [3, 4, 4, 4, 4],
+      starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues red to Bob (slot 2)');
+		takeTurn(game, 'Alice clues 1 to Cathy (slot 5)');
+
+		// Slot 4 should be a 5
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r5', 'y5', 'g5', 'b5', 'p5']);
+	});
+});
