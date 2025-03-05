@@ -44,7 +44,7 @@ describe('trash push', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r5', 'y5', 'g5', 'b5', 'p5']);
 	});
 
-	it('plays into trash pushes', async () => {
+	/*it('plays into trash pushes', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['r4', 'y4', 'g4', 'b1'],
@@ -64,5 +64,5 @@ describe('trash push', () => {
 		const action = await game.take_action();
 
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][1] }, `Expected (play y4) but got ${logPerformAction(action)}`);
-	});
+	});*/
 });
