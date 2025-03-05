@@ -634,7 +634,7 @@ export function interpret_clue(game, action) {
 			const { possible } = common.thoughts[order_pushed];
 			// const result = {focus: order_pushed, chop: false, positional: false};
 			// const focus_possible = find_focus_possible(game, action, result, thinks_stall);
-			 const new_inferred = possible.filter(i => state.isPlayable(i))/*intersect( focus_possible.filter(p => !p.illegal && !p.save))*/;
+			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)))/*intersect( focus_possible.filter(p => !p.illegal && !p.save))*/;
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
