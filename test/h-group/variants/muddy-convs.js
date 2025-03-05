@@ -77,12 +77,12 @@ describe('muddy tempo clues', () => {
 	it('still interprets mud clues correctly', () => { // https://hanab.live/shared-replay/1426433#57
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['y3', 'r4', 'y2', 'r1', 'r1'],
-			['g1', 'g2', 'g3', 'g4', 'm3'],
+			['b2', 'm4', 'r1', 'r4', 'y3'],
+			['p1', 'g3', 'g2', 'g4', 'm3'],
 		], {
 			level: { min: 1 },
 			starting: PLAYER.BOB,
-			variant: VARIANTS.MUDDY_RAINBOW
+			variant: { id: 290, name: "Cocoa Rainbow (6 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple", "Cocoa Rainbow"] }
 		});
 
 		takeTurn(game, 'Bob clues red to Alice (slots 4,5)');
