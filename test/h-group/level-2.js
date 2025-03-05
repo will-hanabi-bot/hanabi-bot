@@ -115,6 +115,50 @@ describe('reverse finesse', () => {
 		// Alice's slot 1 should be i4, not [i4,i5].
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['i4']);
 	});
+
+	it(`self-prompts if impossible to be direct`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'g1', 'y2', 'g4', 'b4'],
+			['r1', 'g3', 'b3', 'r5', 'm3']
+		], {
+			level: { min: 2 },
+			play_stacks: [0, 0, 1, 0, 0],
+			starting: PLAYER.CATHY,
+			variant: VARIANTS.RAINBOW
+		});
+
+		takeTurn(game, 'Cathy clues 2 to Alice (slots 1,2)');
+		takeTurn(game, 'Alice plays g2 (slot 1)');
+		takeTurn(game, 'Bob clues red to Alice (slots 2,5)');		// slot 5 is !2, so this is either r1, m1 or r3
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r1', 'r3', 'm1']);
+
+		takeTurn(game, 'Cathy plays r1', 'b1');
+
+		// Alice knows she has r3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r3']);
+	});
+
+	it(`recognizes known finesses`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'r4', 'r4', 'g4', 'g4'],
+			['y4', 'y4', 'b4', 'b4', 'r3']
+		], {
+			level: { min: 2 },
+			starting: PLAYER.CATHY,
+			discarded: ['r1', 'r1']
+		});
+
+		takeTurn(game, 'Cathy clues red to Alice (slot 1)');
+
+		// Bob's r1 is definitely finessed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].uncertain, false);
+
+		// Alice knows that her card is r2.
+		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][0]], ['r2']);
+	});
 });
 
 describe('self-finesse', () => {

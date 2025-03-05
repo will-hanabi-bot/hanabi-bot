@@ -387,6 +387,27 @@ describe('anxiety plays', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 	});
 
+	it('forces the next player into anxiety by playing an unrelated card', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r5', 'y5', 'b5', 'g5'],
+			['b3', 'g4', 'b4', 'b2'],
+			['y4', 'y4', 'r4', 'r3']
+		], {
+			level: { min: 9 },
+			play_stacks: [4, 0, 0, 0, 0],
+			clue_tokens: 2,
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 5 to Bob');
+		takeTurn(game, 'Donald clues blue to Alice (slot 1)');
+
+		// Alice should play slot 1 as b1.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
+	});
+
 	/*it('gives an anxiety clue to the next player', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],

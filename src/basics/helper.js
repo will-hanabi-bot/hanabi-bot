@@ -166,7 +166,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 		const card = newCommon.thoughts[order];
 
 		// No new eliminations
-		if (card.possible.length === common.thoughts[order].possible.length)
+		if (card.possible.length === oldThoughts[order].possible.length)
 			return false;
 
 		if (newCommon.thoughts[order].identity() === undefined || card.clues.filter(clue => clue.type === card.clues.at(-1).type && clue.value === card.clues.at(-1).value ).length > 1)

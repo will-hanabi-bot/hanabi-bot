@@ -301,15 +301,18 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 					if (card.uncertain || giver === state.ourPlayerIndex || card.rewinded)
 						return false;
 
-					if (reacting === state.ourPlayerIndex)
+					if (reacting === state.ourPlayerIndex) {
 						// We are uncertain if the card isn't known and there's some other card in our hand that allows for a swap
-						return type !== 'known' && identities.some(i => state.ourHand.some(o => o !== order && me.thoughts[o].possible.has(i)));
+						return type !== 'known' && identities.some(i => state.ourHand.some(o => o !== order && me.thoughts[o].possible.has(i))) &&
+							// The card also needs to be playable in some other suit
+							card.possible.some(i => i.suitIndex !== identities[0].suitIndex && i.rank <= common.hypo_stacks[i.suitIndex] + 1);
+					}
 
 					// We are uncertain if the connection is a finesse that could be ambiguous
 					const uncertain_conn = (type === 'finesse' && all_poss.length > 1) ||
 						(type === 'prompt' && me.thoughts[focus].possible.some(p => p.suitIndex !== identities[0].suitIndex));
 
-					return uncertain_conn && (!(identities.every(i => state.isCritical(i)) && focused_card.matches(inference)) ||
+					return uncertain_conn && !((identities.every(i => state.isCritical(i)) && focused_card.matches(inference)) ||
 						// Colour finesses are guaranteed if the focus cannot be a finessed identity
 						(clue.type === CLUE.COLOUR && identities.every(i => !me.thoughts[focused_card.order].possible.has(i))));
 				})();
