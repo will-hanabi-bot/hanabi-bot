@@ -74,19 +74,19 @@ describe('muddy tempo clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['m1']);
 	});
 
-	it('still interprets mud clues correctly', () => { // https://hanab.live/shared-replay/1426433#57
+	it('tempos the correct card in cocoa rainbow', () => { // https://hanab.live/shared-replay/1426433#57
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['b2', 'm4', 'r1', 'r4', 'y3'],
-			['p1', 'g3', 'g2', 'g4', 'm3'],
+			['r1', 'g3', 'g2', 'g4', 'm3'],
 		], {
 			level: { min: 1 },
 			starting: PLAYER.BOB,
-			variant: { id: 290, name: "Cocoa Rainbow (6 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple", "Cocoa Rainbow"] }
+			variant: VARIANTS.COCOA_RAINBOW
 		});
 
 		takeTurn(game, 'Bob clues red to Alice (slots 4,5)');
-		takeTurn(game, 'Cathy clues green to Alice (slots 4,5)');
+		takeTurn(game, 'Cathy clues yellow to Alice (slots 4,5)');
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['m1']);
 	});
