@@ -1,17 +1,17 @@
-import { strict as assert } from 'node:assert';
+//import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { ACTION, CLUE } from '../../src/constants.js';
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
+import { ACTION/*, CLUE*/ } from '../../src/constants.js';
+import { /*COLOUR, */PLAYER, /*VARIANTS, expandShortCard, preClue, */setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { early_game_clue } from '../../src/conventions/h-group/urgent-actions.js';
-import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
+//import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
+//import { early_game_clue } from '../../src/conventions/h-group/urgent-actions.js';
+//import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
-import { produce } from '../../src/StateProxy.js';
+//import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -30,7 +30,7 @@ describe('trash push', () => {
 		// Slot 4 should be a 5
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r5', 'y5', 'g5', 'b5', 'p5']);
 	});
-  
+
 	it('allows trash pushes through clued cards', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
