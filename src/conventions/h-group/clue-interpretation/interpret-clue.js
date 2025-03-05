@@ -612,7 +612,7 @@ export function interpret_clue(game, action) {
 	}
 
 	// check for trash push at level "99"
-	if (game.level === LEVEL.TRASH_PUSH) {
+	if (game.level >= LEVEL.TRASH_PUSH) {
 		const order_pushed = interpret_trash_push(game, action, focus);
 		if (order_pushed > -1) {
 			logger.info('trash push!');
@@ -639,6 +639,8 @@ export function interpret_clue(game, action) {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
 			});
+			console.log(order_pushed, new_inferred, focus_possible.filter(p => !p.illegal && !p.save));
+			
 
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
 			team_elim(game);
