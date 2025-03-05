@@ -356,6 +356,5 @@ function assignSettings(data, priv) {
 	else if (settings.convention === 'RefSieve') {
 		reply('Note that this bot plays with loaded rank play clues that are right-referential rather than direct (as in the doc).');
 	}
-	reply(`This bot is on Experimental version 2.0.0. Please do not use unless you are testing trash pushes.`);
 	reply(`Currently playing with ${settingsString()} conventions.`);
 }
