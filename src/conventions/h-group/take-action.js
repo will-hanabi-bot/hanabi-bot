@@ -679,8 +679,8 @@ export async function take_action(game) {
 
 	// Either there are no clue tokens or the best play clue doesn't meet MCVP
 
-	// Perform a positional discard/misplay at <= 1 clue
-	if (game.level >= LEVEL.ENDGAME) {
+	// Perform a positional discard/misplay at <= 1 clue but not at 0 pace
+	if (game.level >= LEVEL.ENDGAME && state.pace > 0) {
 		const positional = find_positional_discard(game, state.ourPlayerIndex, discardable);
 
 		if (positional !== undefined) {
