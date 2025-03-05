@@ -668,9 +668,8 @@ export async function take_action(game) {
 			}
 
 			// Go through rest of actions in order of priority (except early save)
-			if (i !== actionPrioritySize * 2 && urgent_actions[i].length > 0) {
+			if (i !== actionPrioritySize * 2 && urgent_actions[i].length > 0)
 				return urgent_actions[i][0];
-			}
 		}
 	}
 
