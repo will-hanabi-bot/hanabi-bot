@@ -189,6 +189,24 @@ describe('stalling', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 2 });
 	});
 
+	it('gives bad touch play clues over bad touch saves to the same player', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g2', 'b1', 'r2', 'r3', 'g1'],
+			['y3', 'b3', 'm1', 'm4', 'm3']
+		], {
+			level: { min: 9 },
+			play_stacks: [1, 5, 5, 5, 2],
+			clue_tokens: 8,
+			variant: VARIANTS.MUDDY_RAINBOW,
+		});
+
+		const action = await game.take_action();
+
+		// Alice should give green to Cathy instead of red
+		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN }, `Expected (green to Cathy) but got ${logPerformAction(action)}`);
+	});
+
 	it('gives a 5 stall on the 5 closest to chop', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
