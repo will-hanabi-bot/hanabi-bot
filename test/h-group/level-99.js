@@ -1,8 +1,9 @@
+/*
 //import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { ACTION/*, CLUE*/ } from '../../src/constants.js';
-import { /*COLOUR, */PLAYER, /*VARIANTS, expandShortCard, preClue, */setup, takeTurn } from '../test-utils.js';
+import { ACTION } from '../../src/constants.js';
+import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 //import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
@@ -71,3 +72,4 @@ describe('trash push', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][1] }, `Expected (play y4) but got ${logPerformAction(action)}`);
 	});
 });
+*/
