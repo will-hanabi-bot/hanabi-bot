@@ -1,18 +1,12 @@
-/*
-//import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-//import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
-//import { early_game_clue } from '../../src/conventions/h-group/urgent-actions.js';
-//import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
-//import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -72,4 +66,3 @@ describe('trash push', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][1] }, `Expected (play y4) but got ${logPerformAction(action)}`);
 	});
 });
-*/
