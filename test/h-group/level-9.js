@@ -197,14 +197,14 @@ describe('stalling', () => {
 		], {
 			level: { min: 9 },
 			play_stacks: [1, 5, 5, 5, 2],
-			clue_tokens: 8,
-			variant: VARIANTS.MUDDY_RAINBOW,
+			variant: VARIANTS.MUDDY_RAINBOW
 		});
 
 		const action = await game.take_action();
 
 		// Alice should give green to Cathy instead of red
-		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN }, `Expected (green to Cathy) but got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN },
+			`Expected (green to Cathy) but got ${logPerformAction(action)}`);
 	});
 
 	it('gives a 5 stall on the 5 closest to chop', async () => {
@@ -440,25 +440,28 @@ describe('double discard avoidance', async () => {
 	it(`understands a clue from a player on double discard avoidance may be a stall`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['y5', 'y5', 'b4', 'g4'],
+			['y5', 'g5', 'b4', 'g4'],
 			['b1', 'g4', 'b4', 'b2'],
 			['y4', 'y4', 'r4', 'r3']
 		], {
 			level: { min: 9 },
 			play_stacks: [2, 2, 2, 2, 2],
+			clue_tokens: 6,
 			starting: PLAYER.DONALD
 		});
-		const { state } = game;
-		takeTurn(game, 'Donald discards r3', 'p4'); // Ends early game
+
+		takeTurn(game, 'Donald discards r3', 'p4');
 
 		// A discard of a useful card means Alice is in a DDA situation.
-		ExAsserts.objHasProperties(game.state.dda, {suitIndex: COLOUR.RED, rank: 3});
+		ExAsserts.objHasProperties(game.state.dda, { suitIndex: COLOUR.RED, rank: 3 });
+
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 5 });
+
 		takeTurn(game, 'Alice clues 5 to Bob');
 
 		// No one should be finessed by this as Alice was simply stalling.
-		const finessed = state.hands.filter(hand => hand.some(o => game.common.thoughts[o].finessed));
+		const finessed = game.state.hands.filter(hand => hand.some(o => game.common.thoughts[o].finessed));
 		assert.equal(finessed.length, 0);
 		assert.equal(game.common.waiting_connections.length, 0);
 	});
@@ -471,19 +474,18 @@ describe('double discard avoidance', async () => {
 			['y4', 'b4', 'r4', 'r3']
 		], {
 			level: { min: 9 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.DONALD,
 			clue_tokens: 0
 		});
-		const { state } = game;
+
 		takeTurn(game, 'Donald discards r3', 'p3'); // Ends early game
 
 		// A discard of a useful card means common knowledge is Alice is in a DDA situation.
-		ExAsserts.objHasProperties(game.state.dda, {suitIndex: COLOUR.RED, rank: 3});
+		ExAsserts.objHasProperties(game.state.dda, { suitIndex: COLOUR.RED, rank: 3 });
 
 		// However, since Alice can see the other r3, Alice can discard.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: state.hands[PLAYER.ALICE][3] });
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
 	});
 
 	it(`will give a fill-in clue on double discard avoidance`, async () => {
@@ -494,16 +496,15 @@ describe('double discard avoidance', async () => {
 			['y4', 'b4', 'r4', 'r3']
 		], {
 			level: { min: 9 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.BOB
 		});
-		const { state } = game;
+
 		takeTurn(game, 'Bob clues 5 to Cathy');
 		takeTurn(game, 'Cathy clues 2 to Bob');
 		takeTurn(game, 'Donald discards r3', 'p3'); // Ends early game
 
 		// A discard of a useful card means common knowledge is Alice is in a DDA situation.
-		ExAsserts.objHasProperties(game.state.dda, {suitIndex: COLOUR.RED, rank: 3});
+		ExAsserts.objHasProperties(game.state.dda, { suitIndex: COLOUR.RED, rank: 3 });
 
 		// Alice gives a fill-in clue as the highest priority stall clue.
 		const action = await game.take_action();
@@ -511,7 +512,7 @@ describe('double discard avoidance', async () => {
 		takeTurn(game, 'Alice clues green to Bob');
 
 		// No one should be finessed by this as Alice was simply stalling.
-		const finessed = state.hands.filter(hand => hand.some(o => game.common.thoughts[o].finessed));
+		const finessed = game.state.hands.filter(hand => hand.some(o => game.common.thoughts[o].finessed));
 		assert.equal(finessed.length, 0);
 		assert.equal(game.common.waiting_connections.length, 0);
 	});
@@ -524,18 +525,17 @@ describe('double discard avoidance', async () => {
 			['b1', 'b4', 'r4', 'r3']
 		], {
 			level: { min: 9 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.BOB,
-			clue_tokens: 0,
+			clue_tokens: 2,
 			discarded: ['b1']
 		});
-		const { state } = game;
+
 		takeTurn(game, 'Bob clues 1 to Cathy');
 		takeTurn(game, 'Cathy clues blue to Donald');
-		takeTurn(game, 'Donald discards b1', 'p3'); // Ends early game
+		takeTurn(game, 'Donald discards b1', 'p3');
 
 		// The sarcastic discard doesn't trigger dda.
-		assert.equal(state.dda, undefined);
+		assert.equal(game.state.dda, undefined);
 	});
 
 });

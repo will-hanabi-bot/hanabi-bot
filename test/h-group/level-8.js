@@ -321,7 +321,7 @@ describe('mistake discards', () => {
 	it('does not bomb from a useless positional discard', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['r4', 'r4', 'g4', 'b5', 'b4'],
+			['r4', 'y4', 'g4', 'b5', 'b4'],
 			['g2', 'b3', 'r5', 'p2', 'p3']
 		], {
 			level: { min: 8 },

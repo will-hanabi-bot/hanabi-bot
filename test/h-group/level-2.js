@@ -854,7 +854,7 @@ describe('early game', () => {
 	it('will not 5 stall on a trash 5', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['g4', 'r5', 'r4', 'y4', 'b3'],
+			['g4', 'r5', 'b4', 'y4', 'b3'],
 		], {
 			level: { min: 2 },
 			discarded: ['r4', 'r4'],

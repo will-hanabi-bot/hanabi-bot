@@ -61,7 +61,7 @@ describe('other cases', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['p1', 'p4', 'r3', 'y5'],
-			['y5', 'r4', 'r4', 'r2'],
+			['r5', 'r4', 'r4', 'r2'],
 			['r1', 'b2', 'g3', 'b1']
 		], {
 			level: { min: 1 },
@@ -80,7 +80,7 @@ describe('other cases', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r2', 'p4', 'r3', 'y5', 'r1'],
-			['y5', 'g4', 'r3', 'b4', 'g5']
+			['p5', 'g4', 'r3', 'b4', 'g5']
 		], {
 			level: { min: 1 },
 			play_stacks: [1, 0, 2, 2, 0],

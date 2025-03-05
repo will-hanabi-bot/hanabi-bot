@@ -18,6 +18,7 @@ describe('clandestine finesses', () => {
 			['g1', 'r1', 'b2', 'y3', 'p3']
 		], {
 			level: { min: 5 },
+			clue_tokens: 7,
 			starting: PLAYER.BOB
 		});
 
@@ -46,6 +47,7 @@ describe('clandestine finesses', () => {
 			['g1', 'r1', 'b2', 'y3', 'p3']
 		], {
 			level: { min: 5 },
+			clue_tokens: 7,
 			starting: PLAYER.BOB
 		});
 

@@ -108,7 +108,10 @@ describe('ambiguous clues', () => {
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['p4', 'r4', 'g4', 'r5', 'b4'],
 			['r2', 'b3', 'r1', 'y3', 'p3']
-		], { level: { min: 5 } });
+		], {
+			level: { min: 5 },
+			clue_tokens: 7
+		});
 
 		takeTurn(game, 'Alice clues 1 to Cathy');
 		takeTurn(game, 'Bob clues red to Alice (slot 3)');
@@ -503,16 +506,18 @@ describe('guide principle', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b1', 'p2', 'g4', 'g3'],
-			['y5', 'p3', 'b5', 'r4'],
+			['y4', 'y5', 'p3', 'b5'],
 			['b4', 'y2', 'p4', 'r4']
 		], {
 			level: { min: 5 },
-			starting: PLAYER.CATHY
+			clue_tokens: 7,
+			starting: PLAYER.DONALD,
+			init: (game) => {
+				// TODO: The 5 save should still be urgent without ending the early game in case Cathy has nothing else to do.
+				game.state.early_game = false;
+			}
 		});
 
-		// End early game.
-		// TODO: The 5 save should still be urgent without ending the early game in case Cathy has nothing else to do.
-		takeTurn(game, 'Cathy discards r4', 'y4');
 		takeTurn(game, 'Donald clues purple to Cathy'); // finesses p1 (Alice), b1 (Bob), p2 (Bob)
 
 		// Bob may think playing gives Cathy a play, but Alice can see that it doesn't,
@@ -593,11 +598,12 @@ describe('guide principle', () => {
 			['y3', 'r1', 'r3', 'g4']
 		], {
 			level: { min: 5 },
-			starting: PLAYER.DONALD
+			starting: PLAYER.EMILY,
+			init: (game) => {
+				game.state.early_game = false;
+			}
 		});
 
-		// End early game.
-		takeTurn(game, 'Donald discards r4', 'y4');
 		takeTurn(game, 'Emily clues purple to Donald'); // finesses p1 (Alice), p2 (Bob), p3 (Bob), y1 (Cathy), p4 (Cathy)
 
 		// Alice doesn't need to save Donald's 5, since Cathy will not play on her turn (this action isn't urgent).

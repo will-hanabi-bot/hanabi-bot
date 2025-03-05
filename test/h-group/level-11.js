@@ -24,11 +24,13 @@ describe('bluff clues', () => {
 			play_stacks: [2, 2, 2, 2, 2],
 			starting: PLAYER.BOB
 		});
+
 		takeTurn(game, 'Bob clues red to Alice (slot 2)');
 
 		// Cathy's slot 1 could be any of the playable 3's.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r3', 'y3', 'g3', 'b3', 'p3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+
 		// Alice's slot 2 could be r3 or r4.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'r4']);
 
@@ -46,9 +48,9 @@ describe('bluff clues', () => {
 			['p2', 'b5', 'b1', 'y1']
 		], {
 			level: { min: 11 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.BOB
 		});
+
 		takeTurn(game, 'Bob clues purple to Alice (slot 1)');
 		takeTurn(game, 'Cathy plays p1', 'r2');
 		takeTurn(game, 'Donald plays p2', 'b4');
@@ -64,9 +66,9 @@ describe('bluff clues', () => {
 			['p4', 'r3', 'g1', 'y4', 'y3'],
 		], {
 			level: { min: 11 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues 2 to Bob');
 
 		// Alice should not give a self colour bluff to Bob.
@@ -83,9 +85,9 @@ describe('bluff clues', () => {
 			['p2', 'b5', 'b1', 'y1']
 		], {
 			level: { min: 11 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues 4 to Alice (slot 2)');
 
 		// Alice's slot 1 could be any of the next 1's.
@@ -99,9 +101,9 @@ describe('bluff clues', () => {
 			['p4', 'b1', 'b1', 'b1', 'y3'],
 		], {
 			level: { min: 11 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues blue to Bob');
 
 		// Despite knowing that it can't be b1, the bluff is still recognized.
@@ -123,11 +125,14 @@ describe('bluff clues', () => {
 			starting: PLAYER.BOB,
 			variant: VARIANTS.PINK
 		});
+
 		takeTurn(game, 'Bob clues 3 to Alice (slot 3)');
+
 		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][2]], ['r3']);
 
-		// After the play, Alice still assumes a bluff since the rank does not connect to the play.
 		takeTurn(game, 'Cathy plays i1', 'b5');
+
+		// After the play, Alice still assumes a bluff since the rank does not connect to the play.
 		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][2]], ['r3']);
 	});
 
@@ -140,10 +145,12 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			play_stacks: [2, 2, 2, 2, 2]
 		});
+
 		takeTurn(game, 'Alice clues red to Cathy');
 
 		// Bob's slot 1 could be any of the playable 3's.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, false);
+
 		// Cathy's slot 2 will be known to be r3 by Cathy after Bob doesn't play.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r3', 'r4']);
 
@@ -167,6 +174,7 @@ describe('bluff clues', () => {
 		// Bob's slot 1 could be any of the playable 3's.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+
 		// Cathy's slot 2 could be r3 or r4.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r3', 'r4']);
 
@@ -186,6 +194,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			play_stacks: [1, 0, 0, 0, 0]
 		});
+
 		takeTurn(game, 'Alice clues 2 to Bob');
 		takeTurn(game, 'Bob clues red to Donald');
 
@@ -219,6 +228,7 @@ describe('bluff clues', () => {
 			play_stacks: [2, 2, 2, 2, 2],
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues blue to Bob');
 
 		// Alice's slot 1 is assumed b3 (Bob's Truth Principle)
@@ -246,6 +256,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues 2 to Donald');
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['p1']);
 	});
@@ -259,6 +270,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			starting: PLAYER.BOB
 		});
+
 		takeTurn(game, 'Bob clues red to Alice (slot 4)');
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r1', 'r2']);
@@ -289,6 +301,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues red to Alice (slots 3,4)');
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r1']);
 		takeTurn(game, 'Alice plays r1 (slot 4)');
@@ -315,6 +328,7 @@ describe('bluff clues', () => {
 			clue_tokens: 7,
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues red to Donald');
 		takeTurn(game, 'Donald plays r1', 'p5');
 		takeTurn(game, 'Alice discards y4 (slot 4)');
@@ -341,6 +355,7 @@ describe('bluff clues', () => {
 			clue_tokens: 7,
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues red to Donald');
 		takeTurn(game, 'Donald plays r1', 'p5');
 		takeTurn(game, 'Alice discards y4 (slot 4)');
@@ -393,6 +408,7 @@ describe('bluff clues', () => {
 			play_stacks: [1, 1, 0, 0, 1],
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues 1 to Bob');
 		takeTurn(game, 'Alice clues yellow to Bob');
 		takeTurn(game, 'Bob clues red to Cathy');
@@ -417,6 +433,7 @@ describe('bluff clues', () => {
 			play_stacks: [1, 2, 1, 0, 0],
 			starting: PLAYER.BOB
 		});
+
 		takeTurn(game, 'Bob clues 3 to Alice (slot 2)');
 
 		// Alice's slot 2 could be any of the playable 3's
@@ -441,6 +458,7 @@ describe('bluff clues', () => {
 			starting: PLAYER.DONALD,
 			variant: VARIANTS.WHITE
 		});
+
 		takeTurn(game, 'Donald clues blue to Bob');
 
 		// Alice's slot 1 should is not assumed
@@ -461,6 +479,7 @@ describe('bluff clues', () => {
 			play_stacks: [0, 1, 0, 0, 1],
 			starting: PLAYER.BOB
 		});
+
 		takeTurn(game, 'Bob clues yellow to Cathy');
 		takeTurn(game, 'Cathy clues blue to Bob');
 
@@ -480,7 +499,7 @@ describe('bluff clues', () => {
 	it(`doesn't bluff a card that isn't immediately playable`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['y1', 'b5', 'r1', 'r1'],
+			['y1', 'b5', 'y1', 'r1'],
 			['y4', 'p1', 'g3', 'g4'],
 			['y3', 'g1', 'g3', 'r1']
 		], {
@@ -488,15 +507,15 @@ describe('bluff clues', () => {
 			play_stacks: [1, 0, 0, 1, 2],
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues 1 to Donald');
 		takeTurn(game, 'Donald plays r1', 'p1');
 
 		const { play_clues } = find_clues(game);
-		const bluff_clues = play_clues[3].filter(clue => {
-			return clue.type == CLUE.RANK && clue.target == 3 && clue.value == 3 ||
-				clue.type == CLUE.COLOUR && clue.target == 3 && clue.value == COLOUR.GREEN;
-		});
-		assert.equal(bluff_clues.length, 0);
+
+		// We should not give 3 or green to Donald.
+		assert.ok(!play_clues[PLAYER.DONALD].some(clue => (clue.type === CLUE.RANK && clue.value === 3) ||
+			(clue.type === CLUE.COLOUR && clue.value === COLOUR.GREEN)));
 	});
 
 	it('assumes a finesse over self bluff when connecting cards exist', () => {
@@ -529,10 +548,9 @@ describe('bluff clues', () => {
 		});
 
 		const { play_clues } = find_clues(game);
-		const bluff_clues = play_clues[2].filter(clue => {
-			return clue.type == CLUE.RANK && clue.target == 2 && clue.value == 3;
-		});
-		assert.equal(bluff_clues.length, 0);
+
+		// We should not give 3 to Cathy.
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 3));
 	});
 
 	it(`doesn't bluff when bluff can't be known by next player to play`, () => {
@@ -545,10 +563,9 @@ describe('bluff clues', () => {
 		});
 
 		const { play_clues } = find_clues(game);
-		const bluff_clues = play_clues[2].filter(clue => {
-			return clue.type == CLUE.RANK && clue.target == 2 && clue.value == 2;
-		});
-		assert.equal(bluff_clues.length, 0);
+
+		// We should not give 2 to Cathy, since y1 will connect.
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 2));
 	});
 
 	it(`doesn't bluff when bluff can't be recognized by all players`, () => {
@@ -561,10 +578,9 @@ describe('bluff clues', () => {
 		});
 
 		const { play_clues } = find_clues(game);
-		const bluff_clues = play_clues[2].filter(clue => {
-			return clue.type == CLUE.RANK && clue.target == 2 && clue.value == 2;
-		});
-		assert.equal(bluff_clues.length, 0);
+
+		// Even though Cathy knows that she can't have y2, we still shouldn't bluff with 2 to Cathy.
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 2));
 	});
 
 	it(`doesn't bluff when bluff can't be known not to connect to focus`, () => {
@@ -577,6 +593,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues purple to Bob');
 		takeTurn(game, 'Donald plays r1 (slot 1)', 'r5');
 
@@ -584,11 +601,9 @@ describe('bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][2]], ['p2']);
 
 		const { play_clues } = find_clues(game);
+
 		// A bluff through the p2 is invalid, because after the r2 plays, Cathy would think she has r3.
-		const bluff_clues = play_clues[2].filter(clue => {
-			return clue.type == CLUE.RANK && clue.target == 2 && clue.value == 3;
-		});
-		assert.equal(bluff_clues.length, 0);
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 3));
 	});
 
 	it(`doesn't bluff on top of unknown queued cards`, () => {
@@ -602,17 +617,17 @@ describe('bluff clues', () => {
 			play_stacks: [1, 0, 0, 0, 0],
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues red to Cathy');
-		// With g1, r2 already queued, we cannot bluff the y1.
+
 		const { play_clues } = find_clues(game);
-		const bluff_clues = play_clues[2].filter(clue => {
-			return clue.type == CLUE.RANK && clue.target == 2 && clue.value == 2 ||
-				clue.type == CLUE.COLOUR && clue.target == 2 && (clue.value == COLOUR.BLUE || clue.value == COLOUR.PURPLE);
-		});
-		assert.equal(bluff_clues.length, 0);
+
+		// With g1, r2 already queued, we cannot bluff the y1 with (2/blue/purple to Cathy).
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => (clue.type == CLUE.RANK && clue.value == 2) ||
+			(clue.type == CLUE.COLOUR && (clue.value == COLOUR.BLUE || clue.value == COLOUR.PURPLE))));
 	});
 
-	it(`doesn't bluff when bluff out a card that it is likely to have clued in hand`, () => {
+	it(`doesn't bluff a card that it's likely to have clued in hand`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['y2', 'b5', 'y1', 'r4'],
@@ -623,14 +638,13 @@ describe('bluff clues', () => {
 			starting: PLAYER.BOB,
 			play_stacks: [0, 0, 2, 2, 2]
 		});
+
 		takeTurn(game, 'Bob clues 2 to Alice (slot 4)'); // r2 or y2
 		takeTurn(game, 'Cathy clues 1 to Donald');
 		takeTurn(game, 'Donald plays y1', 'p1');
+
 		const { play_clues } = find_clues(game);
-		const bluff_clues = play_clues[2].filter(clue => {
-			return clue.type == CLUE.COLOUR && clue.target == 2 && clue.value == COLOUR.BLUE;
-		});
-		assert.equal(bluff_clues.length, 0);
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type == CLUE.COLOUR && clue.value == COLOUR.BLUE));
 	});
 
 	it(`doesn't assume it can give a layered finesse when bluff target is likely a duplicate`, () => {
@@ -644,27 +658,26 @@ describe('bluff clues', () => {
 			starting: PLAYER.BOB,
 			play_stacks: [0, 0, 2, 2, 2]
 		});
+
 		takeTurn(game, 'Bob clues 2 to Alice (slot 4)'); // r2 or y2
 		takeTurn(game, 'Cathy clues 1 to Donald');
 		takeTurn(game, 'Donald plays y1', 'p1');
+
 		const { play_clues } = find_clues(game);
-		const finesse = play_clues[2].filter(clue => {
-			return clue.type == CLUE.COLOUR && clue.target == 2 && clue.value == COLOUR.BLUE;
-		});
-		assert.equal(finesse.length, 0);
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type == CLUE.COLOUR && clue.value == COLOUR.BLUE));
 	});
 
 	it(`understands a bluff on top of known queued plays`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'r2', 'y1', 'y1', 'r4'],
-			['g5', 'b2', 'r3', 'y5', 'y4'],
+			['p5', 'b2', 'r3', 'y5', 'y4'],
 			['g1', 'g2', 'g3', 'g5', 'p4'],
 		], {
 			level: { min: 11 },
-			play_stacks: [0, 0, 0, 0, 0],
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues red to Bob');
 		// Since Bob has known plays a bluff should be possible on blue.
 		takeTurn(game, 'Alice clues blue to Cathy');
@@ -676,7 +689,7 @@ describe('bluff clues', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'r4', 'y1', 'y1', 'y5'],
-			['p4', 'b2', 'r3', 'y5', 'y4'],
+			['p4', 'b2', 'r3', 'b5', 'y4'],
 		], { level: { min: 11 } });
 
 		takeTurn(game, 'Alice clues red to Bob');
@@ -694,7 +707,7 @@ describe('bluff clues', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['y2', 'r2', 'y1', 'y1', 'y5'],
-			['g4', 'b2', 'p3', 'y5', 'y4'],
+			['g4', 'b2', 'p3', 'b5', 'y4'],
 		], {
 			level: { min: 11 },
 			play_stacks: [0, 1, 0, 0, 1]
@@ -721,6 +734,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues 2 to Cathy');    // 2 save
 		takeTurn(game, 'Alice clues 5 to Bob');       // 5 save
 		takeTurn(game, 'Bob clues blue to Donald');   // finesse for b1 on us
@@ -746,6 +760,7 @@ describe('bluff clues', () => {
 			play_stacks: [3, 4, 1, 1, 3],
 			discarded: ['r1', 'y3', 'g3']
 		});
+
 		takeTurn(game, 'Donald clues blue to Bob');
 
 		// We expect Alice is finessed on both slots
@@ -765,6 +780,7 @@ describe('bluff clues', () => {
 			level: { min: 11 },
 			starting: PLAYER.CATHY
 		});
+
 		takeTurn(game, 'Cathy clues 3 to Donald');
 
 		// Alice should be finessed for y1.
@@ -808,6 +824,7 @@ describe('bluff clues', () => {
 			play_stacks: [0, 0, 1, 0, 2],
 			starting: PLAYER.DONALD
 		});
+
 		takeTurn(game, 'Donald clues 1 to Bob');
 		// Since Bob is only queued on 1s, Alice should be able to bluff Bob's p3 using g3.
 		takeTurn(game, 'Alice clues 3 to Donald');
@@ -853,15 +870,15 @@ describe('bluff clues', () => {
 	it(`prefers a bluff clue when more information is given`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['p1', 'y5', 'b4', 'g5', 'p3'],
+			['p1', 'y5', 'b4', 'p5', 'p3'],
 			['b3', 'r2', 'b2', 'b4', 'y4']
 		], {
 			level: { min: 11 },
-			play_stacks: [0, 0, 5, 3, 0],
-			starting: PLAYER.ALICE
+			play_stacks: [0, 0, 5, 3, 0]
 		});
+
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, {target: 2, type: ACTION.COLOUR, value: COLOUR.RED});
+		ExAsserts.objHasProperties(action, { target: PLAYER.CATHY, type: ACTION.COLOUR, value: COLOUR.RED });
 	});
 
 	it(`prefers a bluff clue when more information is given case 2`, async () => {
@@ -872,11 +889,11 @@ describe('bluff clues', () => {
 			['y2', 'p3', 'g3', 'p2']
 		], {
 			level: { min: 11 },
-			play_stacks: [4, 1, 1, 3, 0],
-			starting: PLAYER.ALICE
+			play_stacks: [4, 1, 1, 3, 0]
 		});
+
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, {target: 2, type: ACTION.COLOUR, value: COLOUR.PURPLE});
+		ExAsserts.objHasProperties(action, { target: PLAYER.CATHY, type: ACTION.COLOUR, value: COLOUR.PURPLE });
 	});
 
 	it(`understands a clandestine finesse`, () => {
@@ -905,8 +922,8 @@ describe('bluff clues', () => {
 			['r3', 'p3', 'p1', 'y2'],
 			['b3', 'y2', 'g4', 'r5']
 		], {
-			starting: PLAYER.DONALD,
-			level: { min: 11 }
+			level: { min: 11 },
+			starting: PLAYER.DONALD
 		});
 
 		takeTurn(game, 'Donald clues 2 to Alice (slot 3)');
@@ -1038,8 +1055,7 @@ describe('bluff clues', () => {
 			['r3', 'r4', 'y5', 'p4', 'r2']
 		], {
 			level: { min: 11 },
-			play_stacks: [2, 2, 1, 0, 0],
-			starting: PLAYER.ALICE
+			play_stacks: [2, 2, 1, 0, 0]
 		});
 
 		const { play_clues } = find_clues(game);
@@ -1134,12 +1150,13 @@ describe('guide principle', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b4', 'p2', 'b5', 'b3'],
-			['y1', 'g2', 'b5', 'b2'],
+			['y1', 'g2', 'p5', 'b2'],
 			['g1', 'y5', 'b1', 'g5']
 		], {
 			level: { min: 11 },
 			starting: PLAYER.BOB
 		});
+
 		takeTurn(game, 'Bob clues red to Alice (slot 2)'); // Could be a bluff
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r1', 'r2']);
 
@@ -1151,7 +1168,7 @@ describe('guide principle', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b4', 'p2', 'b5', 'b3'],
-			['y1', 'g2', 'b5', 'b2'],
+			['y1', 'g2', 'p5', 'b2'],
 			['p1', 'y5', 'b1', 'g5']
 		], {
 			level: { min: 11 },

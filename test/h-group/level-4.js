@@ -486,11 +486,11 @@ describe('interpreting chop moves', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['b4', 'b1', 'g1', 'r3', 'r2'],
-			['y4', 'b2', 'y1', 'p3', 'y4']
+			['p4', 'b2', 'y1', 'p3', 'y4']
 		], {
 			level: { min: 4 },
 			play_stacks: [4, 5, 5, 5, 5],
-			clue_tokens: 1,
+			clue_tokens: 2,
 			starting: PLAYER.BOB
 		});
 
