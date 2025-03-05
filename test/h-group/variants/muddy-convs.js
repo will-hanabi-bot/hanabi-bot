@@ -74,6 +74,44 @@ describe('muddy tempo clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['m1']);
 	});
 
+	it('still interprets mud clues correctly', () => { // https://hanab.live/shared-replay/1426433#57
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b2', 'm4', 'r1', 'r4', 'y3'],
+			['p1', 'g3', 'g2', 'g4', 'm3'],
+		], {
+			level: { min: 1 },
+			starting: PLAYER.BOB,
+			variant: { id: 290, name: "Cocoa Rainbow (6 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple", "Cocoa Rainbow"] }
+		});
+
+		takeTurn(game, 'Bob clues red to Alice (slots 4,5)');
+		takeTurn(game, 'Cathy clues green to Alice (slots 4,5)');
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['m1']);
+	});
+
+	it('recognizes normal tempo clues when the leftmost card is not muddy', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['b1', 'r2', 'r3', 'g5'],
+			['b1', 'g2', 'g3', 'r5'],
+			['b1', 'r2', 'r3', 'y5'],
+		], {
+			level: { min: 1 },
+			starting: PLAYER.BOB,
+			variant: VARIANTS.MUDDY_RAINBOW
+		});
+
+		takeTurn(game, 'Bob clues red to Alice (slots 3,4)');
+		takeTurn(game, 'Cathy clues 2 to Alice (slot 2)');
+		takeTurn(game, 'Donald clues green to Alice (slots 2,3,4)');
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['g2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['m1', 'm2', 'm3', 'm4', 'm5']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['m1', 'm2', 'm5']);
+	});
+
 	it('wraps around', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],

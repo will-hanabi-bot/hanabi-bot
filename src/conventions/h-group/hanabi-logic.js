@@ -56,22 +56,6 @@ export function determine_focus(game, hand, player, list, clue) {
 	if (brown_tempo)
 		return { focus: hand.findLast(o => list.includes(o)), chop: false, positional: true };
 
-	const muddy_tempo = clue.type === CLUE.COLOUR && state.includesVariant(/Muddy|Cocoa/) &&
-		list.every(o => state.deck[o].clued);
-
-	if (muddy_tempo) {
-		const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
-		const possible_muddy_cards = list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
-		const card_amt = possible_muddy_cards.length;
-
-		if (card_amt > 0) {
-			const colors_available_amt = colourableSuits(state.variant).length;
-			const focus_index = (clue.value - colors_available_amt + colors_available_amt*card_amt) % card_amt;
-			return { focus: list[focus_index], chop: false, positional: true };
-		}
-		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
-	}
-
 	if (clue.type === CLUE.RANK && clue.value === 1) {
 		const unknown_1s = list.filter(o => unknown_1(state.deck[o], true));
 		const ordered_1s = order_1s(state, common, unknown_1s, { no_filter: true });
@@ -81,7 +65,23 @@ export function determine_focus(game, hand, player, list, clue) {
 	}
 
 	const sorted_list = list.toSorted((a, b) => b - a);
-	
+	const muddy_suit_index = state.variant.suits.findIndex(suit => /Muddy|Cocoa/.test(suit));
+	const muddy_tempo = clue.type === CLUE.COLOUR && state.includesVariant(/Muddy|Cocoa/) &&
+		sorted_list.every(o => state.deck[o].clued) && common.thoughts[sorted_list[0]].possible.some(i => i.suitIndex === muddy_suit_index);
+	// Mud clues should only work if the leftmost card is muddy. Otherwise it should be a normal tempo clue.
+
+	if (muddy_tempo) {
+		const possible_muddy_cards = sorted_list.filter(o => common.thoughts[o].possible.some(i => i.suitIndex === muddy_suit_index));
+		const card_amt = possible_muddy_cards.length;
+
+		if (card_amt > 0) {
+			const colors_available_amt = colourableSuits(state.variant).length;
+			const focus_index = (clue.value - colors_available_amt + colors_available_amt*card_amt) % card_amt;
+			return { focus: possible_muddy_cards[focus_index], chop: false, positional: true };
+		}
+		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
+	}
+
 	let focus =
 		sorted_list.find(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// leftmost newly clued
 		sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
