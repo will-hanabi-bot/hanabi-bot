@@ -639,7 +639,7 @@ export function interpret_clue(game, action) {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
 			});
-			console.log(order_pushed, new_inferred, focus_possible.filter(p => !p.illegal && !p.save));
+			console.log(order_pushed, action, new_inferred, focus_possible);
 			
 
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
