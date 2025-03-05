@@ -77,18 +77,18 @@ describe('muddy tempo clues', () => {
 	it('still interprets mud clues correctly', () => { // https://hanab.live/shared-replay/1426433#57
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y3', 'p4', 'y2', 'r1', 'r1'],
 			['p1', 'g2', 'g3', 'g4', 'm3'],
-			['y3', 'p4', 'y2', 'm5', 'm1'],
 		], {
 			level: { min: 1 },
-			starting: PLAYER.ALICE,
+			starting: PLAYER.BOB,
 			variant: VARIANTS.MUDDY_RAINBOW
 		});
 
-		takeTurn(game, 'Alice clues red to Cathy (slots 4,5)');
-		takeTurn(game, 'Bob clues green to Cathy (slots 4,5)');
+		takeTurn(game, 'Bob clues red to Alice (slots 4,5)');
+		takeTurn(game, 'Cathy clues green to Alice (slots 4,5)');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]], ['m1']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['m1']);
 	});
 
 	it('recognizes normal tempo clues when the leftmost card is not muddy', () => {
