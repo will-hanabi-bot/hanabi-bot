@@ -192,7 +192,7 @@ describe('stalling', () => {
 	it('gives bad touch play clues over bad touch saves to the same player', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['g2', 'b1', 'r2', 'r3', 'g1'],
+			['g2', 'b1', 'r4', 'r3', 'g1'],
 			['y3', 'b3', 'm1', 'm4', 'm3']
 		], {
 			level: { min: 9 },
