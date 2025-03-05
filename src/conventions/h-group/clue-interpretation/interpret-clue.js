@@ -632,14 +632,14 @@ export function interpret_clue(game, action) {
 			}
 
 			const { possible } = common.thoughts[order_pushed];
-			const result = {focus: order_pushed, chop: false, positional: false};
-			const focus_possible = find_focus_possible(game, action, result, thinks_stall);
-			const new_inferred = possible.intersect(focus_possible.filter(p => !p.illegal && !p.save));
+			// const result = {focus: order_pushed, chop: false, positional: false};
+			// const focus_possible = find_focus_possible(game, action, result, thinks_stall);
+			 const new_inferred = possible.filter(i => state.isPlayable(i))/*intersect( focus_possible.filter(p => !p.illegal && !p.save))*/;
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
 			});
-			console.log(order_pushed, action, new_inferred, focus_possible);
+			// console.log(order_pushed, action, new_inferred, focus_possible);
 			
 
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
