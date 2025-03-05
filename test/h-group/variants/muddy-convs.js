@@ -77,8 +77,8 @@ describe('muddy tempo clues', () => {
 	it('still interprets mud clues correctly', () => { // https://hanab.live/shared-replay/1426433#57
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['y3', 'p4', 'y2', 'r1', 'r1'],
-			['p1', 'g2', 'g3', 'g4', 'm3'],
+			['y3', 'r4', 'y2', 'r1', 'r1'],
+			['g1', 'g2', 'g3', 'g4', 'm3'],
 		], {
 			level: { min: 1 },
 			starting: PLAYER.BOB,
