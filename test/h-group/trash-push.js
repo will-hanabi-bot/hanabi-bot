@@ -44,6 +44,27 @@ describe('trash push', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]], ['r4', 'r5', 'y5', 'g5', 'b5', 'p5']);
 	});
 
+	it('plays the correct card when some cards are chop moved', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r1', 'p1', 'g1', 'b1'],
+			['r1', 'p1', 'y1', 'b1'],
+		], {
+			level: { min: 14 },
+			play_stacks: [2, 5, 5, 5, 5],
+      			starting: PLAYER.BOB
+		});
+
+		takeTurn(game, 'Bob clues 1 to Alice (slot 3)');
+		takeTurn(game, 'Cathy clues 2 to Alice (slot 2)');
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
+
+		// Alice should play slot 1.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] }, `Expected (play slot 1) but got ${logPerformAction(action)}`);
+	});
+
 	it('plays into trash push finesses', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],

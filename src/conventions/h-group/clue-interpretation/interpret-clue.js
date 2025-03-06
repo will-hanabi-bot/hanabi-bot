@@ -715,7 +715,6 @@ export function interpret_clue(game, action) {
 								draft.bluffed = true;
 								draft.finessed = true;
 							});
-							console.log(game.players[player].thinksPlayables(state, player));
 							break;
 						}
 					}
@@ -1014,18 +1013,13 @@ function interpret_trash_push(game, action, focus_order) {
 		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }))) {
 		return -1;
 	}
-	// at this point, we know all cards are trash. If it's not a trash chop move, it's a trash push.
-	if (interpret_tcm(game, action, focus_order).length === 0) {
-		const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
+	// at this point, we know all cards are trash.
+	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
+	for (let i = oldest_trash_index - 1; i >= 0; i--) {
+		const order = state.hands[target][i];
 
-		logger.info(`oldest trash card is ${logCard(state.deck[state.hands[target][oldest_trash_index]])}`);
-
-		//find first unclued card to the left of oldest trash
-		for (let i = oldest_trash_index - 1; i > 0; i--) {
-			const order = state.hands[target][i];
-
-			if (!state.deck[order].clued)
-				return order;
-		}
+		if (!state.deck[order].clued)
+			return order;
 	}
+	return -1;
 }
