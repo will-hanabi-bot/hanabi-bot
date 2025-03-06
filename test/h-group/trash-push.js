@@ -1,12 +1,12 @@
 import { describe, it } from 'node:test';
 
-//import { ACTION } from '../../src/constants.js';
+import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 
 import logger from '../../src/tools/logger.js';
-//import { logPerformAction } from '../../src/tools/log.js';
+import { logPerformAction } from '../../src/tools/log.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -26,7 +26,7 @@ describe('trash push', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r5', 'y5', 'g5', 'b5', 'p5']);
 	});
 
-	/*it('allows trash pushes through clued cards', async () => {
+	it('allows trash pushes through clued cards', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['g2', 'r4', 'p2', 'g4', 'b1'],
@@ -64,5 +64,5 @@ describe('trash push', () => {
 		const action = await game.take_action();
 
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][1] }, `Expected (play y4) but got ${logPerformAction(action)}`);
-	});*/
+	});
 });
