@@ -48,7 +48,7 @@ describe('trash push', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['r4', 'y4', 'g4', 'b1'],
-			['r1', 'p2', 'g4', 'b1'],
+			['r1', 'p2', 'b4', 'b1'],
 			['r1', 'y2', 'y5', 'y1']
 		], {
 			level: { min: 99 },
