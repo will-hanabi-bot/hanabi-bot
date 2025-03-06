@@ -335,7 +335,7 @@ export async function take_action(game) {
 
 	// Urgent save for next player
 	for (let i = 1; i < actionPrioritySize; i++) {
-		const action = urgent_actions[i].find(action => state.clue_tokens > 0 || (action.type !== ACTION.RANK && action.type !== ACTION.COLOUR));
+		const action = urgent_actions[i].find(action => state.clue_tokens > 0 || (action.type !== ACTION.RANK && action.type !== ACTION.COLOUR) && state.pace != 0);
 
 		if (action)
 			return action;
