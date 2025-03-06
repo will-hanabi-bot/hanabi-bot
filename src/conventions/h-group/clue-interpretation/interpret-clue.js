@@ -667,7 +667,7 @@ export function interpret_clue(game, action) {
 					}
 				}
 			}
-
+			additional_possibilities.push(new BasicCard(state.deck[order_pushed].suitIndex, state.deck[order_pushed].rank));
 			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) ||
 				additional_possibilities.some(x => {
 					return x.suitIndex === i.suitIndex && x.rank === i.rank;
@@ -715,7 +715,7 @@ export function interpret_clue(game, action) {
 								draft.bluffed = true;
 								draft.finessed = true;
 							});
-							console.log(game.players[player].thoughts[c].inferred.array);
+							console.log(game.players[player].thinksPlayables(state, player));
 							break;
 						}
 					}

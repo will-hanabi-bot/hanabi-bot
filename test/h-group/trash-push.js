@@ -47,21 +47,21 @@ describe('trash push', () => {
 	it('plays into trash push finesses', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['r4', 'g1', 'g1', 'b1'],
 			['r3', 'p3', 'r5', 'b1'],
+			['r1', 'p1', 'y1', 'b1'],
 		], {
 			level: { min: 14 },
 			play_stacks: [3, 5, 5, 5, 5],
-      			starting: PLAYER.ALICE
+      			starting: PLAYER.CATHY
 		});
 
-		takeTurn(game, 'Alice clues 1 to Cathy (slot 4)');
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r4']);
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['r5']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].bluffed, true);
+		takeTurn(game, 'Cathy clues 1 to Bob (slot 4)');
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r4']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][2]], ['r5']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].bluffed, true);
 
-		// Bob should play r4.
+		// Alice should play r4.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][0] }, `Expected (play r4) but got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] }, `Expected (play r4) but got ${logPerformAction(action)}`);
 	});
 });
