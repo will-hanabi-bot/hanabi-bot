@@ -6,6 +6,7 @@ import * as Utils from '../src/tools/util.js';
 import { logAction, logCard, logClue } from '../src/tools/log.js';
 import { team_elim } from '../src/basics/helper.js';
 import { produceC } from '../src/StateProxy.js';
+import { visibleFind } from '../src/basics/hanabi-util.js';
 
 /**
  * @typedef {import('../src/basics/Game.js').Game} Game
@@ -89,10 +90,12 @@ let testShortForms;
  * @param {string} short
  */
 export function expandShortCard(short) {
-	return {
-		suitIndex: testShortForms.indexOf(short[0]) - 1,
-		rank: Number(short[1]) || -1
-	};
+	const suitIndex = testShortForms.indexOf(short[0]) - 1;
+
+	if (suitIndex === -2)
+		throw new Error(`Identity ${short} doesn't exist in selected variant, test written incorrectly?`);
+
+	return { suitIndex, rank: Number(short[1]) || -1 };
 }
 
 /**
@@ -101,7 +104,7 @@ export function expandShortCard(short) {
  * @param {Partial<SetupOptions>} options
  */
 function init_game(game, options) {
-	const { common, state } = game;
+	const { common, me, state } = game;
 
 	if (options.play_stacks) {
 		state.play_stacks = options.play_stacks.slice();
@@ -121,6 +124,16 @@ function init_game(game, options) {
 		// Discarded all copies of a card - the new max rank is 1 less than the rank of discarded card
 		if (state.discard_stacks[suitIndex][rank - 1] === cardCount(state.variant, identity) && state.max_ranks[suitIndex] > rank - 1)
 			state.max_ranks[suitIndex] = rank - 1;
+	}
+
+	for (let suitIndex = 0; suitIndex < state.variant.suits.length; suitIndex++) {
+		for (let rank = 1; rank <= 5; rank++) {
+			const identity = { suitIndex, rank };
+			const count = state.baseCount(identity) + visibleFind(state, me, identity, { infer: false }).length;
+
+			if (count > cardCount(state.variant, identity))
+				throw new Error(`Found ${count} copies of ${logCard(identity)}, test written incorrectly?`);
+		}
 	}
 
 	for (const player of game.allPlayers)
@@ -242,6 +255,12 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 		throw new Error(`Expected ${expectedPlayer}'s turn for action (${logAction(action)}), test written incorrectly?`);
 	}
 
+	if (action.type === 'clue' && state.clue_tokens === 0)
+		throw new Error('Tried to clue with 0 clue tokens, test written incorrectly?');
+
+	if (action.type === 'discard' && !action.failed && state.clue_tokens === 8)
+		throw new Error('Tried to discard with 8 clue tokens, test written incorrectly?');
+
 	game.catchup = true;
 	Object.assign(game, game.handle_action(action));
 
@@ -249,8 +268,13 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 		if (draw === 'xx' && state.currentPlayerIndex !== state.ourPlayerIndex)
 			throw new Error(`Missing draw for ${state.playerNames[state.currentPlayerIndex]}'s action (${logAction(action)}).`);
 
-		const { suitIndex, rank } = expandShortCard(draw);
-		Object.assign(game, game.handle_action({ type: 'draw', playerIndex: state.currentPlayerIndex, order: state.cardOrder + 1, suitIndex, rank }));
+		const identity = expandShortCard(draw);
+		Object.assign(game, game.handle_action({ type: 'draw', playerIndex: state.currentPlayerIndex, order: state.cardOrder + 1, ...identity }));
+
+		const count = game.state.baseCount(identity) + visibleFind(game.state, game.me, identity, { infer: false }).length;
+
+		if (count > cardCount(game.state.variant, identity))
+			throw new Error(`Found ${count} copies of ${logCard(identity)}, test written incorrectly?`);
 	}
 
 	const nextPlayerIndex = state.nextPlayerIndex(state.currentPlayerIndex);

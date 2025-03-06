@@ -140,7 +140,7 @@ describe('ref discard', () => {
 	it('understands a lock', () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['g4', 'b2', 'r1', 'r5', 'r5']
+			['g4', 'b2', 'r1', 'r5', 'p5']
 		], {
 			play_stacks: [1, 1, 0, 1, 1]
 		});

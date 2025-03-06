@@ -52,7 +52,7 @@ describe('sarcastic discards', () => {
 	it('sarcastic discards to a clued card', async () => {
 		const game = setup(PlayfulSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['g5', 'b4', 'g2', 'r1', 'g5']
+			['g5', 'b4', 'g2', 'r1', 'g4']
 		], {
 			play_stacks: [0, 0, 1, 0, 0]
 		});

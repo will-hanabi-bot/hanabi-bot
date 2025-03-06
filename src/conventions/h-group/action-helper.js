@@ -70,6 +70,12 @@ export function order_1s(state, player, orders, options = { no_filter: false }) 
 		const [c1_start, c2_start] = [order1, order2].map(o => state.inStartingHand(o));
 		const [c1, c2] = [order1, order2].map(o => player.thoughts[o]);
 
+		/** @param {number} o */
+		const first_clued_turn = (o) => (state.deck[o].clues[0] ?? { turn: state.turn_count }).turn;
+
+		if (first_clued_turn(order1) !== first_clued_turn(order2))
+			return first_clued_turn(order2) - first_clued_turn(order1);
+
 		if (c1.finessed && c2.finessed)
 			return c1.finesse_index - c2.finesse_index;
 

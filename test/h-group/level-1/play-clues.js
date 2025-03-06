@@ -287,7 +287,7 @@ describe('counting playables', () => {
 	it('considers ambiguous play clues to still be plays', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['y1', 'p4', 'g4', 'g4', 'r4'],
+			['y1', 'g2', 'p4', 'g4', 'r4'],
 			['y5', 'r2', 'y3', 'p1', 'y1']
 		], {
 			level: { min: 1 },

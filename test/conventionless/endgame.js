@@ -87,7 +87,7 @@ describe('simple endgames with 1 card left', () => {
 			['r4', 'r4', 'xx', 'xx'],
 			['b2', 'y1', 'g1', 'b5'],
 			['g1', 'b1', 'b1', 'r1'],
-			['b2', 'p1', 'p1', 'r5'],
+			['r1', 'p1', 'p1', 'r5'],
 		], {
 			play_stacks: [3, 5, 5, 4, 5],
 			init: (game) => {
@@ -114,9 +114,9 @@ describe('simple endgames with 1 card left', () => {
 	it('plays to start endgame when other has dupes', () => {
 		const game = setup(HGroup, [
 			['p3', 'xx', 'xx', 'xx'],
-			['b1', 'p4', 'g1', 'p4'],
-			['g1', 'b1', 'b1', 'r1'],
-			['r1', 'p1', 'p1', 'p5'],
+			['b1', 'p4', 'b1', 'p4'],
+			['r1', 'y1', 'g1', 'p1'],
+			['r1', 'y1', 'g1', 'p5'],
 		], {
 			play_stacks: [5, 5, 5, 5, 2],
 			discarded: ['p3'],

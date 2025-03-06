@@ -54,8 +54,8 @@ describe('good touch principle', () => {
 	it('eliminates from indirect focus', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['b2', 'b4', 'b2', 'p2', 'r1'],
-			['y3', 'r4', 'y2', 'p1', 'g3']
+			['r1', 'b4', 'g1', 'b1', 'p1'],
+			['r1', 'y1', 'g1', 'b1', 'p1']
 		], {
 			level: { min: 1 },
 			play_stacks: [5, 2, 5, 3, 5],

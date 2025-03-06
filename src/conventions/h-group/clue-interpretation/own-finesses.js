@@ -87,7 +87,7 @@ function connect(game, action, identity, looksDirect, connected, ignoreOrders, i
 
 	const focus = connected[0];
 
-	const self_allowed = giver !== state.ourPlayerIndex && !(target === state.ourPlayerIndex && looksDirect);
+	const self_allowed = giver !== state.ourPlayerIndex && !(target === state.ourPlayerIndex && looksDirect && me.thoughts[connected[0]].possible.has(identity));
 
 	if (self_allowed) {
 		if (options.bluffed) {

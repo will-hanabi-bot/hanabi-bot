@@ -102,10 +102,13 @@ describe('scream discard chop moves', () => {
 			['g1', 'b3', 'r2', 'y3', 'p3']
 		], {
 			level: { min: 7 },
-			clue_tokens: 0
+			clue_tokens: 1,
+			starting: PLAYER.BOB,
+			init: (game) => {
+				game.state.early_game = false;
+			}
 		});
 
-		takeTurn(game, 'Alice discards r1 (slot 5)');	// End early game
 		takeTurn(game, 'Bob clues green to Cathy');
 		takeTurn(game, 'Cathy discards p3', 'p4');
 
@@ -175,11 +178,14 @@ describe('shout discard chop moves', () => {
 			['p1', 'g1', 'r4', 'y3', 'p3']
 		], {
 			level: { min: 7 },
-			clue_tokens: 2,
-			play_stacks: [1, 1, 0, 1, 1]
+			clue_tokens: 1,
+			play_stacks: [1, 1, 0, 1, 1],
+			starting: PLAYER.BOB,
+			init: (game) => {
+				game.state.early_game = false;
+			}
 		});
 
-		takeTurn(game, 'Alice discards r1 (slot 5)');	// End early game
 		takeTurn(game, 'Bob clues 1 to Cathy');
 		takeTurn(game, 'Cathy discards p1', 'p4');
 

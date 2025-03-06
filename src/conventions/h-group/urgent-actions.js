@@ -25,6 +25,22 @@ import { produce } from '../../StateProxy.js';
  */
 
 /**
+ * Determines whether the order can be placed into anxiety.
+ * @param {Game} game
+ * @param {number} target
+ * @param {number} order
+ * @returns {boolean}
+ */
+export function anxiety_targetable(game, target, order) {
+	const { common, state } = game;
+
+	return game.level >= LEVEL.STALLING &&
+			common.thinksLocked(state, target) &&
+			state.clue_tokens === 0 &&
+			game.players[target].anxietyPlay(state, state.hands[target]) === order;
+}
+
+/**
  * Determines whether we can play a connecting card into the target's hand.
  * @param {Game} game
  * @param {number} target
@@ -45,12 +61,8 @@ export function find_unlock(game, target) {
 		if (our_connecting === undefined)
 			continue;
 
-		// The card must become playable
-		const known = game.players[target].thoughts[order].inferred.every(c => state.isPlayable(c) || c.matches(card)) ||
-			(game.level >= LEVEL.STALLING &&
-				common.thinksLocked(state, target) &&
-				state.clue_tokens === 0 &&
-				game.players[target].anxietyPlay(state, state.hands[target]) === order);
+		// The card must become playable (TODO: maybe anxiety should only be on next player?)
+		const known = game.players[target].thoughts[order].inferred.every(c => state.isPlayable(c) || c.matches(card)) || anxiety_targetable(game, target, order);
 
 		if (known) {
 			// Reorder if unknown 1 (e.g. we have a good touch link for the last remaining 1)
@@ -217,6 +229,12 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 
 		// They are locked (or will be locked), we should try to unlock
 		if (locked) {
+			const playable = playable_priorities.flat()[0];
+			if (playable !== undefined && state.hands[target].some(order => anxiety_targetable(game, target, order))) {
+				urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: playable });
+				continue;
+			}
+
 			const unlock_order = find_unlock(game, target);
 			if (unlock_order !== undefined && (finessed_order === -1 || finessed_order == unlock_order)) {
 				urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: unlock_order });

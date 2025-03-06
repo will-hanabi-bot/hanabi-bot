@@ -167,7 +167,7 @@ describe('baton discards', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b4', 'g4', 'y2', 'b2'],
-			['r1', 'y4', 'r4', 'y3'],
+			['r1', 'y4', 'p4', 'y3'],
 			['y1', 'r4', 'b4', 'b1']
 		], {
 			level: { min: 10 },
@@ -189,7 +189,7 @@ describe('baton discards', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b3', 'g4', 'y2', 'b2'],
-			['r1', 'y4', 'r4', 'y3'],
+			['r1', 'y4', 'p4', 'y3'],
 			['y1', 'r4', 'b4', 'b1']
 		], {
 			level: { min: 10 },
@@ -327,7 +327,7 @@ describe('composition finesse', () => {
 	it('resolves a complex certain discard correctly', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['r4', 'b4', 'y4', 'g4'],
+			['r1', 'b4', 'y4', 'g4'],
 			['g2', 'r4', 'y3', 'b5'],
 			['g1', 'g3', 'r2', 'b1']
 		], {
@@ -366,7 +366,7 @@ describe('composition finesse', () => {
 	it('resolves a fake certain discard correctly', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['g2', 'r4', 'y3', 'b5'],
+			['g2', 'r4', 'y3', 'g5'],
 			['g1', 'g3', 'r2', 'b1'],
 			['b2', 'y5', 'b5', 'b4']
 		], {

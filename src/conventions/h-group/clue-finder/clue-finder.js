@@ -282,7 +282,7 @@ export function get_clue_interp(game, clue, giver, options) {
 				return;
 			}
 
-			if (finesses.length > 0 && list.some(o => ((id = state.deck[o]) => id.playedBefore(focused_card) && common.hypo_stacks[id.suitIndex] < id.rank)())) {
+			if (finesses.some(f => list.some(o => f.card.order !== o && state.deck[f.card.order].matches(state.deck[o])))) {
 				logger.warn('looks like out-of-order play clue, not giving');
 				return;
 			}

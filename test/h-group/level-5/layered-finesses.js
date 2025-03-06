@@ -20,6 +20,7 @@ describe('layered finesse', () => {
 			['g1', 'y1', 'r2', 'y3', 'p3']
 		], {
 			level: { min: 5 },
+			clue_tokens: 7,
 			starting: PLAYER.BOB
 		});
 
@@ -108,7 +109,7 @@ describe('layered finesse', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['b5', 'p4', 'y2', 'g3'],
-			['g1', 'r4', 'g4', 'r5'],
+			['g1', 'r4', 'g4', 'y5'],
 			['g2', 'r4', 'b4', 'g1']
 		], {
 			level: { min: 5 },
@@ -248,6 +249,7 @@ describe('layered finesse', () => {
 			['g1', 'r1', 'b5', 'g4', 'b4']
 		], {
 			level: { min: 5 },
+			clue_tokens: 7,
 			starting: PLAYER.CATHY
 		});
 

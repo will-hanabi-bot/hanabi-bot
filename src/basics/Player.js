@@ -6,7 +6,7 @@ import * as Utils from '../tools/util.js';
 import * as Elim from './player-elim.js';
 
 import logger from '../tools/logger.js';
-import { logCard } from '../tools/log.js';
+import { logCard, logConnection } from '../tools/log.js';
 import { produce } from '../StateProxy.js';
 
 /**
@@ -228,18 +228,41 @@ export class Player {
 				card.possible.every(p => state.isBasicTrash(p) || state.isPlayable(p)) && card.possible.some(p => state.isPlayable(p));
 
 			const conflicting_conn = () => {
-				const wc = this.waiting_connections.find((wc, i1) =>
-					(playerIndex !== state.ourPlayerIndex || !wc.symmetric) &&
+				/** @type {WaitingConnection[]} */
+				const dependents = [];
+
+				for (const wc of this.waiting_connections) {
+					// Ignore symmetric connections when looking at our own playables, since no one else will consider them
+					if (playerIndex === state.ourPlayerIndex && wc.symmetric)
+						continue;
+
 					// Unplayable target of possible waiting connection
-					(wc.focus === o && !state.isPlayable(wc.inference) && card.possible.has(wc.inference)) ||
-					wc.connections.some((conn, ci) => ci >= wc.conn_index && conn.order === o && (
-						// Unplayable connecting card
-						conn.identities.some(i => !state.isPlayable(i) && card.possible.has(i)) ||
-						// A different connection on the same focus doesn't use this connecting card
-						this.waiting_connections.some((wc2, i2) =>
-							i1 !== i2 && wc2.focus === wc.focus && wc2.connections.every(conn2 => conn2.order !== o))))
-				);
-				return wc !== undefined;
+					if (wc.focus === o && !state.isPlayable(wc.inference) && card.possible.has(wc.inference)) {
+						logger.debug(`order ${o} has conflicting connection ${wc.connections.map(logConnection).join(' -> ')} (unplayable target)`);
+						return true;
+					}
+
+					if (wc.connections.some((conn, ci) => ci >= wc.conn_index && conn.order === o))
+						dependents.push(wc);
+				}
+
+				for (const wc of dependents) {
+					const depending_conn = wc.connections.find((conn, ci) => ci >= wc.conn_index && conn.order === o);
+					const unplayable_ids = depending_conn.identities.filter(i => !state.isPlayable(i) && card.possible.has(i));
+					if (unplayable_ids.length > 0) {
+						logger.debug(`order ${o} has conflicting connection ${wc.connections.map(logConnection).join(' -> ')} with unplayable ids ${unplayable_ids.map(logCard)})`);
+						return true;
+					}
+				}
+
+				// Every connection using this card has another connection with the same focus that doesn't use it
+				const replaceable = dependents.map(wc =>
+					this.waiting_connections.find(wc2 => wc !== wc2 && wc2.focus === wc.focus && wc2.connections.every(conn2 => conn2.order !== o)));
+
+				if (replaceable.every(r => r !== undefined))
+					logger.debug(`order ${o} has connections replaceable with ${replaceable.map(wc => wc.connections.map(logConnection).join(' -> '))}`);
+
+				return replaceable.every(r => r !== undefined);
 			};
 
 			return card.possibilities.every(p => (card.chop_moved ? state.isBasicTrash(p) : false) || state.isPlayable(p)) &&	// cm cards can ignore trash ids

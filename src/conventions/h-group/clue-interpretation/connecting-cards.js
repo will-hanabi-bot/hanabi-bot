@@ -196,7 +196,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 		if (game.level >= LEVEL.INTERMEDIATE_FINESSES && state.play_stacks[prompt_c.suitIndex] + 1 === prompt_c.rank) {
 			// Could be duplicated in giver's hand - disallow hidden prompt
 			if (giver === state.ourPlayerIndex && state.hands[giver].some(o => state.deck[o].clued && game.players[giver].thoughts[o].inferred.has(identity))) {
-				logger.warn(`disallowed hidden prompt on ${logCard(prompt_c)} ${prompt_order}, true ${logCard(identity)}  could be duplicated in giver's hand`);
+				logger.warn(`disallowed hidden prompt on ${logCard(prompt_c)} ${prompt_order}, true ${logCard(identity)} could be duplicated in giver's hand`);
 				return { tried: true };
 			}
 			return { tried: true, conn: { type: 'prompt', reacting, order: prompt_order, hidden: true, identities: [prompt_c.raw()] } };
