@@ -645,8 +645,8 @@ export function interpret_clue(game, action) {
 			const additional_possibilities = [];
 			const possible_extra_playables = [];
 			for (const player of inbetween_players) {
-				let first_finesse = state.hands[player].sort((a, b) => b-a)[0];
-				
+				const first_finesse = state.hands[player].sort((a, b) => b-a)[0];
+
 				// only clued cards and first finesse position can connect to a trash push.
 				for (const possible_card of state.hands[player]) {
 					const consider_card = state.deck[possible_card];
@@ -667,7 +667,7 @@ export function interpret_clue(game, action) {
 					}
 				}
 			}
-			
+
 			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) ||
 				additional_possibilities.some(x => {
 					return x.suitIndex === i.suitIndex && x.rank === i.rank;
@@ -683,39 +683,37 @@ export function interpret_clue(game, action) {
 			// mark in-between cards as forced to play, if any (this code is for the player with the connecting card)
 			if (state.playableAway(state.deck[order_pushed]) > 0) {
 				const real_cards_inbetween = [];
-				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++) {
+				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++)
 					real_cards_inbetween.push(new BasicCard(state.deck[order_pushed].suitIndex, i));
-				}
 				for (const player of inbetween_players) {
 					const card_checking_order = [];
 					const sorted_hand = state.hands[player].sort((a, b) => b-a);
 					for (const c of sorted_hand) {
 						if (state.deck[c].clued)
-							card_checking_order.push(c);						
+							card_checking_order.push(c);
 					}
 					for (const c of sorted_hand) {
 						if (!state.deck[c].clued)
-							card_checking_order.push(c);						
+							card_checking_order.push(c);
 					}
 					for (const c of card_checking_order) {
 						const possible_identities = common.thoughts[c].possible;
 						const can_match = possible_identities.intersect(possible_identities.array.filter(i =>
 							real_cards_inbetween.some(x => {
 								return x.suitIndex === i.suitIndex && x.rank === i.rank;
-							})))
+							})));
 						if (can_match.array.length > 0) {
 							common.updateThoughts(c, (draft) => {
 								draft.inferred = can_match;
 								draft.info_lock = can_match;
 								draft.bluffed = true;
 								draft.finessed = true;
-							})
+							});
 							console.log(real_cards_inbetween, can_match, card_checking_order, possible_identities);
 							break;
 						}
 					}
 				}
-				
 			}
 
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
