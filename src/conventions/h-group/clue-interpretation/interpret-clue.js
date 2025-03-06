@@ -658,8 +658,7 @@ export function interpret_clue(game, action) {
 						common.updateThoughts(possible_card, (draft) => {
 							const finessed_possibilities = common.thoughts[possible_card].possible;
 							draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
-							draft.bluffed = true;
-							draft.finessed = true;
+							draft.trash_pushed = true;
 						});
 						// add the next rank of the suit to possible pushed identities
 						const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
@@ -676,8 +675,7 @@ export function interpret_clue(game, action) {
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
-				draft.bluffed = true; // force the card to immediately play
-				draft.finessed = true;
+				draft.trash_pushed = true; // force the card to immediately play
 			});
 
 			// mark in-between cards as forced to play, if any (this code is for the player with the connecting card)
@@ -706,14 +704,12 @@ export function interpret_clue(game, action) {
 							common.updateThoughts(c, (draft) => {
 								draft.inferred = can_match;
 								draft.info_lock = can_match;
-								draft.bluffed = true;
-								draft.finessed = true;
+								draft.trash_pushed = true;
 							});
 							game.players[player].updateThoughts(c, (draft) => {
 								draft.inferred = can_match;
 								draft.info_lock = can_match;
-								draft.bluffed = true;
-								draft.finessed = true;
+								draft.trash_pushed = true;
 							});
 							break;
 						}
