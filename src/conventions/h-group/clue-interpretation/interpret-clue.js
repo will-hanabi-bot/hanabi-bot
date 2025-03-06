@@ -633,7 +633,7 @@ export function interpret_clue(game, action) {
 			}
 
 			const { possible } = common.thoughts[order_pushed];
-			let inbetween_players = [];
+			const inbetween_players = [];
 			if (giver < target) {
 				for (let i = giver + 1; i < target; i++)
 					inbetween_players.push(i);
@@ -642,18 +642,18 @@ export function interpret_clue(game, action) {
 					inbetween_players.push(i % game.players.length);
 			}
 			// check for trash push finesse / trash push prompt
-			let additional_possibilities = [];
-			let possible_extra_playables = [];
-			for (let player of inbetween_players) {
+			const additional_possibilities = [];
+			const possible_extra_playables = [];
+			for (const player of inbetween_players) {
 				let first_finesse = -1;
-				for (let c of state.hands[player]) {
+				for (const c of state.hands[player]) {
 					if (!state.deck[c].clued) {
 						first_finesse = c;
 						break;
 					}
 				}
 				// only clued cards and first finesse position can connect to a trash push.
-				for (let possible_card of state.hands[player]) {
+				for (const possible_card of state.hands[player]) {
 					const consider_card = state.deck[possible_card];
 					const playable_away_max = possible_extra_playables.filter(i => i.suitIndex === consider_card.suitIndex).length;
 					if ((state.isPlayable(consider_card) || state.playableAway(consider_card) <= playable_away_max) && (consider_card.clued || possible_card == first_finesse)) {
@@ -662,7 +662,7 @@ export function interpret_clue(game, action) {
 							const finessed_possibilities = common.thoughts[possible_card].possible;
 							draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
 							draft.bluffed = true;
-						})
+						});
 						// add the next rank of the suit to possible pushed identities
 						const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
 						additional_possibilities.push(new_card);
