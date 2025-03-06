@@ -52,7 +52,7 @@ describe('trash push', () => {
 		], {
 			level: { min: 14 },
 			play_stacks: [3, 5, 5, 5, 5],
-      			starting: PLAYER.Alice
+      			starting: PLAYER.ALICE
 		});
 
 		takeTurn(game, 'Alice clues 1 to Cathy (slot 4)');
