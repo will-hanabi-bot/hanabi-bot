@@ -709,7 +709,13 @@ export function interpret_clue(game, action) {
 								draft.bluffed = true;
 								draft.finessed = true;
 							});
-							console.log(real_cards_inbetween, can_match, card_checking_order, possible_identities);
+							game.players[player].updateThoughts(c, (draft) => {
+								draft.inferred = can_match;
+								draft.info_lock = can_match;
+								draft.bluffed = true;
+								draft.finessed = true;
+							});
+							console.log(game.players[player].thoughts[c].inferred.array);
 							break;
 						}
 					}
