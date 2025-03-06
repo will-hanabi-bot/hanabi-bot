@@ -1,5 +1,5 @@
 import { describe, it } from 'node:test';
-
+import { strict as assert } from 'node:assert';
 import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
@@ -16,7 +16,7 @@ describe('trash push', () => {
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['g2', 'r4', 'r2', 'r5', 'b1']
 		], {
-			level: { min: 99 },
+			level: { min: 14 },
 			play_stacks: [4, 4, 4, 4, 4]
 		});
 
@@ -32,7 +32,7 @@ describe('trash push', () => {
 			['g2', 'r4', 'p2', 'g4', 'b1'],
 			['b2', 'y4', 'y2', 'r5', 'y1']
 		], {
-			level: { min: 99 },
+			level: { min: 14 },
 			play_stacks: [3, 4, 4, 4, 4],
       			starting: PLAYER.CATHY
 		});
@@ -40,29 +40,28 @@ describe('trash push', () => {
 		takeTurn(game, 'Cathy clues red to Bob (slot 2)');
 		takeTurn(game, 'Alice clues 1 to Cathy (slot 5)');
 
-		// Slot 4 should be a 5
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r5', 'y5', 'g5', 'b5', 'p5']);
+		// Slot 4 should be playable or delayed playable
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]], ['r4', 'r5', 'y5', 'g5', 'b5', 'p5']);
 	});
 
-	it('plays into trash pushes', async () => {
+	it('plays into trash push finesses', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['r4', 'y4', 'g4', 'b1'],
-			['r1', 'p2', 'b4', 'b1'],
-			['r1', 'y2', 'y5', 'y1']
+			['r4', 'g1', 'g1', 'b1'],
+			['r3', 'p3', 'r5', 'b1'],
 		], {
-			level: { min: 99 },
-			play_stacks: [3, 3, 4, 4, 4],
-      			starting: PLAYER.CATHY
+			level: { min: 14 },
+			play_stacks: [3, 5, 5, 5, 5],
+      			starting: PLAYER.Alice
 		});
 
-		takeTurn(game, 'Cathy clues red to Bob (slot 1)');
-		takeTurn(game, 'Donald clues yellow to Bob (slot 2)');
-		takeTurn(game, 'Alice clues 1 to Donald (slot 4)');
+		takeTurn(game, 'Alice clues 1 to Cathy (slot 4)');
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r4']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['r5']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].bluffed, true);
 
-		// Bob should play y4.
+		// Bob should play r4.
 		const action = await game.take_action();
-
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][1] }, `Expected (play y4) but got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.BOB][0] }, `Expected (play r4) but got ${logPerformAction(action)}`);
 	});
 });

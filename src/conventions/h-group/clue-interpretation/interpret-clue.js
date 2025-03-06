@@ -617,6 +617,7 @@ export function interpret_clue(game, action) {
 		const order_pushed = interpret_trash_push(game, action, focus);
 		if (order_pushed > -1) {
 			logger.info('trash push!');
+			console.log('trash push');
 			// mark all cards as trash
 			for (const order of list) {
 				if (!state.deck[order].newly_clued)
@@ -645,23 +646,21 @@ export function interpret_clue(game, action) {
 			const additional_possibilities = [];
 			const possible_extra_playables = [];
 			for (const player of inbetween_players) {
-				let first_finesse = -1;
-				for (const c of state.hands[player]) {
-					if (!state.deck[c].clued) {
-						first_finesse = c;
-						break;
-					}
-				}
+				let first_finesse = state.hands[player].sort((a, b) => b-a)[0];
+				
 				// only clued cards and first finesse position can connect to a trash push.
 				for (const possible_card of state.hands[player]) {
 					const consider_card = state.deck[possible_card];
 					const playable_away_max = possible_extra_playables.filter(i => i.suitIndex === consider_card.suitIndex).length;
-					if ((state.isPlayable(consider_card) || state.playableAway(consider_card) <= playable_away_max) && (consider_card.clued || possible_card == first_finesse)) {
+					const playable_away = state.playableAway(consider_card);
+					if ((state.isPlayable(consider_card) || (playable_away > 0 && playable_away <= playable_away_max)) &&
+						(consider_card.clued || possible_card == first_finesse)) {
 						possible_extra_playables.push(consider_card);
 						common.updateThoughts(possible_card, (draft) => {
 							const finessed_possibilities = common.thoughts[possible_card].possible;
 							draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
 							draft.bluffed = true;
+							draft.finessed = true;
 						});
 						// add the next rank of the suit to possible pushed identities
 						const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
@@ -669,12 +668,18 @@ export function interpret_clue(game, action) {
 					}
 				}
 			}
+			
+			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) ||
+				additional_possibilities.some(x => {
+					console.log(x.suitIndex, i.suitIndex, x.rank, i.rank);
+					return x.suitIndex === i.suitIndex && x.rank === i.rank;
+				})));
 
-			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) || additional_possibilities.some(x => x.suitIndex == i.suitIndex && x.rank == i.rank)));
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
 				draft.bluffed = true; // force the card to immediately play
+				draft.finessed = true;
 			});
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
 			team_elim(game);
