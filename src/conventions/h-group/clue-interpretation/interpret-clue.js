@@ -20,6 +20,7 @@ import * as Utils from '../../../tools/util.js';
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections, logHand } from '../../../tools/log.js';
 import { produce } from '../../../StateProxy.js';
+import { BasicCard } from '../../../basics/Card.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -611,7 +612,7 @@ export function interpret_clue(game, action) {
 		return game;
 	}
 
-	// check for trash push at level "99"
+	// check for trash push at level 14
 	if (game.level >= LEVEL.TRASH_PUSH) {
 		const order_pushed = interpret_trash_push(game, action, focus);
 		if (order_pushed > -1) {
@@ -632,16 +633,49 @@ export function interpret_clue(game, action) {
 			}
 
 			const { possible } = common.thoughts[order_pushed];
-			// const result = {focus: order_pushed, chop: false, positional: false};
-			// const focus_possible = find_focus_possible(game, action, result, thinks_stall);
-			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)))/*intersect( focus_possible.filter(p => !p.illegal && !p.save))*/;
+			let inbetween_players = [];
+			if (giver < target) {
+				for (let i = giver + 1; i < target; i++)
+					inbetween_players.push(i);
+			} else {
+				for (let i = (giver + 1) ; i < target + game.players.length; i++)
+					inbetween_players.push(i % game.players.length);
+			}
+			// check for trash push finesse / trash push prompt
+			let additional_possibilities = [];
+			let possible_extra_playables = [];
+			for (let player of inbetween_players) {
+				let first_finesse = -1;
+				for (let c of state.hands[player]) {
+					if (!state.deck[c].clued) {
+						first_finesse = c;
+						break;
+					}
+				}
+				// only clued cards and first finesse position can connect to a trash push.
+				for (let possible_card of state.hands[player]) {
+					const consider_card = state.deck[possible_card];
+					const playable_away_max = possible_extra_playables.filter(i => i.suitIndex === consider_card.suitIndex).length;
+					if ((state.isPlayable(consider_card) || state.playableAway(consider_card) <= playable_away_max) && (consider_card.clued || possible_card == first_finesse)) {
+						possible_extra_playables.push(consider_card);
+						common.updateThoughts(possible_card, (draft) => {
+							const finessed_possibilities = common.thoughts[possible_card].possible;
+							draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
+							draft.bluffed = true;
+						})
+						// add the next rank of the suit to possible pushed identities
+						const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
+						additional_possibilities.push(new_card);
+					}
+				}
+			}
+
+			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) || additional_possibilities.some(x => x.suitIndex == i.suitIndex && x.rank == i.rank)));
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
 				draft.info_lock = new_inferred;
+				draft.bluffed = true; // force the card to immediately play
 			});
-			// console.log(order_pushed, action, new_inferred, focus_possible);
-			
-
 			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
 			team_elim(game);
 			return game;
