@@ -15,6 +15,7 @@ import { logCard } from '../../tools/log.js';
  * @typedef {import('../../types.js').Action} Action
  * @typedef {import('../../types.js').PerformAction} PerformAction
  * @typedef {Omit<PerformAction, 'tableID'> & {playerIndex: number}} ModPerformAction
+ * @typedef {{ id: Identity, missing: number, all: boolean }[]} RemainingSet
  */
 
 export const simpler_cache = new Map();
@@ -42,6 +43,7 @@ function find_must_plays(state, hand) {
 		if (id.suitIndex === -1 || state.isBasicTrash(id))
 			return acc;
 
+		// All remaining copies of this identity are in the hand
 		if (cardCount(state.variant, id) - state.baseCount(id) === group.length)
 			acc.push(id);
 
@@ -201,70 +203,106 @@ function get_playables(state, playerTurn) {
  * 
  * @param {State} state
  * @param {number} playerTurn
+ * @param {RemainingSet} remaining_ids
+ * @param {number} depth
  * @returns {boolean}
  */
-export function winnable_simpler(state, playerTurn) {
-	if (state.score === state.maxScore)
+export function winnable_simpler(state, playerTurn, remaining_ids, depth = 0) {
+	if (state.score === state.maxScore) {
+		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}won!!`);
 		return true;
+	}
 
-	if (unwinnable_state(state, playerTurn))
+	if (unwinnable_state(state, playerTurn)) {
+		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}unwinnable state`);
 		return false;
+	}
 
-	const cached_result = simpler_cache.get(hash_state(state) + `,${playerTurn}`);
+	const hash = `${hash_state(state)},${playerTurn},${JSON.stringify(remaining_ids.filter(r => logCard(r.id) !== 'xx'))}`;
+
+	const cached_result = simpler_cache.get(hash);
 	if (cached_result !== undefined)
 		return cached_result;
 
-	for (const order of get_playables(state, playerTurn)) {
-		const action = { type: ACTION.PLAY, target: order, playerIndex: playerTurn };
+	/** @type {ModPerformAction[]} */
+	const possible_actions = [];
 
-		if (predict_winnable2(state, playerTurn, action))
-			return true;
-	}
+	for (const order of get_playables(state, playerTurn))
+		possible_actions.push({ type: ACTION.PLAY, target: order, playerIndex: playerTurn });
 
-	if (state.clue_tokens > 0) {
-		const action = { type: ACTION.RANK, target: -1, value: -1, playerIndex: playerTurn };
-
-		if (predict_winnable2(state, playerTurn, action))
-			return true;
-	}
+	if (state.clue_tokens > 0)
+		possible_actions.push({ type: ACTION.RANK, target: -1, value: -1, playerIndex: playerTurn });
 
 	const discardable = state.hands[playerTurn].find(o => ((c = state.deck[o]) => c.identity() === undefined || state.isBasicTrash(c))());
 
-	if (state.pace >= 0 && discardable !== undefined) {
-		const action = { type: ACTION.DISCARD, target: discardable, playerIndex: playerTurn };
+	if (state.pace >= 0 && discardable !== undefined)
+		possible_actions.push({ type: ACTION.DISCARD, target: discardable, playerIndex: playerTurn });
 
-		if (predict_winnable2(state, playerTurn, action))
-			return true;
-	}
+	const winnable = possible_actions.some(action => winnable_if(state, playerTurn, action, remaining_ids, depth).winnable);
+	simpler_cache.set(hash, winnable);
 
-	simpler_cache.set(hash_state(state) + `,${playerTurn}`, false);
-	return false;
+	return winnable;
 }
 
 /**
- * @param {State} _state
- * @param {number} _playerTurn
- * @param {ModPerformAction} _action
+ * @param {RemainingSet} remaining
+ * @param {Identity} id
  */
-export function predict_winnable(_state, _playerTurn, _action) {
-	return true;
-	// return winnable_simpler(advance_state(state, action), state.nextPlayerIndex(playerTurn));
+export function remove_remaining(remaining, id) {
+	const index = remaining.findIndex(r => r.id.suitIndex === id.suitIndex && r.id.rank === id.rank);
+	const { missing, all } = remaining[index];
+
+	if (missing === 1)
+		return remaining.toSpliced(index, 1);
+	else
+		return remaining.with(index, { id, missing: missing - 1, all });
 }
 
 /**
  * @param {State} state
  * @param {number} playerTurn
  * @param {ModPerformAction} action
+ * @param {RemainingSet} remaining_ids
+ * @param {number} [depth]
  */
-export function predict_winnable2(state, playerTurn, action) {
-	return winnable_simpler(advance_state(state, action), state.nextPlayerIndex(playerTurn));
+export function winnable_if(state, playerTurn, action, remaining_ids, depth = 0) {
+	if (action.type === ACTION.RANK || action.type === ACTION.COLOUR || state.cardsLeft === 0) {
+		const newState = advance_state(state, action, undefined);
+		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}checking if winnable after ${logObjectiveAction(state, action)} {`);
+		const winnable = winnable_simpler(newState, state.nextPlayerIndex(playerTurn), remaining_ids, depth + 1);
+
+		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}} ${winnable}`);
+		return { winnable };
+	}
+
+	/** @type {Identity[]} */
+	const winnable_draws = [];
+
+	// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}remaining ids ${JSON.stringify(remaining_ids.map(r => ({...r, id: logCard(r.id) })))}`);
+
+	for (const { id } of remaining_ids) {
+		const draw = Object.freeze(new ActualCard(id.suitIndex, id.rank, state.cardOrder + 1, state.turn_count));
+		const newState = advance_state(state, action, draw);
+		const new_remaining = remove_remaining(remaining_ids, id);
+
+		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}checking if winnable after ${logObjectiveAction(state, action)} drawing ${logCard(id)} {`);
+		const winnable = winnable_simpler(newState, state.nextPlayerIndex(playerTurn), new_remaining, depth + 1);
+
+		if (winnable)
+			winnable_draws.push(id);
+
+		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}} ${winnable}`);
+	}
+
+	return { winnable: winnable_draws.length > 0, winnable_draws };
 }
 
 /**
  * @param {State} state
  * @param {ModPerformAction} action
+ * @param {ActualCard} draw
  */
-function advance_state(state, action) {
+function advance_state(state, action, draw) {
 	const new_state = state.shallowCopy();
 	new_state.hands = state.hands.slice();
 	new_state.turn_count++;
@@ -293,7 +331,7 @@ function advance_state(state, action) {
 
 		if (state.deck[newCardOrder] === undefined) {
 			new_state.deck = new_state.deck.slice();
-			new_state.deck[newCardOrder] = Object.freeze(new ActualCard(-1, -1, newCardOrder, state.turn_count));
+			new_state.deck[newCardOrder] = draw ?? Object.freeze(new ActualCard(-1, -1, newCardOrder, state.turn_count));
 		}
 	};
 

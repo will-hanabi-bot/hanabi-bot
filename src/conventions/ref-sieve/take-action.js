@@ -37,7 +37,7 @@ export function find_all_clues(game, giver) {
 
 	/** @type {(clue: Clue) => ClueAction} */
 	const clueToAction = (clue) => ({ type: 'clue', clue, giver, target: clue.target, list: state.clueTouched(state.hands[clue.target], clue) });
-	const all_clue_values = all_clues.map(clue => ({ clue, value: predict_value(game, clueToAction(clue)) }));
+	const all_clue_values = all_clues.map(clue => ({ clue, value: predict_value(game, clueToAction(clue)) })).filter(cv => cv.value > -100);
 
 	logger.on();
 
