@@ -617,6 +617,8 @@ export function interpret_clue(game, action) {
 		const order_pushed = interpret_trash_push(game, action, focus);
 		if (order_pushed > -1) {
 			logger.info('trash push!');
+			if (order_pushed === 10)
+				console.log(order_pushed);
 			// mark all cards as trash
 			for (const order of list) {
 				if (!state.deck[order].newly_clued)
@@ -631,7 +633,7 @@ export function interpret_clue(game, action) {
 					draft.trash = true;
 				});
 			}
-
+			
 			const { possible } = common.thoughts[order_pushed];
 			const inbetween_players = [];
 			if (giver < target) {
@@ -645,24 +647,48 @@ export function interpret_clue(game, action) {
 			const additional_possibilities = [];
 			const possible_extra_playables = [];
 			for (const player of inbetween_players) {
-				const first_finesse = state.hands[player].sort((a, b) => b-a)[0];
-
+				const card_checking_order = [];
+				const sorted_hand = state.hands[player].sort((a, b) => b-a);
+				// check all clued cards, left to right, and then check first finesse
+				for (const c of sorted_hand) {
+					if (state.deck[c].clued)
+						card_checking_order.push(c);
+				}
+				for (const c of sorted_hand) {
+					if (!state.deck[c].clued) {
+						card_checking_order.push(c);
+						break;
+					}
+				}
 				// only clued cards and first finesse position can connect to a trash push.
-				for (const possible_card of state.hands[player]) {
+				for (const possible_card of card_checking_order) {
 					const consider_card = state.deck[possible_card];
 					const playable_away_max = possible_extra_playables.filter(i => i.suitIndex === consider_card.suitIndex).length;
 					const playable_away = state.playableAway(consider_card);
-					if ((state.isPlayable(consider_card) || (playable_away > 0 && playable_away <= playable_away_max)) &&
-						(consider_card.clued || possible_card == first_finesse)) {
-						possible_extra_playables.push(consider_card);
-						common.updateThoughts(possible_card, (draft) => {
-							const finessed_possibilities = common.thoughts[possible_card].possible;
-							draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
-							draft.trash_pushed = true;
-						});
-						// add the next rank of the suit to possible pushed identities
-						const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
-						additional_possibilities.push(new_card);
+
+					if ((state.isPlayable(consider_card) || (playable_away > 0 && playable_away <= playable_away_max))) {
+						
+						// make sure that the card is immediately promptable.
+						let is_valid_connecting = true;
+						for (const o of card_checking_order) {
+							const possible_identities = common.thoughts[o].possible;
+							const can_match = possible_identities.intersect(consider_card).array.length > 0;
+							if (can_match && card_checking_order.indexOf(o) < card_checking_order.indexOf(possible_card)) {
+								is_valid_connecting = false;
+							}
+							//console.log(o, state.deck[o].identity(), common.thoughts[o].possible.array, state.deck[possible_card].identity());
+						}
+						if (is_valid_connecting) {
+							possible_extra_playables.push(consider_card);
+							common.updateThoughts(possible_card, (draft) => {
+								const finessed_possibilities = common.thoughts[possible_card].possible;
+								draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
+								draft.trash_pushed = true;
+							});
+							// add the next rank of the suit to possible pushed identities
+							const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
+							additional_possibilities.push(new_card);
+						}
 					}
 				}
 			}
@@ -679,10 +705,12 @@ export function interpret_clue(game, action) {
 			});
 
 			// mark in-between cards as forced to play, if any (this code is for the player with the connecting card)
-			if (state.playableAway(state.deck[order_pushed]) > 0) {
+			if (state.playableAway(state.deck[order_pushed]) > 0 && state.playableAway(state.deck[order_pushed]) < 5) {
 				const real_cards_inbetween = [];
-				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++)
+				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++) 
 					real_cards_inbetween.push(new BasicCard(state.deck[order_pushed].suitIndex, i));
+				//console.log(inbetween_players);
+				//console.log(state.playableAway(state.deck[order_pushed]), real_cards_inbetween);
 				for (const player of inbetween_players) {
 					const card_checking_order = [];
 					const sorted_hand = state.hands[player].sort((a, b) => b-a);
@@ -694,13 +722,21 @@ export function interpret_clue(game, action) {
 						if (!state.deck[c].clued)
 							card_checking_order.push(c);
 					}
+					//console.log(card_checking_order);
 					for (const c of card_checking_order) {
 						const possible_identities = common.thoughts[c].possible;
 						const can_match = possible_identities.intersect(possible_identities.array.filter(i =>
 							real_cards_inbetween.some(x => {
 								return x.suitIndex === i.suitIndex && x.rank === i.rank;
 							})));
+						const does_match = possible_identities.intersect([{suitIndex: state.deck[c].suitIndex, rank: state.deck[c].rank}]).array.length !== 0;
 						if (can_match.array.length > 0) {
+							//console.log(does_match, state.deck[c], can_match);
+							if (!does_match && game.allPlayers[player] != game.me) {
+								game.interpretMove(CLUE_INTERP.MISTAKE);
+								team_elim(game);
+								return game;
+							}
 							common.updateThoughts(c, (draft) => {
 								draft.inferred = can_match;
 								draft.info_lock = can_match;

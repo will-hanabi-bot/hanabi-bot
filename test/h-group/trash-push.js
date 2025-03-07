@@ -1,9 +1,10 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { ACTION } from '../../src/constants.js';
-import { PLAYER, setup, takeTurn } from '../test-utils.js';
+import { PLAYER, setup, takeTurn, expandShortCard } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
+import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -105,5 +106,24 @@ describe('trash push', () => {
 		// Alice should not wait for Cathy to play r4.
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][2] }, `Expected (play slot 3) but got ${logPerformAction(action)}`);
+	});
+
+	it('does not consider illegal trash pushes', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r3', 'y3', 'g1', 'b1'],
+			['p4', 'r4', 'r1', 'y1'],
+		], {
+			level: { min: 14 },
+			play_stacks: [2, 2, 5, 5, 5],
+      			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Bob (slots 1,2)');
+		takeTurn(game, 'Alice clues 1 to Cathy (slots 3,4)');
+
+		// Cathy should not consider y4.
+		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].inferred.has(expandShortCard('y4')));
+
 	});
 });
