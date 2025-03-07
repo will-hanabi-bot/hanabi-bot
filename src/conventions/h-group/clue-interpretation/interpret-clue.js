@@ -631,7 +631,6 @@ export function interpret_clue(game, action) {
 					draft.trash = true;
 				});
 			}
-			
 			const { possible } = common.thoughts[order_pushed];
 			const inbetween_players = [];
 			if (giver < target) {
@@ -665,15 +664,13 @@ export function interpret_clue(game, action) {
 					const playable_away = state.playableAway(consider_card);
 
 					if ((state.isPlayable(consider_card) || (playable_away > 0 && playable_away <= playable_away_max))) {
-						
 						// make sure that the card is immediately promptable.
 						let is_valid_connecting = true;
 						for (const o of card_checking_order) {
 							const possible_identities = common.thoughts[o].possible;
 							const can_match = possible_identities.intersect(consider_card).array.length > 0;
-							if (can_match && card_checking_order.indexOf(o) < card_checking_order.indexOf(possible_card)) {
+							if (can_match && card_checking_order.indexOf(o) < card_checking_order.indexOf(possible_card))
 								is_valid_connecting = false;
-							}
 							//console.log(o, state.deck[o].identity(), common.thoughts[o].possible.array, state.deck[possible_card].identity());
 						}
 						if (is_valid_connecting) {
@@ -705,7 +702,7 @@ export function interpret_clue(game, action) {
 			// mark in-between cards as forced to play, if any (this code is for the player with the connecting card)
 			if (state.playableAway(state.deck[order_pushed]) > 0 && state.playableAway(state.deck[order_pushed]) < 5) {
 				const real_cards_inbetween = [];
-				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++) 
+				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++)
 					real_cards_inbetween.push(new BasicCard(state.deck[order_pushed].suitIndex, i));
 				//console.log(inbetween_players);
 				//console.log(state.playableAway(state.deck[order_pushed]), real_cards_inbetween);
