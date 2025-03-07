@@ -617,8 +617,6 @@ export function interpret_clue(game, action) {
 		const order_pushed = interpret_trash_push(game, action, focus);
 		if (order_pushed > -1) {
 			logger.info('trash push!');
-			if (order_pushed === 10)
-				console.log(order_pushed);
 			// mark all cards as trash
 			for (const order of list) {
 				if (!state.deck[order].newly_clued)
