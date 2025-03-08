@@ -43,6 +43,8 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	// Globally known
 	for (let i = 0; i < state.numPlayers; i++) {
 		const playerIndex = (giver + i) % state.numPlayers;
+		if (state.hands[playerIndex].some(c => common.thoughts[c].trash_pushed))
+			continue;
 
 		const globally_known = state.hands[playerIndex].find(order => {
 			const ineligible = ignoreOrders.includes(order) ||
@@ -50,11 +52,6 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 				!state.deck[order].matches(identity, { assume: true }) ||
 				(common.thoughts[order].uncertain && possibly_fake(order)) ||	// May appear uncertain even though we know a finesse is occuring, since we don't know who it's on
 				common.linkedOrders(state).has(order);
-
-			if (ineligible || state.hands[playerIndex].some(c => {
-				return common.thoughts[c].trash_pushed;
-			}))
-				return false;
 
 			const old_card = common.thoughts[order];
 			let inferences = common.thoughts[order].inferred;
@@ -102,9 +99,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	// Visible and already going to be played (excluding giver)
 	for (let i = 1; i < state.numPlayers; i++) {
 		const playerIndex = (giver + i) % state.numPlayers;
-		if (state.hands[playerIndex].some(c => {
-			return game.allPlayers[playerIndex].thoughts[c].trash_pushed;
-		}))
+		if (state.hands[playerIndex].some(c => common.thoughts[c].trash_pushed))
 			continue;
 		if (options.knownOnly?.includes(playerIndex))
 			continue;
@@ -165,9 +160,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 function find_unknown_connecting(game, action, reacting, identity, connected = [], ignoreOrders = [], options = {}) {
 	const { common, state, me } = game;
 	const { giver, target } = action;
-	if (state.hands[reacting].some(c => {
-		return common.thoughts[c].trash_pushed;
-	}))
+	if (state.hands[reacting].some(c => common.thoughts[c].trash_pushed))
 		return;
 
 	if (options.bluffed) {
@@ -365,6 +358,8 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 	// Only consider prompts/finesses if no connecting cards found
 	for (let i = 0; i < conn_player_order.length; i++) {
 		const playerIndex = conn_player_order[i];
+		if (state.hands[playerIndex].some(c => common.thoughts[c].trash_pushed))
+			continue;
 
 		// Clue receiver won't find known prompts/finesses in their hand unless it doesn't look direct
 		// Also disallow prompting/finessing a player when they may need to prove a finesse to us
