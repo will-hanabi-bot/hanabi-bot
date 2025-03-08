@@ -254,40 +254,6 @@ export async function take_action(game) {
 	if (discards.length > 0)
 		logger.info('discards', logHand(discards));
 
-	if (playable_orders.length > 0 && state.endgameTurns > 0) {
-		const best_connector = Utils.maxOn(playable_orders, order => {
-			const card_id = me.thoughts[order].identity({ infer: true });
-
-			if (card_id === undefined)
-				return -Infinity;
-
-			const play_stacks = state.play_stacks.with(card_id.suitIndex, card_id.rank);
-			let connectables = 0;
-
-			for (let i = 1; i < state.endgameTurns; i++) {
-				const playerIndex = (state.ourPlayerIndex + i) % state.numPlayers;
-				const connectable = state.hands[playerIndex].some(o => {
-					const id = game.players[playerIndex].thoughts[o].identity({ infer: true });
-					return id !== undefined && id.rank === play_stacks[id.suitIndex] + 1;
-				});
-
-				if (connectable) {
-					connectables++;
-					play_stacks[card_id.suitIndex]++;
-				}
-			}
-
-			return connectables;
-		}, 0);
-
-		const best_playable = best_connector ??
-			playable_orders.find(o => me.thoughts[o].inferred.every(i => i.rank === 5)) ??
-			playable_orders.find(o => me.thoughts[o].inferred.every(i => state.isCritical(i))) ??
-			playable_orders[0];
-
-		return { tableID, type: ACTION.PLAY, target: best_playable };
-	}
-
 	const playable_priorities = determine_playable_card(game, playable_orders);
 
 	const actionPrioritySize = Object.keys(ACTION_PRIORITY).length;
@@ -492,6 +458,40 @@ export async function take_action(game) {
 
 			return { tableID, type: action.type, target: action.target };
 		}
+	}
+
+	if (playable_orders.length > 0 && state.endgameTurns > 0) {
+		const best_connector = Utils.maxOn(playable_orders, order => {
+			const card_id = me.thoughts[order].identity({ infer: true });
+
+			if (card_id === undefined)
+				return -Infinity;
+
+			const play_stacks = state.play_stacks.with(card_id.suitIndex, card_id.rank);
+			let connectables = 0;
+
+			for (let i = 1; i < state.endgameTurns; i++) {
+				const playerIndex = (state.ourPlayerIndex + i) % state.numPlayers;
+				const connectable = state.hands[playerIndex].some(o => {
+					const id = game.players[playerIndex].thoughts[o].identity({ infer: true });
+					return id !== undefined && id.rank === play_stacks[id.suitIndex] + 1;
+				});
+
+				if (connectable) {
+					connectables++;
+					play_stacks[card_id.suitIndex]++;
+				}
+			}
+
+			return connectables;
+		}, 0);
+
+		const best_playable = best_connector ??
+			playable_orders.find(o => me.thoughts[o].inferred.every(i => i.rank === 5)) ??
+			playable_orders.find(o => me.thoughts[o].inferred.every(i => state.isCritical(i))) ??
+			playable_orders[0];
+
+		return { tableID, type: ACTION.PLAY, target: best_playable };
 	}
 
 	// Consider finesses while finessed if we are only waited on to play one card,

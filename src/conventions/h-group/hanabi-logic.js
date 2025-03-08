@@ -313,7 +313,7 @@ export function rainbowMismatch(game, action, identity, prompt) {
 	if (knownAs(game, prompt, variantRegexes.rainbowish))
 		return false;
 
-	const free_choice_clues = state.allValidClues(target).filter(clue => Utils.objEquals(state.clueTouched(state.hands[target], clue), list));
+	const free_choice_clues = state.allValidClues(target).filter(clue => Utils.objEquals(state.clueTouched(state.hands[target], clue).toSorted(), list.toSorted()));
 	const matching_clues = free_choice_clues.filter(cl => state.deck[prompt].clues.some(clu =>
 		cl.type === CLUE.COLOUR && clu.type === CLUE.COLOUR && cl.value === clu.value));
 
