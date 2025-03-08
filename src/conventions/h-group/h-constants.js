@@ -10,6 +10,7 @@ export const LEVEL = /** @type {const} */ ({
 	SPECIAL_DISCARDS: 10,
 	BLUFFS: 11,
 	CONTEXT: 12,
+	TRASH_PUSH: 14,
 });
 
 export const ACTION_PRIORITY = /** @type {const} */ ({
@@ -36,7 +37,8 @@ export const CLUE_INTERP = /** @type {const} */ ({
 	CM_TRASH: 'trash cm',
 	CM_5: '5cm',
 	CM_TEMPO: 'tempo cm',
-	POSITIONAL: 'positional'
+	POSITIONAL: 'positional',
+	TRASH_PUSH: 'trash push'
 });
 
 export const PLAY_INTERP = /** @type {const} */ ({

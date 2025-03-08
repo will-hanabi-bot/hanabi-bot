@@ -390,6 +390,7 @@ export function find_clues(game, options = {}) {
 				case CLUE_INTERP.PLAY:
 				case CLUE_INTERP.DISTRIBUTION:
 				case CLUE_INTERP.POSITIONAL:
+				case CLUE_INTERP.TRASH_PUSH:
 					play_clues[target].push(new_clue);
 					break;
 

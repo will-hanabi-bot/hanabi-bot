@@ -155,6 +155,7 @@ export class Card extends ActualCard {
 	possibly_finessed = false;
 	bluffed = false;
 	possibly_bluffed = false;
+	trash_pushed = false;
 	chop_moved = false;
 	reset = false;			// Whether the card has previously lost all inferences
 	chop_when_first_clued = false;

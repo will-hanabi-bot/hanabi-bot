@@ -197,7 +197,8 @@ describe('stalling', () => {
 		], {
 			level: { min: 9 },
 			play_stacks: [1, 5, 5, 5, 2],
-			variant: VARIANTS.MUDDY_RAINBOW
+			clue_tokens: 8,
+			variant: VARIANTS.MUDDY_RAINBOW,
 		});
 
 		const action = await game.take_action();

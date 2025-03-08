@@ -265,10 +265,10 @@ export class Player {
 				return replaceable.every(r => r !== undefined);
 			};
 
-			return card.possibilities.every(p => (card.chop_moved ? state.isBasicTrash(p) : false) || state.isPlayable(p)) &&	// cm cards can ignore trash ids
+			return (card.possibilities.every(p => (card.chop_moved ? state.isBasicTrash(p) : false) || state.isPlayable(p)) &&	// cm cards can ignore trash ids
 				card.possibilities.some(p => state.isPlayable(p)) &&	// Exclude empty case
 				((options.assume ?? true) || known_playable() || ((!card.uncertain || playerIndex === state.ourPlayerIndex) && !conflicting_conn())) &&
-				(options.symmetric || state.hasConsistentInferences(card));
+				(options.symmetric || state.hasConsistentInferences(card))) || card.trash_pushed;
 		});
 	}
 

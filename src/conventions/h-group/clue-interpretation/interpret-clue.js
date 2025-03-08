@@ -20,6 +20,7 @@ import * as Utils from '../../../tools/util.js';
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections, logHand } from '../../../tools/log.js';
 import { produce } from '../../../StateProxy.js';
+import { BasicCard } from '../../../basics/Card.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -611,6 +612,148 @@ export function interpret_clue(game, action) {
 		return game;
 	}
 
+	// check for trash push at level 14
+	if (game.level >= LEVEL.TRASH_PUSH) {
+		const order_pushed = interpret_trash_push(game, action, focus);
+		if (order_pushed > -1) {
+			logger.info('trash push!');
+			// mark all cards as trash
+			for (const order of list) {
+				if (!state.deck[order].newly_clued)
+					continue;
+
+				const { possible } = common.thoughts[order];
+				const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+
+				common.updateThoughts(order, (draft) => {
+					draft.inferred = new_inferred;
+					draft.info_lock = new_inferred;
+					draft.trash = true;
+				});
+			}
+			const { possible } = common.thoughts[order_pushed];
+			const inbetween_players = [];
+			if (giver < target) {
+				for (let i = giver + 1; i < target; i++)
+					inbetween_players.push(i);
+			} else {
+				for (let i = (giver + 1) ; i < target + game.players.length; i++)
+					inbetween_players.push(i % game.players.length);
+			}
+			// check for trash push finesse / trash push prompt
+			const additional_possibilities = [];
+			const possible_extra_playables = [];
+			for (const player of inbetween_players) {
+				const card_checking_order = [];
+				const sorted_hand = state.hands[player].sort((a, b) => b-a);
+				// check all clued cards, left to right, and then check first finesse
+				for (const c of sorted_hand) {
+					if (state.deck[c].clued)
+						card_checking_order.push(c);
+				}
+				for (const c of sorted_hand) {
+					if (!state.deck[c].clued) {
+						card_checking_order.push(c);
+						break;
+					}
+				}
+				// only clued cards and first finesse position can connect to a trash push.
+				for (const possible_card of card_checking_order) {
+					const consider_card = state.deck[possible_card];
+					const playable_away_max = possible_extra_playables.filter(i => i.suitIndex === consider_card.suitIndex).length;
+					const playable_away = state.playableAway(consider_card);
+
+					if ((state.isPlayable(consider_card) || (playable_away > 0 && playable_away <= playable_away_max))) {
+						// make sure that the card is immediately promptable.
+						let is_valid_connecting = true;
+						for (const o of card_checking_order) {
+							const possible_identities = common.thoughts[o].possible;
+							const can_match = possible_identities.intersect(consider_card).array.length > 0;
+							if (can_match && card_checking_order.indexOf(o) < card_checking_order.indexOf(possible_card))
+								is_valid_connecting = false;
+							//console.log(o, state.deck[o].identity(), common.thoughts[o].possible.array, state.deck[possible_card].identity());
+						}
+						if (is_valid_connecting) {
+							possible_extra_playables.push(consider_card);
+							common.updateThoughts(possible_card, (draft) => {
+								const finessed_possibilities = common.thoughts[possible_card].possible;
+								draft.inferred = finessed_possibilities.intersect(finessed_possibilities.filter(i => state.isPlayable(i)));
+								draft.trash_pushed = true;
+							});
+							// add the next rank of the suit to possible pushed identities
+							const new_card = new BasicCard(consider_card.suitIndex, consider_card.rank + 1);
+							additional_possibilities.push(new_card);
+						}
+					}
+				}
+			}
+			additional_possibilities.push(new BasicCard(state.deck[order_pushed].suitIndex, state.deck[order_pushed].rank));
+			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) ||
+				additional_possibilities.some(x => {
+					return x.suitIndex === i.suitIndex && x.rank === i.rank;
+				})));
+
+			common.updateThoughts(order_pushed, (draft) => {
+				draft.inferred = new_inferred;
+				draft.info_lock = new_inferred;
+				draft.trash_pushed = true; // force the card to immediately play
+			});
+
+			// mark in-between cards as forced to play, if any (this code is for the player with the connecting card)
+			if (state.playableAway(state.deck[order_pushed]) > 0 && state.playableAway(state.deck[order_pushed]) < 5) {
+				const real_cards_inbetween = [];
+				for (let i = state.deck[order_pushed].rank - state.playableAway(state.deck[order_pushed]); i < state.deck[order_pushed].rank; i++)
+					real_cards_inbetween.push(new BasicCard(state.deck[order_pushed].suitIndex, i));
+				//console.log(inbetween_players);
+				//console.log(state.playableAway(state.deck[order_pushed]), real_cards_inbetween);
+				for (const player of inbetween_players) {
+					const card_checking_order = [];
+					const sorted_hand = state.hands[player].sort((a, b) => b-a);
+					for (const c of sorted_hand) {
+						if (state.deck[c].clued)
+							card_checking_order.push(c);
+					}
+					for (const c of sorted_hand) {
+						if (!state.deck[c].clued)
+							card_checking_order.push(c);
+					}
+					//console.log(card_checking_order);
+					for (const c of card_checking_order) {
+						const possible_identities = common.thoughts[c].possible;
+						const can_match = possible_identities.intersect(possible_identities.array.filter(i =>
+							real_cards_inbetween.some(x => {
+								return x.suitIndex === i.suitIndex && x.rank === i.rank;
+							})));
+						const does_match = possible_identities.intersect([{suitIndex: state.deck[c].suitIndex, rank: state.deck[c].rank}]).array.length !== 0;
+						if (can_match.array.length > 0) {
+							//console.log(does_match, state.deck[c], can_match);
+							if (!does_match && game.allPlayers[player] != game.me) {
+								game.interpretMove(CLUE_INTERP.MISTAKE);
+								team_elim(game);
+								return game;
+							}
+							common.updateThoughts(c, (draft) => {
+								draft.inferred = can_match;
+								draft.info_lock = can_match;
+								draft.trash_pushed = true;
+							});
+							game.players[player].updateThoughts(c, (draft) => {
+								draft.inferred = can_match;
+								draft.info_lock = can_match;
+								draft.trash_pushed = true;
+							});
+							break;
+						}
+					}
+				}
+			}
+
+			game.interpretMove(CLUE_INTERP.TRASH_PUSH);
+			team_elim(game);
+			return game;
+		}
+	}
+
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
 
@@ -863,4 +1006,47 @@ export function interpret_clue(game, action) {
 	}
 	team_elim(game);
 	return game;
+}
+
+// This function will return the order of the trash pushed card, or -1 if it's not a trash push.
+function interpret_trash_push(game, action, focus_order) {
+	const { common, state } = game;
+	const { clue, list, target } = action;
+	const focused_card = state.deck[focus_order];
+	const focus_thoughts = common.thoughts[focus_order];
+
+	if (!focused_card.newly_clued)
+		return -1;
+
+	let mod_common = common;
+
+	// Unclue all newly clued cards so that we can search for trash correctly
+	for (const order of list) {
+		if (state.deck[order].newly_clued) {
+			mod_common = mod_common.withThoughts(order, (draft) => {
+				draft.newly_clued = false;
+				draft.clued = false;
+			}, false);
+		}
+	}
+
+	if (clue.type === CLUE.RANK) {
+		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
+
+		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true })))
+			return -1;
+	}
+	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
+		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }))) {
+		return -1;
+	}
+	// at this point, we know all cards are trash.
+	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
+	for (let i = oldest_trash_index - 1; i >= 0; i--) {
+		const order = state.hands[target][i];
+
+		if (!state.deck[order].clued)
+			return order;
+	}
+	return -1;
 }

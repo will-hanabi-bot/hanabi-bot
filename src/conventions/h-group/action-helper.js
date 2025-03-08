@@ -132,6 +132,11 @@ export function determine_playable_card(game, playable_orders) {
 	for (const order of playable_orders) {
 		const card = game.me.thoughts[order];
 
+		if (card.trash_pushed) {
+			priorities[0].push(order);
+			continue;
+		}
+
 		const in_finesse = card.finessed ||
 			(!common.play_links.some(play_link => play_link.orders.includes(order)) && common.dependentConnections(order).some(wc =>
 				!wc.symmetric && wc.connections.some((conn, i) => i >= wc.conn_index && conn.type === 'finesse')));
