@@ -698,7 +698,7 @@ export function interpret_clue(game, action) {
 					return x.suitIndex === i.suitIndex && x.rank === i.rank;
 				})));
 			if (!new_inferred.array.some(x=>{return (x.suitIndex === state.deck[order_pushed].suitIndex &&
-				x.rank === state.deck[order_pushed].rank) || state.deck[order_pushed].suitIndex == -1 || state.deck[order_pushed].rank == -1})) {
+				x.rank === state.deck[order_pushed].rank) || state.deck[order_pushed].suitIndex == -1 || state.deck[order_pushed].rank == -1;})) {
 				game.interpretMove(CLUE_INTERP.MISTAKE);
 				team_elim(game);
 				return game;

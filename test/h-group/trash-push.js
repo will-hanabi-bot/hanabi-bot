@@ -4,7 +4,7 @@ import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn, expandShortCard } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
+// import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
