@@ -52,6 +52,8 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 				!state.deck[order].matches(identity, { assume: true }) ||
 				(common.thoughts[order].uncertain && possibly_fake(order)) ||	// May appear uncertain even though we know a finesse is occuring, since we don't know who it's on
 				common.linkedOrders(state).has(order);
+			if (ineligible)
+				return false;
 
 			const old_card = common.thoughts[order];
 			let inferences = common.thoughts[order].inferred;
