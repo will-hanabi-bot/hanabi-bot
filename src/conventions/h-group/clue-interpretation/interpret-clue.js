@@ -616,6 +616,12 @@ export function interpret_clue(game, action) {
 	if (game.level >= LEVEL.TRASH_PUSH) {
 		const order_pushed = interpret_trash_push(game, action, focus);
 		if (order_pushed > -1) {
+			// make sure the pushed card is not trash
+			if (state.isBasicTrash(state.deck[order_pushed])) {
+				game.interpretMove(CLUE_INTERP.MISTAKE);
+				team_elim(game);
+				return game;
+			}
 			logger.info('trash push!');
 			// mark all cards as trash
 			for (const order of list) {
@@ -671,7 +677,6 @@ export function interpret_clue(game, action) {
 							const can_match = possible_identities.intersect(consider_card).array.length > 0;
 							if (can_match && card_checking_order.indexOf(o) < card_checking_order.indexOf(possible_card))
 								is_valid_connecting = false;
-							//console.log(o, state.deck[o].identity(), common.thoughts[o].possible.array, state.deck[possible_card].identity());
 						}
 						if (is_valid_connecting) {
 							possible_extra_playables.push(consider_card);
@@ -692,6 +697,12 @@ export function interpret_clue(game, action) {
 				additional_possibilities.some(x => {
 					return x.suitIndex === i.suitIndex && x.rank === i.rank;
 				})));
+			if (!new_inferred.array.some(x=>{return (x.suitIndex === state.deck[order_pushed].suitIndex &&
+				x.rank === state.deck[order_pushed].rank) || state.deck[order_pushed].suitIndex == -1 || state.deck[order_pushed].rank == -1})) {
+				game.interpretMove(CLUE_INTERP.MISTAKE);
+				team_elim(game);
+				return game;
+			}
 
 			common.updateThoughts(order_pushed, (draft) => {
 				draft.inferred = new_inferred;
@@ -735,12 +746,10 @@ export function interpret_clue(game, action) {
 							common.updateThoughts(c, (draft) => {
 								draft.inferred = can_match;
 								draft.info_lock = can_match;
-								draft.trash_pushed = true;
 							});
 							game.players[player].updateThoughts(c, (draft) => {
 								draft.inferred = can_match;
 								draft.info_lock = can_match;
-								draft.trash_pushed = true;
 							});
 							break;
 						}

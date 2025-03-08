@@ -4,6 +4,7 @@ import { ACTION } from '../../src/constants.js';
 import { PLAYER, setup, takeTurn, expandShortCard } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
+import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -124,5 +125,23 @@ describe('trash push', () => {
 		// Cathy should not consider y4.
 		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].inferred.has(expandShortCard('y4')));
 
+	});
+
+	it('does not entertain bluffs on trash pushed players', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r3', 'y3', 'g1', 'b1'],
+			['g4', 'b3', 'p3', 'y2'],
+		], {
+			level: { min: 14 },
+			play_stacks: [2, 2, 3, 5, 5],
+      			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 1 to Bob (slots 3,4)');
+		takeTurn(game, 'Alice clues green to Bob (slot 1)');
+
+		// Cathy should not consider g5.
+		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].inferred.has(expandShortCard('g5')));
 	});
 });

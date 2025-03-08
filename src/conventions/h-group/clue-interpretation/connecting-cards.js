@@ -51,7 +51,9 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 				(common.thoughts[order].uncertain && possibly_fake(order)) ||	// May appear uncertain even though we know a finesse is occuring, since we don't know who it's on
 				common.linkedOrders(state).has(order);
 
-			if (ineligible)
+			if (ineligible || state.hands[playerIndex].some(c => {
+				return game.allPlayers[playerIndex].thoughts[c].trash_pushed;
+			}))
 				return false;
 
 			const old_card = common.thoughts[order];
@@ -100,7 +102,10 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	// Visible and already going to be played (excluding giver)
 	for (let i = 1; i < state.numPlayers; i++) {
 		const playerIndex = (giver + i) % state.numPlayers;
-
+		if (state.hands[playerIndex].some(c => {
+			return game.allPlayers[playerIndex].thoughts[c].trash_pushed;
+		}))
+			continue;
 		if (options.knownOnly?.includes(playerIndex))
 			continue;
 
@@ -160,6 +165,10 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 function find_unknown_connecting(game, action, reacting, identity, connected = [], ignoreOrders = [], options = {}) {
 	const { common, state, me } = game;
 	const { giver, target } = action;
+	if (state.hands[reacting].some(c => {
+		return game.allPlayers[reacting].thoughts[c].trash_pushed;
+	}))
+		return;
 
 	if (options.bluffed) {
 		const orders = common.find_clued(state, reacting, identity, connected, ignoreOrders);
