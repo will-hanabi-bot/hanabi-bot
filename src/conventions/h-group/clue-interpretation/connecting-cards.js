@@ -52,7 +52,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 				common.linkedOrders(state).has(order);
 
 			if (ineligible || state.hands[playerIndex].some(c => {
-				return game.allPlayers[playerIndex].thoughts[c].trash_pushed;
+				return common.thoughts[c].trash_pushed;
 			}))
 				return false;
 
@@ -166,7 +166,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 	const { common, state, me } = game;
 	const { giver, target } = action;
 	if (state.hands[reacting].some(c => {
-		return game.allPlayers[reacting].thoughts[c].trash_pushed;
+		return common.thoughts[c].trash_pushed;
 	}))
 		return;
 
