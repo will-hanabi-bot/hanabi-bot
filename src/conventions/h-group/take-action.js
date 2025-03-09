@@ -167,9 +167,8 @@ export function find_all_discards(game, playerIndex) {
 	// this code is here to support TOCMs
 	const all_discards = [{ misplay: false, order: discardable }];
 	for (const c of trash_cards) {
-		if (c != discardable) {
+		if (c != discardable)
 			all_discards.push({misplay: false, order: c});
-		}
 	}
 	return positional !== undefined ? [positional] : (discardable ? all_discards : []);
 }
@@ -617,9 +616,8 @@ export async function take_action(game) {
 				const next_chop = me.chop(state.hands[player_check_index]);
 				const chop_value = cardValue(state, me, state.deck[next_chop], next_chop);
 				const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
-				if (new_chop_value < chop_value && chop_value >= 1) {
+				if (new_chop_value < chop_value && chop_value >= 1)
 					return { tableID, type: ACTION.DISCARD, target: trash_orders[i] };
-				}
 				player_check_index = state.nextPlayerIndex(player_check_index);
 			}
 		}
@@ -721,9 +719,8 @@ export async function take_action(game) {
 				const next_chop = me.chop(state.hands[player_check_index]);
 				const chop_value = cardValue(state, me, state.deck[next_chop], next_chop);
 				const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
-				if (new_chop_value < chop_value && chop_value >= 1) {
+				if (new_chop_value < chop_value && chop_value >= 1)
 					return { tableID, type: ACTION.DISCARD, target: trash_orders[i] };
-				}
 				player_check_index = state.nextPlayerIndex(player_check_index);
 			}
 		}
