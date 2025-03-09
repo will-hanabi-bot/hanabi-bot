@@ -200,4 +200,22 @@ describe('trash order chop move', () => {
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] }, `Expected (Discard slot 4) but got ${logPerformAction(action)}`);
 	});
+	
+	it('will not TOCM trash', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r5', 'p3', 'g4', 'p4', 'y2'],
+			['r1', 'y1', 'g1', 'p2', 'g2']
+		], {
+			level: { min: 14 },
+			play_stacks: [2, 2, 4, 1, 4],
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 1 to Alice (slots 3,4)');
+
+		// Alice should discard slot 3 to not chop move yellow 2.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] }, `Expected (Discard slot 3) but got ${logPerformAction(action)}`);
+	});
 });
