@@ -43,7 +43,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	// Globally known
 	for (let i = 0; i < state.numPlayers; i++) {
 		const playerIndex = (giver + i) % state.numPlayers;
-		
+
 		const globally_known = state.hands[playerIndex].find(order => {
 			const ineligible = ignoreOrders.includes(order) ||
 				!common.thoughts[order].touched ||
@@ -99,7 +99,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	// Visible and already going to be played (excluding giver)
 	for (let i = 1; i < state.numPlayers; i++) {
 		const playerIndex = (giver + i) % state.numPlayers;
-		
+
 		if (options.knownOnly?.includes(playerIndex))
 			continue;
 
