@@ -66,6 +66,7 @@ const DEFAULT_LEVEL = parseInt(process.env['HANABI_LEVEL'] ?? '1');
 const sampleColours = /** @type {const} */ ({
 	'Rainbow': 'm',
 	'Muddy Rainbow': 'm',
+	'Null': 'u',
 	'Light Pink': 'i',
 	'Prism': 'i',
 	'Dark Rainbow': 'm',
