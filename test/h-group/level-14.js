@@ -187,7 +187,7 @@ describe('trash order chop move', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r3', 'b3', 'y1', 'g1', 'g3'],
-			['g5', 'r4', 'y4', 'g4', 'u5']
+			['g4', 'r4', 'y4', 'g4', 'u5']
 		], {
 			level: { min: 14 },
 			play_stacks: [1, 1, 1, 1, 1],
