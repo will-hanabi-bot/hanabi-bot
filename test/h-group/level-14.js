@@ -183,22 +183,21 @@ describe('trash order chop move', () => {
 		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved);
 	});
 
-	it('performs a TOCM if the card can\'t be saved otherwise', async () => {
+	it('performs a TOCM for good cards if it can\'t otherwise cm', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['r3', 'b3', 'y1', 'g1', 'g3'],
-			['g4', 'r4', 'y4', 'g4', 'u5']
+			['r5', 'p3', 'g4', 'p4', 'y4'],
+			['r1', 'y1', 'g1', 'p2', 'g2']
 		], {
 			level: { min: 14 },
-			play_stacks: [1, 1, 1, 1, 1],
-			starting: PLAYER.ALICE,
-			variant: VARIANTS.NULL
+			play_stacks: [2, 2, 4, 1, 4],
+			starting: PLAYER.CATHY
 		});
 
-		takeTurn(game, 'Alice clues 1 to Bob (slots 3,4)');
+		takeTurn(game, 'Cathy clues 1 to Alice (slots 3,4)');
 
-		// Bob should discard slot 4 to chop move null 5.
+		// Alice should discard slot 4 to chop move yellow 3.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.BOB][3] }, `Expected (Discard slot 4) but got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] }, `Expected (Discard slot 4) but got ${logPerformAction(action)}`);
 	});
 });

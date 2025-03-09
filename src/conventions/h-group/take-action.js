@@ -164,8 +164,14 @@ export function find_all_discards(game, playerIndex) {
 	logger.off();
 	const positional = find_positional_discard(game, playerIndex, discardable ?? -1);
 	logger.on();
-
-	return positional !== undefined ? [positional] : (discardable ? [{ misplay: false, order: discardable }] : []);
+	// this code is here to support TOCMs
+	const all_discards = [{ misplay: false, order: discardable }];
+	for (const c of trash_cards) {
+		if (c != discardable) {
+			all_discards.push({misplay: false, order: c});
+		}
+	}
+	return positional !== undefined ? [positional] : (discardable ? all_discards : []);
 }
 
 /**
