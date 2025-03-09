@@ -9,6 +9,7 @@ import { logCard, logConnection } from '../../tools/log.js';
 import { getRealConnects } from './hanabi-logic.js';
 import { check_ocm } from './interpret-play.js';
 import { interpret_baton, interpret_gd } from '../shared/special-discards.js';
+import { perform_cm } from './clue-interpretation/interpret-cm.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -341,6 +342,22 @@ export function interpret_discard(game, action) {
 			resolve_discard(game, action, failed ? DISCARD_INTERP.POS_MISPLAY : DISCARD_INTERP.POS_DISCARD);
 			action.intentional = true;
 			return game;
+		}
+	}
+	// Check if a Trash Order Chop Move happened.
+	if (game.level >= LEVEL.TRASH_PUSH) {
+		const leftmost_kt = before_trash.sort((a, b) => b - a)[0];
+		if (order !== leftmost_kt) {
+			const players_after = before_trash.indexOf(order);
+			// make sure the discarded card is actually known trash
+			if (players_after === -1 || players_after >= game.players.length) {
+				resolve_discard(game, action, DISCARD_INTERP.NONE);
+				return game;
+			}
+			const player_to_cm = (players_after + playerIndex) % game.players.length;
+			// chop move
+			console.log(player_to_cm);
+			perform_cm(state, common, [common.chop(state.hands[player_to_cm])]);
 		}
 	}
 	resolve_discard(game, action, DISCARD_INTERP.NONE);

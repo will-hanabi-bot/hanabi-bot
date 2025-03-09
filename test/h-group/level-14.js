@@ -145,3 +145,41 @@ describe('trash push', () => {
 		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].inferred.has(expandShortCard('g5')));
 	});
 });
+
+describe('trash order chop move', () => {
+	it('cms if the not leftmost trash is discarded', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r5', 'g5', 'y1', 'g1', 'g3']
+		], {
+			level: { min: 14 },
+			play_stacks: [1, 1, 1, 1, 1],
+			starting: PLAYER.ALICE
+		});
+
+		takeTurn(game, 'Alice clues 1 to Bob (slots 3,4)');
+		takeTurn(game, 'Bob discards g1 (slot 4)', 'b5');
+
+		// Alice should chop move.
+		assert.ok(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].chop_moved);
+	});
+
+	it('chop moves the correct player', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r5', 'b1', 'y1', 'g1', 'g3'],
+			['r1', 'r1', 'y1', 'g1', 'p1']
+		], {
+			level: { min: 14 },
+			play_stacks: [1, 1, 1, 1, 1],
+			starting: PLAYER.ALICE
+		});
+
+		takeTurn(game, 'Alice clues 1 to Bob (slots 2,3,4)');
+		takeTurn(game, 'Bob discards g1 (slot 4)', 'b5');
+
+		// Alice should chop move. Cathy shouldn't.
+		assert.ok(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].chop_moved);
+		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved);
+	});
+});
