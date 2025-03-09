@@ -186,8 +186,8 @@ describe('trash order chop move', () => {
 	it('performs a TOCM if the card can\'t be saved otherwise', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['r5', 'b5', 'y1', 'g1', 'g3'],
-			['r1', 'r1', 'y1', 'g1', 'u5']
+			['r3', 'b3', 'y1', 'g1', 'g3'],
+			['g5', 'r4', 'y4', 'g4', 'u5']
 		], {
 			level: { min: 14 },
 			play_stacks: [1, 1, 1, 1, 1],
