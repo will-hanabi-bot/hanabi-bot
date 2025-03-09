@@ -139,7 +139,7 @@ describe('trash push', () => {
 		});
 
 		takeTurn(game, 'Cathy clues 1 to Bob (slots 3,4)');
-		takeTurn(game, 'Alice clues green to Bob (slot 1)');
+		takeTurn(game, 'Alice clues green to Cathy (slot 1)');
 
 		// Cathy should not consider g5.
 		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].inferred.has(expandShortCard('g5')));
