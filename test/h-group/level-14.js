@@ -183,7 +183,7 @@ describe('trash order chop move', () => {
 		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved);
 	});
 
-	it('performs a TOCM for good cards if it can\'t otherwise cm', async () => {
+	it('performs a TOCM for good cards', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r5', 'p3', 'g4', 'p4', 'y4'],
