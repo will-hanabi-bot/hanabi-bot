@@ -111,8 +111,8 @@ export async function getShortForms(variant) {
 	const colours = await colours_promise;
 	const abbreviations = [];
 	for (const suitName of variant.suits) {
-		if (['Black', 'Pink', 'Brown'].includes(suitName)) {
-			abbreviations.push(['k', 'i', 'n'][['Black', 'Pink', 'Brown'].indexOf(suitName)]);
+		if (['Black', 'Pink', 'Brown', 'Null'].includes(suitName)) {
+			abbreviations.push(['k', 'i', 'n', 'u'][['Black', 'Pink', 'Brown', 'Null'].indexOf(suitName)]);
 		} else {
 			const abbreviation = colours.find(colour => colour.name === suitName)?.abbreviation ?? suitName.charAt(0);
 			if (abbreviations.includes(abbreviation.toLowerCase()))
