@@ -355,7 +355,7 @@ export function interpret_discard(game, action) {
 				return game;
 			}
 			const player_to_cm = (players_after + playerIndex) % game.players.length;
-			const player_chop = common.chop(state.hands[player_to_cm])
+			const player_chop = common.chop(state.hands[player_to_cm]);
 			// make sure the player has a chop
 			if (player_chop === undefined) {
 				resolve_discard(game, action, DISCARD_INTERP.NONE);

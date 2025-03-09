@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { ACTION } from '../../src/constants.js';
-import { PLAYER, setup, takeTurn, expandShortCard } from '../test-utils.js';
+import { PLAYER, setup, takeTurn, expandShortCard, VARIANTS } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 // import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
@@ -181,5 +181,24 @@ describe('trash order chop move', () => {
 		// Alice should chop move. Cathy shouldn't.
 		assert.ok(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].chop_moved);
 		assert.ok(!game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved);
+	});
+
+	it('performs a TOCM if the card can\'t be saved otherwise', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r5', 'b5', 'y1', 'g1', 'g3'],
+			['r1', 'r1', 'y1', 'g1', 'u5']
+		], {
+			level: { min: 14 },
+			play_stacks: [1, 1, 1, 1, 1],
+			starting: PLAYER.ALICE,
+			variant: VARIANTS.NULL
+		});
+
+		takeTurn(game, 'Alice clues 1 to Bob (slots 3,4)');
+
+		// Bob should discard slot 4 to chop move null 5.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.BOB][3] }, `Expected (Discard slot 4) but got ${logPerformAction(action)}`);
 	});
 });
