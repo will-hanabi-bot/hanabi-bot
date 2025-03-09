@@ -355,9 +355,15 @@ export function interpret_discard(game, action) {
 				return game;
 			}
 			const player_to_cm = (players_after + playerIndex) % game.players.length;
+			const player_chop = common.chop(state.hands[player_to_cm])
+			// make sure the player has a chop
+			if (player_chop === undefined) {
+				resolve_discard(game, action, DISCARD_INTERP.NONE);
+				return game;
+			}
 			// chop move
 			console.log(player_to_cm);
-			perform_cm(state, common, [common.chop(state.hands[player_to_cm])]);
+			perform_cm(state, common, [player_chop]);
 		}
 	}
 	resolve_discard(game, action, DISCARD_INTERP.NONE);
