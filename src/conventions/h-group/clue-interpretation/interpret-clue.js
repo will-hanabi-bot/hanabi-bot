@@ -609,6 +609,8 @@ export function interpret_clue(game, action) {
 					inbetween_players.push(i % game.players.length);
 			}
 			for (const p of inbetween_players) {
+				if (p === game.me.playerIndex)
+					continue;
 				const first_unclued = state.hands[p].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0];
 				// the leftmost unclued card is either the same color as the clue, or the same rank
 				if ((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
