@@ -592,7 +592,6 @@ export function interpret_clue(game, action) {
 			return game;
 		}
 	}
-
 	// Check for forward trash finesses or bluffs at level 14
 	if (game.level >= LEVEL.TRASH_PUSH) {
 		// trash finesses are only valid if the clue initially reveals all cards to be playable or trash.
@@ -609,32 +608,30 @@ export function interpret_clue(game, action) {
 					inbetween_players.push(i % game.players.length);
 			}
 			for (const p of inbetween_players) {
-				if (p === game.me.playerIndex)
+				if (p === state.ourPlayerIndex)
 					continue;
 				const first_unclued = state.hands[p].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0];
-				// the leftmost unclued card is either the same color as the clue, or the same rank
-				if ((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
-					clue.type === CLUE.RANK && state.deck[first_unclued].rank === clue.value)
+				// the leftmost unclued card is either the same color as the clue, or the same rank, and is playable
+				if (((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
+					clue.type === CLUE.RANK && state.deck[first_unclued].rank === clue.value) && !state.isBasicTrash(state.deck[first_unclued]))
 					last_possible_player = p;
 			}
 			// if no one else has the card, we have it
 			if (last_possible_player === -1) {
-				if (giver === game.me.playerIndex) {
+				if (giver === state.ourPlayerIndex) {
 					game.interpretMove(CLUE_INTERP.MISTAKE);
 					team_elim(game);
 					return game;
 				}
-				last_possible_player = game.me.playerIndex;
+				last_possible_player = state.ourPlayerIndex;
 			}
-			// Mark it as finessed
 			const { possible } = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
-			const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)));
 			common.updateThoughts(state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0],
 				(draft) => {
 					draft.inferred = new_inferred;
 					draft.info_lock = new_inferred;
 					draft.finessed = true;
-					draft.possibly_bluffed = true;
 				});
 			for (const order of list) {
 				if (!state.deck[order].newly_clued)
@@ -650,9 +647,9 @@ export function interpret_clue(game, action) {
 				});
 			}
 
-			perform_cm(state, common, tfcm_orders);
+			perform_cm(state, common, tfcm_orders.filter(x=>x!=-1000));
 
-			game.interpretMove(CLUE_INTERP.CM_TRASH);
+			game.interpretMove(CLUE_INTERP.PLAY);
 			team_elim(game);
 			return game;
 		}
@@ -758,7 +755,7 @@ export function interpret_clue(game, action) {
 				}
 			}
 			if (giver !== game.me.playerIndex)
-				additional_possibilities.push(new BasicCard(state.deck[order_pushed].suitIndex, state.deck[order_pushed].rank))
+				additional_possibilities.push(new BasicCard(state.deck[order_pushed].suitIndex, state.deck[order_pushed].rank));
 			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) ||
 				additional_possibilities.some(x => {
 					return x.suitIndex === i.suitIndex && x.rank === i.rank;
@@ -1168,7 +1165,7 @@ function interpret_trash_finesse(game, action, focus_order) {
 	}
 	// check if all new cards are actually trash
 	for (const order of list) {
-		if (state.deck[order].newly_clued && !isTrash(state, mod_common, state.deck[order].identity, order, { infer: true }))
+		if (state.deck[order].newly_clued && !state.isBasicTrash(state.deck[order]))
 			return [];
 	}
 
@@ -1176,7 +1173,7 @@ function interpret_trash_finesse(game, action, focus_order) {
 
 	logger.info(`oldest trash card is ${logCard(state.deck[state.hands[target][oldest_trash_index]])}`);
 
-	const cm_orders = [];
+	const cm_orders = [-1000];
 
 	// Chop move every unclued card to the right of this, since trash finesses do that
 	for (let i = oldest_trash_index + 1; i < state.hands[target].length; i++) {
@@ -1186,6 +1183,6 @@ function interpret_trash_finesse(game, action, focus_order) {
 			cm_orders.push(order);
 	}
 
-	logger.highlight('cyan', cm_orders.length === 0 ? 'no cards to tcm' : `trash chop move on ${cm_orders.map(o => logCard(state.deck[o])).join(',')} ${cm_orders}`);
+	logger.highlight('cyan', cm_orders.length === 0 ? 'no cards to tcm' : `trash chop move on ${cm_orders.filter(x=>x!=-1000).map(o => logCard(state.deck[o])).join(',')} ${cm_orders.filter(x=>x!=-1000)}`);
 	return cm_orders;
 }
