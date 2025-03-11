@@ -1116,6 +1116,15 @@ function interpret_trash_push(game, action, focus_order) {
 	}
 	// at this point, we know all cards are trash.
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
+
+	// check to make sure there are no unclued non-chop moved cards to the right of oldest trash
+	for (let i = oldest_trash_index + 1; i < state.hands[target].length; i++) {
+		const order = state.hands[target][i];
+
+		if (!state.deck[order].clued && !common.thoughts[order].chop_moved)
+			return -1;
+	}
+
 	for (let i = oldest_trash_index - 1; i >= 0; i--) {
 		const order = state.hands[target][i];
 
