@@ -778,51 +778,53 @@ export function interpret_clue(game, action) {
 				for (let i = (giver + 1) ; i < target + game.players.length; i++)
 					inbetween_players.push(i % game.players.length);
 			}
-			for (const p of inbetween_players) {
-				if (p === state.ourPlayerIndex)
-					continue;
-				const first_unclued = state.hands[p].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0];
-				// the leftmost unclued card is either the same color as the clue, or the same rank, and is playable
-				if (((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
-					clue.type === CLUE.RANK && state.deck[first_unclued].rank === clue.value) && !state.isBasicTrash(state.deck[first_unclued]))
-					last_possible_player = p;
-			}
-			// if no one else has the card, we have it
-			if (last_possible_player === -1) {
-				if (giver === state.ourPlayerIndex) {
-					game.interpretMove(CLUE_INTERP.MISTAKE);
-					team_elim(game);
-					return game;
+			if (inbetween_players.length > 0) {
+				for (const p of inbetween_players) {
+					if (p === state.ourPlayerIndex)
+						continue;
+					const first_unclued = state.hands[p].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0];
+					// the leftmost unclued card is either the same color as the clue, or the same rank, and is playable
+					if (((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
+						clue.type === CLUE.RANK && state.deck[first_unclued].rank === clue.value) && !state.isBasicTrash(state.deck[first_unclued]))
+						last_possible_player = p;
 				}
-				last_possible_player = state.ourPlayerIndex;
+				// if no one else has the card, we have it
+				if (last_possible_player === -1) {
+					if (giver === state.ourPlayerIndex) {
+						game.interpretMove(CLUE_INTERP.MISTAKE);
+						team_elim(game);
+						return game;
+					}
+					last_possible_player = state.ourPlayerIndex;
+				}
+				const { possible } = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
+				const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)));
+				common.updateThoughts(state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0],
+					(draft) => {
+						draft.inferred = new_inferred;
+						draft.info_lock = new_inferred;
+						draft.finessed = true;
+					});
+				for (const order of list) {
+					if (!state.deck[order].newly_clued)
+						continue;
+
+					const { possible } = common.thoughts[order];
+					const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+
+					common.updateThoughts(order, (draft) => {
+						draft.inferred = new_inferred;
+						draft.info_lock = new_inferred;
+						draft.trash = true;
+					});
+				}
+
+				perform_cm(state, common, tfcm_orders.filter(x=>x!=-1000));
+
+				game.interpretMove(CLUE_INTERP.PLAY);
+				team_elim(game);
+				return game;
 			}
-			const { possible } = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
-			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)));
-			common.updateThoughts(state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0],
-				(draft) => {
-					draft.inferred = new_inferred;
-					draft.info_lock = new_inferred;
-					draft.finessed = true;
-				});
-			for (const order of list) {
-				if (!state.deck[order].newly_clued)
-					continue;
-
-				const { possible } = common.thoughts[order];
-				const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
-
-				common.updateThoughts(order, (draft) => {
-					draft.inferred = new_inferred;
-					draft.info_lock = new_inferred;
-					draft.trash = true;
-				});
-			}
-
-			perform_cm(state, common, tfcm_orders.filter(x=>x!=-1000));
-
-			game.interpretMove(CLUE_INTERP.PLAY);
-			team_elim(game);
-			return game;
 		}
 	}
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall);
