@@ -618,8 +618,14 @@ export function interpret_clue(game, action) {
 					last_possible_player = p;
 			}
 			// if no one else has the card, we have it
-			if (last_possible_player == -1)
+			if (last_possible_player === -1) {
+				if (giver === game.me.playerIndex) {
+					game.interpretMove(CLUE_INTERP.MISTAKE);
+					team_elim(game);
+					return game;
+				}
 				last_possible_player = game.me.playerIndex;
+			}
 			// Mark it as finessed
 			const { possible } = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
 			const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
@@ -1149,6 +1155,11 @@ function interpret_trash_finesse(game, action, focus_order) {
 	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
 		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }) && !state.isPlayable(i))) {
 		return [];
+	}
+	// check if all new cards are actually trash
+	for (const order of list) {
+		if (state.deck[order].newly_clued && !isTrash(state, mod_common, state.deck[order].identity, order, { infer: true }))
+			return [];
 	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
