@@ -200,7 +200,7 @@ describe('trash order chop move', () => {
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] }, `Expected (Discard slot 4) but got ${logPerformAction(action)}`);
 	});
-	
+
 	it('will not TOCM trash', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -234,7 +234,6 @@ describe('trash order chop move', () => {
 		takeTurn(game, 'Alice discards g2 (slot 3)', 'r5');
 
 		// Cathy should chop move.
-		const action = await game.take_action();
 		assert.ok(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved);
 	});
 });
