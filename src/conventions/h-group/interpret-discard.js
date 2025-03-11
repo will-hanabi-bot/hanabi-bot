@@ -367,7 +367,6 @@ export function interpret_discard(game, action) {
 			return game;
 		}
 	}
-	
 	resolve_discard(game, action, DISCARD_INTERP.NONE);
 	return game;
 }
