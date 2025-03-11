@@ -7,7 +7,7 @@ import { determine_focus, getRealConnects, rankLooksPlayable, unknown_1 } from '
 import { find_focus_possible } from './focus-possible.js';
 import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score } from './connection-helper.js';
-import { variantRegexes } from '../../../variants.js';
+import { variantRegexes, shortForms } from '../../../variants.js';
 import { remove_finesse } from '../update-wcs.js';
 import { order_1s } from '../action-helper.js';
 import { find_impossible_conn } from '../update-turn.js';
@@ -687,7 +687,7 @@ export function interpret_clue(game, action) {
 				team_elim(game);
 				return game;
 			}
-			logger.info('trash push!');
+			logger.info('trash pushing card', shortForms[state.deck[order_pushed].suitIndex]+state.deck[order_pushed].rank);
 			// mark all cards as trash
 			for (const order of list) {
 				if (!state.deck[order].newly_clued)
@@ -757,7 +757,8 @@ export function interpret_clue(game, action) {
 					}
 				}
 			}
-			additional_possibilities.push(new BasicCard(state.deck[order_pushed].suitIndex, state.deck[order_pushed].rank));
+			if (giver !== game.me.playerIndex)
+				additional_possibilities.push(new BasicCard(state.deck[order_pushed].suitIndex, state.deck[order_pushed].rank))
 			const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i) ||
 				additional_possibilities.some(x => {
 					return x.suitIndex === i.suitIndex && x.rank === i.rank;
