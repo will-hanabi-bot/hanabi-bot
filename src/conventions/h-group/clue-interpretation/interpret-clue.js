@@ -783,6 +783,8 @@ export function interpret_clue(game, action) {
 					if (p === state.ourPlayerIndex)
 						continue;
 					const first_unclued = state.hands[p].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0];
+					if (first_unclued === undefined)
+						continue;
 					// the leftmost unclued card is either the same color as the clue, or the same rank, and is playable
 					if (((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
 						clue.type === CLUE.RANK && state.deck[first_unclued].rank === clue.value) && !state.isBasicTrash(state.deck[first_unclued]))
