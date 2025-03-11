@@ -593,6 +593,63 @@ export function interpret_clue(game, action) {
 		}
 	}
 
+	// Check for forward trash finesses or bluffs at level 14
+	if (game.level >= LEVEL.TRASH_PUSH) {
+		// trash finesses are only valid if the clue initially reveals all cards to be playable or trash.
+		const tfcm_orders = interpret_trash_finesse(game, action, focus);
+		if (tfcm_orders.length > 0) {
+			// Check who has to play into the trash finesse
+			let last_possible_player = -1;
+			const inbetween_players = [];
+			if (giver < target) {
+				for (let i = giver + 1; i < target; i++)
+					inbetween_players.push(i);
+			} else {
+				for (let i = (giver + 1) ; i < target + game.players.length; i++)
+					inbetween_players.push(i % game.players.length);
+			}
+			for (const p of inbetween_players) {
+				const first_unclued = state.hands[p].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0];
+				// the leftmost unclued card is either the same color as the clue, or the same rank
+				if ((clue.type === CLUE.COLOUR && state.deck[first_unclued].suitIndex === clue.value) ||
+					clue.type === CLUE.RANK && state.deck[first_unclued].rank === clue.value)
+					last_possible_player = p;
+			}
+			// if no one else has the card, we have it
+			if (last_possible_player == -1)
+				last_possible_player = game.me.playerIndex;
+			// Mark it as finessed
+			const { possible } = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
+			const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+			common.updateThoughts(state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0],
+				(draft) => {
+					draft.inferred = new_inferred;
+					draft.info_lock = new_inferred;
+					draft.finessed = true;
+					draft.possibly_bluffed = true;
+				});
+			for (const order of list) {
+				if (!state.deck[order].newly_clued)
+					continue;
+
+				const { possible } = common.thoughts[order];
+				const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+
+				common.updateThoughts(order, (draft) => {
+					draft.inferred = new_inferred;
+					draft.info_lock = new_inferred;
+					draft.trash = true;
+				});
+			}
+
+			perform_cm(state, common, tfcm_orders);
+
+			game.interpretMove(CLUE_INTERP.CM_TRASH);
+			team_elim(game);
+			return game;
+		}
+	}
+
 	const pink_trash_fix = state.includesVariant(variantRegexes.pinkish) &&
 		!positional && clue.type === CLUE.RANK &&
 		list.every(o => !state.deck[o].newly_clued && knownAs(game, o, variantRegexes.pinkish)) &&
@@ -1058,4 +1115,54 @@ function interpret_trash_push(game, action, focus_order) {
 			return order;
 	}
 	return -1;
+}
+
+function interpret_trash_finesse(game, action, focus_order) {
+	const { common, state } = game;
+	const { clue, list, target } = action;
+	const focused_card = state.deck[focus_order];
+	const focus_thoughts = common.thoughts[focus_order];
+
+	if (!focused_card.newly_clued)
+		return [];
+
+	let mod_common = common;
+
+	// Unclue all newly clued cards so that we can search for trash correctly
+	for (const order of list) {
+		if (state.deck[order].newly_clued) {
+			mod_common = mod_common.withThoughts(order, (draft) => {
+				draft.newly_clued = false;
+				draft.clued = false;
+			}, false);
+		}
+	}
+	// check if all cards will be known either trash or playable before a blind play
+	if (clue.type === CLUE.RANK) {
+		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
+
+		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true }) && !state.isPlayable(i)))
+			return [];
+	}
+	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
+		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }) && !state.isPlayable(i))) {
+		return [];
+	}
+
+	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
+
+	logger.info(`oldest trash card is ${logCard(state.deck[state.hands[target][oldest_trash_index]])}`);
+
+	const cm_orders = [];
+
+	// Chop move every unclued card to the right of this, since trash finesses do that
+	for (let i = oldest_trash_index + 1; i < state.hands[target].length; i++) {
+		const order = state.hands[target][i];
+
+		if (!state.deck[order].clued && !common.thoughts[order].chop_moved)
+			cm_orders.push(order);
+	}
+
+	logger.highlight('cyan', cm_orders.length === 0 ? 'no cards to tcm' : `trash chop move on ${cm_orders.map(o => logCard(state.deck[o])).join(',')} ${cm_orders}`);
+	return cm_orders;
 }
