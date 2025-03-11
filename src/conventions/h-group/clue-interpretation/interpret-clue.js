@@ -765,7 +765,7 @@ export function interpret_clue(game, action) {
 	}
 	// Check for forward trash finesses or bluffs at level 14
 	if (game.level >= LEVEL.TRASH_PUSH) {
-		// trash finesses are only valid if the clue initially reveals all cards to be playable or trash.
+		// trash bluffs and finesses are only valid if the clue initially reveals all cards to be playable or trash.
 		const tfcm_orders = interpret_trash_finesse(game, action, focus);
 		if (tfcm_orders.length > 0) {
 			// Check who has to play into the trash finesse
@@ -779,6 +779,19 @@ export function interpret_clue(game, action) {
 					inbetween_players.push(i % game.players.length);
 			}
 			if (inbetween_players.length > 0) {
+				// Trash finesses can only have 1 missing card.
+				if (inbetween_players.length > 1) {
+					let missing_cards = 0;
+					for (const c of common.thoughts[focus].possible.array) {
+						if (state.isPlayable(c))
+							missing_cards++;
+					}
+					if (missing_cards >= 2) {
+						game.interpretMove(CLUE_INTERP.MISTAKE);
+						team_elim(game);
+						return game;
+					}
+				}
 				for (const p of inbetween_players) {
 					if (p === state.ourPlayerIndex)
 						continue;
