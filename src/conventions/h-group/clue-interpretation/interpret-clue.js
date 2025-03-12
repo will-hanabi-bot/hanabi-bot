@@ -812,7 +812,13 @@ export function interpret_clue(game, action) {
 					}
 					last_possible_player = state.ourPlayerIndex;
 				}
-				const { possible } = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
+				const p = common.thoughts[state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0]];
+				if (p === undefined) {
+					game.interpretMove(CLUE_INTERP.NONE);
+					team_elim(game);
+					return game;
+				}
+				const { possible } = p;
 				const new_inferred = possible.intersect(possible.filter(i => state.isPlayable(i)));
 				common.updateThoughts(state.hands[last_possible_player].sort((a, b) => b-a).filter(c => !state.deck[c].clued)[0],
 					(draft) => {
