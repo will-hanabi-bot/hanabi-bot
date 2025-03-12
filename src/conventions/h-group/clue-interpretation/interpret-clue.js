@@ -1121,10 +1121,10 @@ function interpret_trash_push(game, action, focus_order) {
 	if (clue.type === CLUE.RANK) {
 		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
 
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true })))
+		if (focus_thoughts.inferred.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true })))
 			return -1;
 	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
+	else if (focus_thoughts.inferred.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
 		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }))) {
 		return -1;
 	}
