@@ -614,6 +614,8 @@ export async function take_action(game) {
 		if (trash_orders.length >= 2 && game.level >= LEVEL.TRASH_PUSH) {
 			for (let i = 1; i < trash_orders.length; i++) {
 				const next_chop = me.chop(state.hands[player_check_index]);
+				if (next_chop === undefined)
+					continue;
 				const chop_value = cardValue(state, me, state.deck[next_chop], next_chop);
 				const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
 				if (new_chop_value < chop_value && chop_value >= 1)
@@ -717,6 +719,8 @@ export async function take_action(game) {
 		if (trash_orders.length >= 2 && game.level >= LEVEL.TRASH_PUSH) {
 			for (let i = 1; i < trash_orders.length; i++) {
 				const next_chop = me.chop(state.hands[player_check_index]);
+				if (next_chop === undefined)
+					continue;
 				const chop_value = cardValue(state, me, state.deck[next_chop], next_chop);
 				const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
 				if (new_chop_value < chop_value && chop_value >= 1)
