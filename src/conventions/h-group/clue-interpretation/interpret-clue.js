@@ -1181,14 +1181,17 @@ function interpret_trash_finesse(game, action, focus_order) {
 		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true }) && !state.isPlayable(i)))
 			return [];
 	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }) && !state.isPlayable(i))) {
+	else if (focus_thoughts.inferred.some(i => !state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }))) {
 		return [];
 	}
 	// check if all new cards are actually trash
 	for (const order of list) {
 		if (state.deck[order].newly_clued && !state.isBasicTrash(state.deck[order]))
 			return [];
+	}
+	// if it's already kt, no blind play needed
+	if (focus_thoughts.possible.every(i => isTrash(state, mod_common, i, focus_order, { infer: true }))) {
+		return [];
 	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
