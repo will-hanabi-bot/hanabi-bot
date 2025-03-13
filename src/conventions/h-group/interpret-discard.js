@@ -271,8 +271,8 @@ export function interpret_discard(game, action) {
 	}
 	// Check if a Trash Order Chop Move happened.
 	if (game.level >= LEVEL.TRASH_PUSH && !state.inEndgame()) {
-		const leftmost_kt = before_trash.sort((a, b) => b - a)[0];
-		if (order !== leftmost_kt) {
+		const kt = before_trash.sort((a, b) => b - a);
+		if (kt.length > 0 && order !== kt[0]) {
 			// check for the Shout Trash Order cm
 			const shout = (common.thinksPlayables(state, playerIndex).length) > 0 ? 1 : 0;
 			const players_after = before_trash.indexOf(order) + shout;
