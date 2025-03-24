@@ -1190,9 +1190,8 @@ function interpret_trash_finesse(game, action, focus_order) {
 			return [];
 	}
 	// if it's already kt, no blind play needed
-	if (focus_thoughts.possible.every(i => isTrash(state, mod_common, i, focus_order, { infer: true }))) {
+	if (focus_thoughts.possible.every(i => isTrash(state, mod_common, i, focus_order, { infer: true })))
 		return [];
-	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
 

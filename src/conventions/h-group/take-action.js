@@ -460,7 +460,7 @@ export async function take_action(game) {
 
 					return Utils.clueToAction(stall_clue, tableID);
 				}
-			return { tableID, type: action.type, target: action.target };
+				return { tableID, type: action.type, target: action.target };
 			}
 		}
 	}
