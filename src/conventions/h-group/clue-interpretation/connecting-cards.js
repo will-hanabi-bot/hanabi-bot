@@ -50,7 +50,6 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 				!state.deck[order].matches(identity, { assume: true }) ||
 				(common.thoughts[order].uncertain && possibly_fake(order)) ||	// May appear uncertain even though we know a finesse is occuring, since we don't know who it's on
 				common.linkedOrders(state).has(order);
-
 			if (ineligible)
 				return false;
 
@@ -160,6 +159,8 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 function find_unknown_connecting(game, action, reacting, identity, connected = [], ignoreOrders = [], options = {}) {
 	const { common, state, me } = game;
 	const { giver, target } = action;
+	if (state.hands[reacting].some(c => common.thoughts[c].trash_pushed))
+		return;
 
 	if (options.bluffed) {
 		const orders = common.find_clued(state, reacting, identity, connected, ignoreOrders);
@@ -356,6 +357,8 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 	// Only consider prompts/finesses if no connecting cards found
 	for (let i = 0; i < conn_player_order.length; i++) {
 		const playerIndex = conn_player_order[i];
+		if (state.hands[playerIndex].some(c => common.thoughts[c].trash_pushed))
+			continue;
 
 		// Clue receiver won't find known prompts/finesses in their hand unless it doesn't look direct
 		// Also disallow prompting/finessing a player when they may need to prove a finesse to us

@@ -57,7 +57,8 @@ export const VARIANTS = /** @type {Record<string, Variant>} */ ({
 	DECEPTIVE_1S: { id: 1672, name: "Deceptive-Ones (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple"], specialRank: 1, specialRankDeceptive: true, clueRanks: [2, 3, 4, 5] },
 	PINK_1S: { id: 327, name: "Pink-Ones (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple"], specialRank: 1, specialRankAllClueRanks: true, clueRanks: [2, 3, 4, 5] },
 	MUDDY_RAINBOW: { id: 161, name: "Muddy Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Muddy Rainbow"] },
-	COCOA_RAINBOW: { id: 291, name: "Cocoa Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Cocoa Rainbow"] }
+	COCOA_RAINBOW: { id: 291, name: "Cocoa Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Cocoa Rainbow"] },
+	NULL: { id: 181, name: "Null (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Null"] }
 });
 
 const DEFAULT_LEVEL = parseInt(process.env['HANABI_LEVEL'] ?? '1');
@@ -65,6 +66,7 @@ const DEFAULT_LEVEL = parseInt(process.env['HANABI_LEVEL'] ?? '1');
 const sampleColours = /** @type {const} */ ({
 	'Rainbow': 'm',
 	'Muddy Rainbow': 'm',
+	'Null': 'u',
 	'Light Pink': 'i',
 	'Prism': 'i',
 	'Dark Rainbow': 'm',

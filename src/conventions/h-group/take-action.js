@@ -164,8 +164,13 @@ export function find_all_discards(game, playerIndex) {
 	logger.off();
 	const positional = find_positional_discard(game, playerIndex, discardable ?? -1);
 	logger.on();
-
-	return positional !== undefined ? [positional] : (discardable ? [{ misplay: false, order: discardable }] : []);
+	// this code is here to support TOCMs
+	const all_discards = [{ misplay: false, order: discardable }];
+	for (const c of trash_cards) {
+		if (c != discardable)
+			all_discards.push({misplay: false, order: c});
+	}
+	return positional !== undefined ? [positional] : (discardable ? all_discards : []);
 }
 
 /**
@@ -301,7 +306,7 @@ export async function take_action(game) {
 
 	// Urgent save for next player
 	for (let i = 1; i < actionPrioritySize; i++) {
-		const action = urgent_actions[i].find(action => state.clue_tokens > 0 || (action.type !== ACTION.RANK && action.type !== ACTION.COLOUR));
+		const action = urgent_actions[i].find(action => state.clue_tokens > 0 || (action.type !== ACTION.RANK && action.type !== ACTION.COLOUR) && state.pace != 0);
 
 		if (action)
 			return action;
@@ -447,16 +452,16 @@ export async function take_action(game) {
 
 		if (result !== undefined) {
 			const { action } = result;
+			if (!((action.type === ACTION.COLOUR || action.type === ACTION.RANK) && action.target === -1)) {
+				if (action.type === ACTION.COLOUR || action.type === ACTION.RANK) {
+					const stall_clue = best_play_clue ??
+						best_stall_clue(stall_clues, 4) ??
+						{ type: CLUE.RANK, target: nextPlayerIndex, value: state.deck[state.hands[nextPlayerIndex].at(-1)].rank };
 
-			if (action.type === ACTION.COLOUR || action.type === ACTION.RANK) {
-				const stall_clue = best_play_clue ??
-					best_stall_clue(stall_clues, 4) ??
-					{ type: CLUE.RANK, target: nextPlayerIndex, value: state.deck[state.hands[nextPlayerIndex].at(-1)].rank };
-
-				return Utils.clueToAction(stall_clue, tableID);
+					return Utils.clueToAction(stall_clue, tableID);
+				}
+				return { tableID, type: action.type, target: action.target };
 			}
-
-			return { tableID, type: action.type, target: action.target };
 		}
 	}
 
@@ -603,8 +608,24 @@ export async function take_action(game) {
 	}
 
 	// Discard known trash at high pace, low clues
-	if (best_playable_order === undefined && trash_orders.length > 0 && state.pace > state.numPlayers * 2 && state.clue_tokens <= 2)
+	if (best_playable_order === undefined && trash_orders.length > 0 && state.pace > state.numPlayers * 2 && state.clue_tokens <= 2) {
+		// check if a TOCM would be better than not doing a TOCM, starting from Bob
+		let player_check_index = state.nextPlayerIndex(state.ourPlayerIndex);
+		if (trash_orders.length >= 2 && game.level >= LEVEL.TRASH_PUSH) {
+			for (let i = 1; i < trash_orders.length; i++) {
+				const next_chop = me.chop(state.hands[player_check_index]);
+				if (next_chop === undefined)
+					continue;
+				const chop_value = cardValue(state, me, state.deck[next_chop], next_chop);
+				const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
+				if (new_chop_value < chop_value && chop_value >= 1)
+					return { tableID, type: ACTION.DISCARD, target: trash_orders[i] };
+				player_check_index = state.nextPlayerIndex(player_check_index);
+			}
+		}
+
 		return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+	}
 
 	// Shout Discard on a valuable card that moves chop to trash
 	const next_chop = me.chop(state.hands[nextPlayerIndex]);
@@ -692,8 +713,23 @@ export async function take_action(game) {
 	}
 
 	// Discard known trash (no pace requirement)
-	if (trash_orders.length > 0 && !state.inEndgame() && state.clue_tokens < 8)
+	if (trash_orders.length > 0 && !state.inEndgame() && state.clue_tokens < 8) {
+		// check if a TOCM would be better than not doing a TOCM, starting from Bob
+		let player_check_index = state.nextPlayerIndex(state.ourPlayerIndex);
+		if (trash_orders.length >= 2 && game.level >= LEVEL.TRASH_PUSH) {
+			for (let i = 1; i < trash_orders.length; i++) {
+				const next_chop = me.chop(state.hands[player_check_index]);
+				if (next_chop === undefined)
+					continue;
+				const chop_value = cardValue(state, me, state.deck[next_chop], next_chop);
+				const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
+				if (new_chop_value < chop_value && chop_value >= 1)
+					return { tableID, type: ACTION.DISCARD, target: trash_orders[i] };
+				player_check_index = state.nextPlayerIndex(player_check_index);
+			}
+		}
 		return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+	}
 
 	// Early save
 	if (state.clue_tokens > 0 && urgent_actions[actionPrioritySize * 2].length > 0)

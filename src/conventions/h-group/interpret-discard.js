@@ -9,6 +9,7 @@ import { logCard, logConnection } from '../../tools/log.js';
 import { getRealConnects } from './hanabi-logic.js';
 import { check_ocm } from './interpret-play.js';
 import { interpret_baton, interpret_gd } from '../shared/special-discards.js';
+import { perform_cm } from './clue-interpretation/interpret-cm.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -268,7 +269,30 @@ export function interpret_discard(game, action) {
 				state.dda = state.deck[order].identity();
 		}
 	}
-
+	// Check if a Trash Order Chop Move happened.
+	if (game.level >= LEVEL.TRASH_PUSH && !state.inEndgame()) {
+		const kt = before_trash.sort((a, b) => b - a);
+		if (kt.length > 0 && order !== kt[0]) {
+			// check for the Shout Trash Order cm
+			const shout = (common.thinksPlayables(state, playerIndex).length) > 0 ? 1 : 0;
+			const players_after = before_trash.indexOf(order) + shout;
+			// make sure the discarded card is actually known trash
+			if (players_after === -1 || players_after >= game.players.length) {
+				resolve_discard(game, action, DISCARD_INTERP.NONE);
+				return game;
+			}
+			const player_to_cm = (players_after + playerIndex) % game.players.length;
+			const player_chop = common.chop(state.hands[player_to_cm]);
+			// make sure the player has a chop
+			if (player_chop === undefined) {
+				resolve_discard(game, action, DISCARD_INTERP.NONE);
+				return game;
+			}
+			// chop move
+			console.log(player_to_cm);
+			perform_cm(state, common, [player_chop]);
+		}
+	}
 	if (game.level >= LEVEL.LAST_RESORTS && !action.failed && !state.inEndgame()) {
 		let interp = check_sdcm(game, action, before_trash, old_chop);
 

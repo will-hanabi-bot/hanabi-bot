@@ -2,6 +2,7 @@ import { isTrash } from '../../basics/hanabi-util.js';
 import { connectable_simple } from '../../basics/helper.js';
 import { unknown_1 } from './hanabi-logic.js';
 import * as Utils from '../../tools/util.js';
+import { CLUE_INTERP } from './h-constants.js';
 
 import logger from '../../tools/logger.js';
 import { logClue } from '../../tools/log.js';
@@ -25,6 +26,8 @@ import { logClue } from '../../tools/log.js';
  */
 export function find_clue_value(clue_result) {
 	const { finesses, new_touched, playables, bad_touch, trash, cm_dupe, avoidable_dupe, elim, remainder } = clue_result;
+	if (clue_result.interp === CLUE_INTERP.TRASH_PUSH)
+		return 1; // trash pushes always meet MCVP because it gets a new card.
 	const good_new_touched = new_touched.filter(c => !trash.includes(c.order));
 
 	// Touching 1 card is much better than touching none, but touching more cards is only marginally better
@@ -131,6 +134,11 @@ export function determine_playable_card(game, playable_orders) {
 	let min_rank = 5;
 	for (const order of playable_orders) {
 		const card = game.me.thoughts[order];
+
+		if (card.trash_pushed) {
+			priorities[0].push(order);
+			continue;
+		}
 
 		const in_finesse = card.finessed ||
 			(!common.play_links.some(play_link => play_link.orders.includes(order)) && common.dependentConnections(order).some(wc =>
