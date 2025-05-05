@@ -12,7 +12,7 @@ import {CLUE_INTERP} from "../../src/conventions/ref-sieve/rs-constants.js";
 
 logger.setLevel(logger.LEVELS.ERROR);
 
-describe('fix clues', () => {
+describe('negative fix clues', () => {
 	it('gives a negative fix clue to stop card from bombing', async () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -41,8 +41,7 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slots 1,2)');
 		takeTurn(game, 'Alice plays y1 (slot 1)');
 
-		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
-		logger.debug(slot2.inferred.map(logCard));
+		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];  // looks like r1
 		const playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
 		assert.ok(playables.includes(slot2.order));
 
@@ -52,9 +51,8 @@ describe('fix clues', () => {
 		const trash = game.common.thinksTrash(game.state, PLAYER.ALICE);
 		assert.ok(trash.includes(slot2.order));
 
-		// Alice's slot 1 should not be called to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].called_to_play, false);
-		// assert.equal(game.common.thinksPlayables(game.state, PLAYER.ALICE).length, 0);
+		// Alice's cards should not be called to play.
+		assert.equal(game.common.thinksPlayables(game.state, PLAYER.ALICE).length, 0);
 	});
 
 	it(`doesn't give a negative fix clue that doesn't stop card from bombing`, () => {
@@ -68,15 +66,13 @@ describe('fix clues', () => {
 			}
 		});
 
-		// takeTurn(game, 'Alice clues 2 to Bob');
-		// takeTurn(game, 'Bob plays y2 (slot 1)', 'b1');
 		takeTurn(game, 'Alice clues red to Bob'); // "fixing" Bob's "r2"
 
 		// This clue is nonsensical.
 		assert.equal(game.lastMove, CLUE_INTERP.NONE);
 	});
 
-	it(`understands fix clue that doesn't stop bomb as play clue`, () => {
+	it(`understands negative fix clue that doesn't stop a bomb as play clue`, () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['p4', 'p4', 'y5', 'y3', 'g3']
@@ -89,7 +85,26 @@ describe('fix clues', () => {
 			}
 		});
 
-		// takeTurn(game, 'Bob clues red to Alice (slot 3)'); // neg fixing Alice's "r2" with ref play
+		takeTurn(game, 'Bob clues red to Alice (slot 3)'); // neg fixing Alice's "r2" with ref play
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].called_to_play, true);
+	});
+});
+
+describe('fix clues', () => {
+	it(`understands fix clue that doesn't stop a bomb as play clue`, () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p4', 'p4', 'y5', 'y3', 'g3']
+		], {
+			play_stacks: [0, 2, 2, 2, 2],
+			starting: PLAYER.BOB,
+			init: (game) => {
+				// Alice's slot 2 is known 2 that looks like r2, but is actually trash b2
+				preClue(game, game.state.hands[PLAYER.ALICE][1], [{ type: CLUE.RANK, value: 2, giver: PLAYER.BOB }]);
+			}
+		});
+
 		takeTurn(game, 'Bob clues blue to Alice (slots 2,3)'); // fixing Alice's "r2" with ref play
 
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].called_to_play, true);
@@ -107,8 +122,7 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slots 1,2)');
 		takeTurn(game, 'Alice plays y1 (slot 1)');
 
-		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
-		logger.debug(slot2.inferred.map(logCard));
+		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];  // looks like r1
 		const playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
 		assert.ok(playables.includes(slot2.order));
 
