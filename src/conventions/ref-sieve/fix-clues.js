@@ -59,7 +59,7 @@ export function find_fix_clue(game) {
  * @param {T} game
  * @param {Card[]} oldThoughts
  * @param {ClueAction} clueAction
- * @returns {{ all_resets: number[], duplicate_reveal: number[], rewinded: boolean, newGame: T }}
+ * @returns {{ resets: number[], duplicate_reveal: number[], rewinded: boolean, newGame: T }}
  */
 export function checkFix(game, oldThoughts, clueAction) {
 	const { clue, giver, list, target } = clueAction;
@@ -106,7 +106,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 
 			if (newGame !== undefined) {
 				newGame.notes = newGame.updateNotes();
-				return { clued_resets: [], duplicate_reveal: [], rewinded: true, newGame };
+				return { resets: [], duplicate_reveal: [], rewinded: true, newGame };
 			}
 		}
 
@@ -135,15 +135,9 @@ export function checkFix(game, oldThoughts, clueAction) {
 			newCommon = newCommon.restore_elim(inf);
 	}
 
-	// // Any clued cards that lost all inferences
-	// const clued_resets = list.filter(order => all_resets.has(order) && !state.deck[order].newly_clued);
-	//
-	// if (clued_resets.length > 0)
-	// 	logger.info('clued cards', clued_resets, 'were newly reset!');
-
-	const resets_arr = Array.from(all_resets);
-	if (resets_arr.length > 0)
-		logger.info('cards', resets_arr, 'were newly reset!');
+	const resets = Array.from(all_resets);
+	if (resets.length > 0)
+		logger.info('cards', resets, 'were newly reset!');
 
 	const duplicate_reveal = list.filter(order => {
 		const card = newCommon.thoughts[order];
@@ -167,5 +161,5 @@ export function checkFix(game, oldThoughts, clueAction) {
 
 	const newGame = game.shallowCopy();
 	newGame.common = newCommon;
-	return { all_resets: resets_arr, duplicate_reveal, rewinded: false, newGame };
+	return { resets, duplicate_reveal, rewinded: false, newGame };
 }

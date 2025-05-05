@@ -252,13 +252,13 @@ export function interpret_clue(game, action) {
 	const newGame = Basics.onClue(game, action);
 	const { state: newState } = newGame;
 
-	const { all_resets, duplicate_reveal, rewinded, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
+	const { resets, duplicate_reveal, rewinded, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
 	if (rewinded)
 		return rewindedGame;
 
 	newGame.common = /** @type {Player} */(rewindedGame.common.good_touch_elim(newState).refresh_links(newState));
 
-	const fixed = new Set(all_resets.concat(duplicate_reveal));
+	const fixed = new Set(resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
 	const trash_push = !fix && newly_touched.every(o => newGame.common.thoughts[o].possible.every(p => newState.isBasicTrash(p)));
 

@@ -1,4 +1,4 @@
-import { describe, it, skip, todo } from 'node:test';
+import { describe, it, skip } from 'node:test';
 import { strict as assert } from 'node:assert';
 
 import {ACTION, CLUE} from '../../src/constants.js';
@@ -13,74 +13,6 @@ import {CLUE_INTERP} from "../../src/conventions/ref-sieve/rs-constants.js";
 logger.setLevel(logger.LEVELS.ERROR);
 
 describe('fix clues', () => {
-	it('gives fix clue on previously untouched card', async () => {
-		const game = setup(RefSieve, [
-			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['b1', 'p4', 'r5', 'r3', 'g3']
-		]);
-
-		takeTurn(game, 'Alice clues purple to Bob');  // ref play on b1
-		takeTurn(game, 'Bob clues purple to Alice (slot 2)');  // ref play on b1
-		takeTurn(game, 'Alice plays b1 (slot 1)');
-		takeTurn(game, 'Bob clues 5 to Alice (slot 1)');
-
-		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, value: 3 });
-	});
-
-	skip('understands fix clue on previously untouched card', () => {
-		const game = setup(RefSieve, [
-			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['b1', 'p4', 'r5', 'r3', 'g3']
-		], {
-			starting: PLAYER.BOB,
-		});
-
-		takeTurn(game, 'Bob clues purple to Alice (slot 2)');  // ref play on b1
-		takeTurn(game, 'Alice clues purple to Bob');  // ref play on b1
-		takeTurn(game, 'Bob plays b1 (slot 1)', 'r3');
-		takeTurn(game, 'Alice clues 5 to Bob (slot 3)');
-		takeTurn(game, 'Bob clues blue to Alice (slots 1,4)');  // fix on untouched b1
-
-		// Alice's cards should not be called to play.
-		//Currently conflict between possible, inferred, and info_lock card identities
-		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].inferred.map(logCard));
-		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].possible.map(logCard));
-		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].info_lock.map(logCard));
-		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].clues.map(logClue));
-		assert.equal(game.common.thinksPlayables(game.state, PLAYER.ALICE).length, 0);
-	});
-
-	skip('understands a fix reclue', () => {
-		const game = setup(RefSieve, [
-			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['p4', 'p4', 'r5', 'r3', 'g3']
-		], {
-			play_stacks: [1, 0, 0, 0, 0],
-			starting: PLAYER.BOB,
-		});
-
-		takeTurn(game, 'Bob clues 1 to Alice (slot 1,2)');
-		takeTurn(game, 'Alice plays b1 (slot 1)');
-
-		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
-		logger.debug(slot2.inferred.map(logCard));
-		let playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
-		assert.ok(playables.includes(slot2.order));
-
-		// Attempt to fix
-		takeTurn(game, 'Bob clues 1 to Alice (slot 2)');
-
-		// Alice's slot 2 should not be playable.
-		logger.debug(slot2);
-		playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
-		assert.ok(!playables.includes(slot2.order));
-
-		// Alice's slot 2 should be trash
-		const trash = game.common.thinksTrash(game.state, PLAYER.ALICE);
-		assert.ok(trash.includes(slot2.order));
-	});
-
 	it('gives a negative fix clue to stop card from bombing', async () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -97,7 +29,7 @@ describe('fix clues', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, value: 0 });
 	});
 
-	todo('understands a negative fix clue that stops card from bombing', () => {
+	it('understands a negative fix clue that stops card from bombing', () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['p4', 'p4', 'y5', 'y3', 'g3']
@@ -220,5 +152,73 @@ describe('fix clues', () => {
 
 		// Alice's slot 1 should not be called to play.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].called_to_play, false);
+	});
+
+	it('gives fix clue on previously untouched card', async () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b1', 'p4', 'r5', 'r3', 'g3']
+		]);
+
+		takeTurn(game, 'Alice clues purple to Bob');  // ref play on b1
+		takeTurn(game, 'Bob clues purple to Alice (slot 2)');  // ref play on b1
+		takeTurn(game, 'Alice plays b1 (slot 1)');
+		takeTurn(game, 'Bob clues 5 to Alice (slot 1)');
+
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, value: 3 });
+	});
+
+	skip('understands fix clue on previously untouched card', () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b1', 'p4', 'r5', 'r3', 'g3']
+		], {
+			starting: PLAYER.BOB,
+		});
+
+		takeTurn(game, 'Bob clues purple to Alice (slot 2)');  // ref play on b1
+		takeTurn(game, 'Alice clues purple to Bob');  // ref play on b1
+		takeTurn(game, 'Bob plays b1 (slot 1)', 'r3');
+		takeTurn(game, 'Alice clues 5 to Bob (slot 3)');
+		takeTurn(game, 'Bob clues blue to Alice (slots 1,4)');  // fix on untouched b1
+
+		// Alice's cards should not be called to play.
+		//Currently conflict between possible, inferred, and info_lock card identities
+		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].inferred.map(logCard));
+		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].possible.map(logCard));
+		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].info_lock.map(logCard));
+		logger.warn(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].clues.map(logClue));
+		assert.equal(game.common.thinksPlayables(game.state, PLAYER.ALICE).length, 0);
+	});
+
+	skip('understands a fix reclue', () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p4', 'p4', 'r5', 'r3', 'g3']
+		], {
+			play_stacks: [1, 0, 0, 0, 0],
+			starting: PLAYER.BOB,
+		});
+
+		takeTurn(game, 'Bob clues 1 to Alice (slot 1,2)');
+		takeTurn(game, 'Alice plays b1 (slot 1)');
+
+		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
+		logger.debug(slot2.inferred.map(logCard));
+		let playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
+		assert.ok(playables.includes(slot2.order));
+
+		// Attempt to fix
+		takeTurn(game, 'Bob clues 1 to Alice (slot 2)');
+
+		// Alice's slot 2 should not be playable.
+		logger.debug(slot2);
+		playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
+		assert.ok(!playables.includes(slot2.order));
+
+		// Alice's slot 2 should be trash
+		const trash = game.common.thinksTrash(game.state, PLAYER.ALICE);
+		assert.ok(trash.includes(slot2.order));
 	});
 });
