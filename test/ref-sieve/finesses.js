@@ -181,6 +181,25 @@ describe('finesses', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r2']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
 	});
+
+	it(`doesn't give finesse that looks like prompt`, () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r2', 'r5', 'g5', 'p2', 'p4'],
+			['r1', 'r3', 'p4', 'r4', 'p5']
+		], {
+			play_stacks: [1, 0, 0, 0, 0],
+			init: (game) => {
+				// Bob has r5 clued with red.
+				preClue(game, game.state.hands[PLAYER.BOB][1], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.CATHY }]);
+			}
+		});
+
+		takeTurn(game, 'Alice clues purple to Cathy');
+
+		// This clue is nonsensical.
+		assert.equal(game.lastMove, CLUE_INTERP.NONE);
+	});
 });
 
 describe('self-finesses', () => {
@@ -222,6 +241,25 @@ describe('self-finesses', () => {
 		]);
 
 		takeTurn(game, 'Alice clues green to Cathy');
+
+		// This clue is nonsensical.
+		assert.equal(game.lastMove, CLUE_INTERP.NONE);
+	});
+
+	it(`doesn't give self-finesse that looks like prompt`, () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r2', 'r5', 'g5', 'r3', 'p4']
+		], {
+			play_stacks: [1, 0, 0, 0, 0],
+			init: (game) => {
+				// Bob has r5 and r3 clued with red.
+				preClue(game, game.state.hands[PLAYER.BOB][1], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }]);
+				preClue(game, game.state.hands[PLAYER.BOB][3], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }]);
+			}
+		});
+
+		takeTurn(game, 'Alice clues 3 to Bob');
 
 		// This clue is nonsensical.
 		assert.equal(game.lastMove, CLUE_INTERP.NONE);
