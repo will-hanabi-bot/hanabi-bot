@@ -1,7 +1,8 @@
 import { CLUE } from '../../constants.js';
 import { CLUE_INTERP } from './rs-constants.js';
 import { connect, find_own_finesses } from './connecting-cards.js';
-import { checkFix, distribution_clue } from '../../basics/helper.js';
+import { distribution_clue } from '../../basics/helper.js';
+import { checkFix } from './fix-clues.js';
 import * as Basics from '../../basics.js';
 
 import logger from '../../tools/logger.js';
@@ -251,13 +252,13 @@ export function interpret_clue(game, action) {
 	const newGame = Basics.onClue(game, action);
 	const { state: newState } = newGame;
 
-	const { clued_resets, duplicate_reveal, rewinded, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
+	const { all_resets, duplicate_reveal, rewinded, newGame: rewindedGame } = checkFix(newGame, prev_common.thoughts, action);
 	if (rewinded)
 		return rewindedGame;
 
 	newGame.common = /** @type {Player} */(rewindedGame.common.good_touch_elim(newState).refresh_links(newState));
 
-	const fixed = new Set(clued_resets.concat(duplicate_reveal));
+	const fixed = new Set(all_resets.concat(duplicate_reveal));
 	const fix = fixed.size > 0;
 	const trash_push = !fix && newly_touched.every(o => newGame.common.thoughts[o].possible.every(p => newState.isBasicTrash(p)));
 
