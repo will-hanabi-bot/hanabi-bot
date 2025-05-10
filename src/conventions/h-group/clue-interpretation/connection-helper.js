@@ -13,6 +13,7 @@ import { colour_save, rank_save } from './focus-possible.js';
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../../basics/State.js').State} State
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
+ * @typedef {import('../../h-player.js').HGroup_Player} Player
  * @typedef {import('../../../types.js').ClueAction} ClueAction
  * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../types.js').Identity} Identity
@@ -406,11 +407,12 @@ export function connection_score(focus_possibility, playerIndex) {
 
 /**
  * @template {Pick<FocusPossibility, 'suitIndex'| 'rank' | 'connections'>} T
+ * @param {Player} me
  * @param {T} fp1
  * @param {T} fp2
  * @param {number} playerIndex
  */
-export function isSimpler(fp1, fp2, playerIndex) {
+export function isSimpler(me, fp1, fp2, playerIndex) {
 	const { connections: conns1 } = fp1;
 	const { connections: conns2 } = fp2;
 
@@ -438,7 +440,7 @@ export function isSimpler(fp1, fp2, playerIndex) {
 
 	// Both have first unknown connection on self
 
-	const [truth1, truth2] = [fconns1, fconns2].map(conns => conns.every(conn => !conn.bluff));
+	const [truth1, truth2] = [fconns1, fconns2].map(conns => conns.every(conn => me.thoughts[conn.order].rewinded || !conn.bluff));
 
 	if (truth1 !== truth2)
 		return truth1 ? -1 : 1;
@@ -461,21 +463,16 @@ export function isSimpler(fp1, fp2, playerIndex) {
  * @param {number} focused_order
  */
 export function occams_razor(game, focus_possibilities, playerIndex, focused_order) {
-	const sorted = focus_possibilities.toSorted((a, b) => isSimpler(a, b, playerIndex));
+	const sorted = focus_possibilities.toSorted((a, b) => isSimpler(game.me, a, b, playerIndex));
 
 	logger.debug('occams razor', focus_possibilities.map(fp => logConnections(fp.connections, fp)), sorted.map(fp => logConnections(fp.connections, fp)));
 
-	let i = sorted.findIndex(fp => game.players[playerIndex].thoughts[focused_order].possible.has(fp));
+	const i = sorted.findIndex(fp => game.players[playerIndex].thoughts[focused_order].possible.has(fp));
 
 	if (i === -1)
 		return sorted;
 
-	const simplest = sorted.slice(0, i + 1);
-
-	while (i + 1 < sorted.length && isSimpler(sorted[i], sorted[i + 1], playerIndex) === 0) {
-		simplest.push(sorted[i + 1]);
-		i++;
-	}
+	const simplest = sorted.filter((_, j) => j <= i || isSimpler(game.me, sorted[i], sorted[j], playerIndex) === 0);
 
 	return simplest;
 }

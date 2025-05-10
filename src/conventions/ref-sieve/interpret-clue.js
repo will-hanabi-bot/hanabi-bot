@@ -147,7 +147,7 @@ function target_play(game, action, target) {
 	const focus_poss = [];
 
 	for (const inf of common.thoughts[target].inferred) {
-		const { success, connections } = connect(game, inf, giver, clue_target, unknown);
+		const { success, connections } = connect(game, target, inf, giver, clue_target, unknown);
 		const { suitIndex, rank } = inf;
 
 		if (success)
@@ -165,7 +165,7 @@ function target_play(game, action, target) {
 		if (giver === state.ourPlayerIndex)
 			return { success: false };
 
-		const { success, connections } = find_own_finesses(game, target_id, giver, clue_target, unknown);
+		const { success, connections } = find_own_finesses(game, target, target_id, giver, clue_target, unknown);
 		const { suitIndex, rank } = target_id;
 
 		if (success) {

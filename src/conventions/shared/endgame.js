@@ -45,6 +45,10 @@ const simple_cache = new Map();
 /** @type {number} */
 let timeout;
 
+export function getTimeout() {
+	return timeout;
+}
+
 /**
  * @param {Game} game
  * @param {number} playerTurn
@@ -387,7 +391,10 @@ function winnable(game, playerTurn, find_clues, find_discards, remaining_ids, de
 
 	const bottom_decked = remaining_ids.length > 0 && remaining_ids.every(({ id }) => state.isCritical(id) && id.rank !== 5);
 
-	if (Date.now() > timeout || unwinnable_state(state, playerTurn) || bottom_decked) {
+	if (Date.now() > timeout)
+		throw new UnsolvedGame(`timed out`);
+
+	if (unwinnable_state(state, playerTurn) || bottom_decked) {
 		simple_cache.set(hash, FAILURE);
 		return FAILURE;
 	}
@@ -432,6 +439,9 @@ function optimize({ undrawn, drawn }, actions, playerTurn, find_clues, find_disc
 				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')} drew ${logCard(drew)} unwinnable ${JSON.stringify(winnable_draws)}`);
 				continue;
 			}
+
+			if (Date.now() > timeout)
+				throw new UnsolvedGame(`timed out`);
 
 			const new_game = advance_game(hypo_game, playerTurn, action);
 

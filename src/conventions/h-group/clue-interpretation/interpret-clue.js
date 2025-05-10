@@ -792,7 +792,9 @@ export function interpret_clue(game, action) {
 		if (ordered_1s.length > 0) {
 			const missing_1s = Utils.range(0, state.variant.suits.length)
 				.map(suitIndex => ({ suitIndex, rank: 1 }))
-				.filter(i => !state.isBasicTrash(i) && !visibleFind(state, game.players[target], i, { infer: true }).some(o => !ordered_1s.includes(o)));
+				.filter(i =>
+					!state.isBasicTrash(i) &&
+					!visibleFind(state, game.players[target], i, { infer: true }).some(o => state.deck[o].clued && !ordered_1s.includes(o)));
 
 			if (missing_1s.length > 0) {
 				for (const order of ordered_1s.slice(0, missing_1s.length))

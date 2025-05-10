@@ -335,7 +335,7 @@ export function get_clue_interp(game, clue, giver, options) {
  * @property {boolean} [noRecurse]
  */
 export function find_clues(game, options = {}) {
-	const { common, state } = game;
+	const { common, me, state } = game;
 	const { giver = state.ourPlayerIndex, noFix = false } = options;
 
 	logger.highlight('whiteb', `------- FINDING CLUES ${giver !== state.ourPlayerIndex ? `(${state.playerNames[giver]}) ` : ''}-------`);
@@ -434,7 +434,10 @@ export function find_clues(game, options = {}) {
 
 		for (const clue of all_clues) {
 			const discard = clue?.result?.discard;
-			const value = discard ? cardValue(state, hypo_games[logClue(clue)].me, state.deck[discard], discard) : 0;
+
+			// value was previously computed using player: hypo_games[logClue(clue)], but this made b4 a worse discard after cluing b1
+			// that doesn't make sense, so instead use card value before the clue
+			const value = discard ? cardValue(state, me, state.deck[discard], discard) : 0;
 			remainders.set(logClue(clue), value);
 
 			if (value < best_remainder)

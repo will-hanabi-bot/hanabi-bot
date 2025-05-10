@@ -2,6 +2,7 @@ import { ACTION } from '../../constants.js';
 import { ActualCard } from '../../basics/Card.js';
 import { cardCount } from '../../variants.js';
 import { playersBetween } from '../h-group/hanabi-logic.js';
+import { getTimeout, UnsolvedGame } from './endgame.js';
 import * as Utils from '../../tools/util.js';
 
 import { logCard } from '../../tools/log.js';
@@ -217,6 +218,9 @@ export function winnable_simpler(state, playerTurn, remaining_ids, depth = 0) {
 		// logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}unwinnable state`);
 		return false;
 	}
+
+	if (Date.now() > getTimeout())
+		throw new UnsolvedGame('timed out');
 
 	const hash = `${hash_state(state)},${playerTurn},${JSON.stringify(remaining_ids.filter(r => logCard(r.id) !== 'xx'))}`;
 

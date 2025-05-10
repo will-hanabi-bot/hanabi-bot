@@ -40,7 +40,9 @@ describe('save clue interpretation', () => {
 
 		takeTurn(game, 'Bob clues blue to Alice (slot 5)');
 
-		assert.ok([1, 2, 3, 4, 5].every(rank =>
-			!game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has({ suitIndex: 4, rank })));
+		const possible_ranks = [2, 3, 4, 5].filter(rank =>
+			game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].inferred.has({ suitIndex: 4, rank }));
+
+		assert.ok(possible_ranks.length === 0, `Expected !i2345, got i${possible_ranks.join('')}`);
 	});
 });

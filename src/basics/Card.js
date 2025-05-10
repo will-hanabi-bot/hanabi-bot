@@ -34,6 +34,9 @@ export class BasicCard {
 			return new BasicCard(this.suitIndex, this.rank);
 	}
 
+	/**
+	 * @param {Identity} identity
+	 */
 	matches({ suitIndex, rank }) {
 		return this.suitIndex === suitIndex && this.rank === rank;
 	}

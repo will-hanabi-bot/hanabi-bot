@@ -26,13 +26,13 @@ function find_connecting(game, identity, playerIndex, connected, looksDirect, ig
 	const { common, state } = game;
 	const hand = state.hands[playerIndex];
 
-	const known = hand.find(o => common.thoughts[o].matches(identity, { infer: true }));
+	const known = hand.find(o => !connected.includes(o) && common.thoughts[o].matches(identity, { infer: true }));
 
 	if (known !== undefined && !ignoreOrders.includes(known))
 		return { type: 'known', reacting: playerIndex, order: known, identities: [identity] };
 
 	const playable = hand.find(o => ((card = common.thoughts[o]) =>
-		(card.finessed || card.called_to_play || card.possible.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(identity)))());
+		!connected.includes(o) && (card.finessed || card.called_to_play || card.possible.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(identity)))());
 
 	if (playable !== undefined && state.deck[playable].matches(identity) && !ignoreOrders.includes(playable))
 		return { type: 'playable', reacting: playerIndex, order: playable, identities: [identity] };
@@ -56,13 +56,14 @@ function find_connecting(game, identity, playerIndex, connected, looksDirect, ig
 
 /**
  * @param {Game} game
+ * @param {number} target_order
  * @param {Identity} identity
  * @param {number} giver
  * @param {number} target
  * @param {boolean} unknown
  * @returns {{ success: boolean, connections?: Connection[] }}
  */
-export function connect(game, identity, giver, target, unknown) {
+export function connect(game, target_order, identity, giver, target, unknown) {
 	const { state } = game;
 	const { suitIndex, rank } = identity;
 
@@ -79,7 +80,7 @@ export function connect(game, identity, giver, target, unknown) {
 		const next_identity = { suitIndex, rank: next_rank };
 		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
 		// logger.info('looking for', logCard(next_identity), playerIndex, unknown, looped_around);
-		const connecting = find_connecting(game, next_identity, playerIndex, connections.map(c => c.order), unknown && playerIndex === target, ignoreOrders);
+		const connecting = find_connecting(game, next_identity, playerIndex, [target_order, ...connections.map(c => c.order)], unknown && playerIndex === target, ignoreOrders);
 
 		if (connecting !== undefined) {
 			next_rank++;
@@ -110,13 +111,14 @@ export function connect(game, identity, giver, target, unknown) {
 
 /**
  * @param {Game} game
+ * @param {number} target_order
  * @param {Identity} identity
  * @param {number} giver
  * @param {number} target
  * @param {boolean} unknown
  * @returns {{ success: boolean, connections?: Connection[] }}
  */
-export function find_own_finesses(game, identity, giver, target, unknown) {
+export function find_own_finesses(game, target_order, identity, giver, target, unknown) {
 	const { common, me, state } = game;
 	const { suitIndex, rank } = identity;
 
@@ -127,13 +129,13 @@ export function find_own_finesses(game, identity, giver, target, unknown) {
 	/** @type {Connection[]} */
 	const connections = [];
 
-	logger.info('attempting to find own finesses', logCard(identity), next_rank);
+	logger.info('attempting to find own finesses', logCard(identity), next_rank, target_order);
 
 	while (next_rank !== rank) {
 		const next_identity = { suitIndex, rank: next_rank };
 		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
 		const looksDirect = (unknown && playerIndex === target) || (playerIndex === giver);
-		const connecting = find_connecting(game, next_identity, playerIndex, connections.map(c => c.order), looksDirect, ignoreOrders);
+		const connecting = find_connecting(game, next_identity, playerIndex, [target_order, ...connections.map(c => c.order)], looksDirect, ignoreOrders);
 
 		if (connecting !== undefined) {
 			next_rank++;

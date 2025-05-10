@@ -372,16 +372,15 @@ function check_positional_discard(game, action, before_trash, old_chop, slot) {
 	logger.debug('expected discard', expected_discard);
 
 	const num_plays = (action.failed && order !== expected_discard) ? 2 : 1;
-
-	const playable_possibilities = game.players[playerIndex].hypo_stacks
-		.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
-		.filter(id => !isTrash(state, common, id, -1, { infer: true }));
-
 	const reacting = [];
 
 	for (let i = 1; i < state.numPlayers; i++) {
 		const index = (playerIndex + i) % state.numPlayers;
 		const target_order = state.hands[index][slot - 1];
+
+		const playable_possibilities = game.players[index].hypo_stacks
+			.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
+			.filter(id => !isTrash(state, common, id, -1, { infer: true }));
 
 		if (target_order === undefined || index === state.ourPlayerIndex || game.next_ignore[0]?.some(({ order }) => order === target_order))
 			continue;
@@ -393,6 +392,10 @@ function check_positional_discard(game, action, before_trash, old_chop, slot) {
 
 	// If we haven't found a target, check if we can be the target.
 	if (reacting.length < num_plays && playerIndex !== state.ourPlayerIndex) {
+		const playable_possibilities = game.me.hypo_stacks
+			.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
+			.filter(id => !isTrash(state, common, id, -1, { infer: true }));
+
 		if (state.ourHand.length >= slot &&
 			me.thoughts[state.ourHand[slot - 1]].inferred.some(i => playable_possibilities.some(p => i.matches(p)))
 		)
