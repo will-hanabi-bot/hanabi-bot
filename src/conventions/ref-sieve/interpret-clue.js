@@ -1,7 +1,7 @@
 import { CLUE } from '../../constants.js';
 import { CLUE_INTERP } from './rs-constants.js';
 import { connect, find_own_finesses } from './connecting-cards.js';
-import { distribution_clue, checkFix } from '../../basics/helper.js';
+import { checkFix, distribution_clue } from '../../basics/helper.js';
 import * as Basics from '../../basics.js';
 
 import logger from '../../tools/logger.js';
