@@ -80,7 +80,7 @@ export function team_elimP(game, good_touch = true) {
  * @param {T} game
  * @param {Card[]} oldThoughts
  * @param {ClueAction} clueAction
- * @returns {{ clued_resets: number[], duplicate_reveal: number[], rewinded: boolean, newGame: T }}
+ * @returns {{ clued_resets: number[], all_resets: number[], duplicate_reveal: number[], rewinded: boolean, newGame: T }}
  */
 export function checkFix(game, oldThoughts, clueAction) {
 	const { clue, giver, list, target } = clueAction;
@@ -127,7 +127,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 
 			if (newGame !== undefined) {
 				newGame.notes = newGame.updateNotes();
-				return { clued_resets: [], duplicate_reveal: [], rewinded: true, newGame };
+				return { clued_resets: [], all_resets: [], duplicate_reveal: [], rewinded: true, newGame };
 			}
 		}
 
@@ -184,7 +184,7 @@ export function checkFix(game, oldThoughts, clueAction) {
 
 	const newGame = game.shallowCopy();
 	newGame.common = newCommon;
-	return { clued_resets, duplicate_reveal, rewinded: false, newGame };
+	return { clued_resets, all_resets: Array.from(all_resets), duplicate_reveal, rewinded: false, newGame };
 }
 
 /**
