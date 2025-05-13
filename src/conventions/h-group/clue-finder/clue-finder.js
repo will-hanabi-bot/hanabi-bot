@@ -289,7 +289,7 @@ export function get_clue_interp(game, clue, giver, options) {
 
 			if (playables.length === 0) {
 				logger.warn('play clue with no playables!');
-				new_interp = CLUE_INTERP.STALL_BURN;
+				new_interp = elim > 0 ? CLUE_INTERP.STALL_FILLIN : CLUE_INTERP.STALL_BURN;
 			}
 
 			// if (game.level < LEVEL.CONTEXT || avoidable_dupe == 0)

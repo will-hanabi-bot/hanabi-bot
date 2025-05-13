@@ -603,7 +603,12 @@ export function interpret_clue(game, action) {
 		logger.info('pink trash fix!');
 		common.updateThoughts(focus, (draft) => {
 			draft.inferred = draft.possible.intersect(state.variant.suits.map((_, i) => ({ suitIndex: i, rank: clue.value })));
-			draft.trash = true;
+
+			const basic_trash = state.variant.suits.every((suit, suitIndex) =>
+				!variantRegexes.pinkish.test(suit) ||
+				state.isBasicTrash({ suitIndex, rank: clue.value }));
+
+			draft.trash = basic_trash;
 		});
 
 		game.interpretMove(CLUE_INTERP.FIX);

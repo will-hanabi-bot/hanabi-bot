@@ -30,7 +30,7 @@ export function find_sarcastics(state, playerIndex, player, identity) {
 	return state.hands[playerIndex].filter(o => {
 		const card = player.thoughts[o];
 
-		return state.deck[o].clued && card.possible.has(identity) &&
+		return card.touched && card.possible.has(identity) &&
 			!(card.inferred.length === 1 && card.inferred.array[0].rank < identity.rank) &&		// Do not sarcastic on connecting cards
 			(card.info_lock === undefined || card.info_lock.has(identity));
 	});
@@ -153,7 +153,7 @@ export function interpret_sarcastic(game, discardAction) {
 				if (locked_discard)
 					newCommon = apply_locked_discard(state, newCommon, playerIndex);
 			}
-			logger.info(`writing sarcastic ${logCard(identity)} on ${state.playerNames[playerIndex]}'s slot(s) ${sarcastics.map(s => state.ourHand.findIndex(o => o === s) + 1)}`);
+			logger.info(`writing sarcastic ${logCard(identity)} on ${state.playerNames[receiver]}'s slot(s) ${sarcastics.map(s => state.hands[receiver].findIndex(o => o === s) + 1)}`);
 			newGame.common = newCommon;
 			return { newGame, sarcastics };
 		}

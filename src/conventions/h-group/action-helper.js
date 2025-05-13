@@ -238,7 +238,7 @@ export function determine_playable_card(game, playable_orders) {
 export function find_positional_discard(game, discarder, expected_discard) {
 	const { state, me } = game;
 
-	if (!state.inEndgame())
+	if (!(state.inEndgame() || (state.maxScore - state.score === 1 && state.cardsLeft === 1)))
 		return;
 
 	const trash = state.hands[discarder].filter(o =>

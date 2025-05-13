@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**Version** (PM the bot with `/version`): 
-**Convention settings:** 
 **Steps to reproduce or replay link:** 
+**Incorrect behaviour:** 
+**Expected behaviour:** 
 **Additional information:** 

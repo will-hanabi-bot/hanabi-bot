@@ -327,15 +327,17 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 
 		const connected_copy = connected.slice();
 		let prompt = common.find_prompt(state, i, identity, connected, ignoreOrders, true);
+		const stacks = state.play_stacks.slice();
 
 		while (prompt !== undefined) {
 			if (prompt === match)
 				return false;
 
 			// Layered prompt is not possible
-			if (!state.isPlayable(state.deck[prompt]))
+			if (stacks[state.deck[prompt].suitIndex] + 1 !== state.deck[prompt].rank)
 				return true;
 
+			stacks[state.deck[prompt].suitIndex]++;
 			connected_copy.push(prompt);
 			prompt = common.find_prompt(state, i, identity, connected_copy, ignoreOrders, true);
 		}

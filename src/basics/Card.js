@@ -360,8 +360,13 @@ export class Card extends ActualCard {
 					draft.inferred = possible;
 				}
 			}
+			else if (!broke_info_lock) {
+				const new_inferred = draft.info_lock?.intersect(possible) ?? possible;
+				draft.info_lock = new_inferred;
+				draft.inferred = new_inferred;
+			}
 			else {
-				draft.inferred = (!broke_info_lock && info_lock) || possible;
+				draft.inferred = possible;
 			}
 		});
 	}

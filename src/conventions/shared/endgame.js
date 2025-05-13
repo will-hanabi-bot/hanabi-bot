@@ -389,10 +389,10 @@ function winnable(game, playerTurn, find_clues, find_discards, remaining_ids, de
 		return [{ action, winrate: new Fraction(1, 1) }];
 	}
 
-	const bottom_decked = remaining_ids.length > 0 && remaining_ids.every(({ id }) => state.isCritical(id) && id.rank !== 5);
-
 	if (Date.now() > timeout)
 		throw new UnsolvedGame(`timed out`);
+
+	const bottom_decked = remaining_ids.length > 0 && remaining_ids.every(({ id }) => state.isCritical(id) && id.rank !== 5);
 
 	if (unwinnable_state(state, playerTurn) || bottom_decked) {
 		simple_cache.set(hash, FAILURE);

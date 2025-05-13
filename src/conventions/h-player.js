@@ -132,9 +132,9 @@ export class HGroup_Player extends Player {
 	 * @param {number[]} connected 		Orders of cards that have previously connected
 	 * @param {number[]} ignoreOrders 	Orders of cards to ignore when searching.
 	 */
-	find_clued(state, playerIndex, identity, connected = [], ignoreOrders = []) {
-		return state.hands[playerIndex].filter(o => {
-			const { clued, newly_clued, order, clues } = state.deck[o];
+	find_clued({ hands, deck, variant }, playerIndex, identity, connected = [], ignoreOrders = []) {
+		return hands[playerIndex].filter(o => {
+			const { clued, newly_clued, order, clues } = deck[o];
 			const { inferred, possible, info_lock } = this.thoughts[o];
 
 			return !connected.includes(order) &&			// not already connected
@@ -142,7 +142,7 @@ export class HGroup_Player extends Player {
 				possible.has(identity) &&					// must be a possibility
 				(info_lock === undefined || info_lock.has(identity)) &&
 				(inferred.length !== 1 || inferred.array[0]?.matches(identity)) && 		// must not be information-locked on a different identity
-				clues.some(clue => cardTouched(identity, state.variant, clue)) &&		// at least one clue matches
+				clues.some(clue => cardTouched(identity, variant, clue)) &&		// at least one clue matches
 				!ignoreOrders.includes(o);
 		});
 	}
@@ -156,9 +156,9 @@ export class HGroup_Player extends Player {
 	 * @param {number[]} ignoreOrders 	Orders of cards to ignore when searching.
 	 * @param {boolean} forcePink 		Whether to force a prompt on a possibly-pink card.
 	 */
-	find_prompt(state, playerIndex, identity, connected = [], ignoreOrders = [], forcePink = false) {
-		const order = state.hands[playerIndex].find(o => {
-			const { clued, newly_clued, order, clues } = state.deck[o];
+	find_prompt({ hands, deck, variant }, playerIndex, identity, connected = [], ignoreOrders = [], forcePink = false) {
+		const order = hands[playerIndex].find(o => {
+			const { clued, newly_clued, order, clues } = deck[o];
 			const { inferred, possible, info_lock } = this.thoughts[o];
 
 			return !connected.includes(order) &&			// not already connected
@@ -166,9 +166,9 @@ export class HGroup_Player extends Player {
 				possible.has(identity) &&					// must be a possibility
 				(info_lock === undefined || info_lock.has(identity)) &&
 				(inferred.length !== 1 || inferred.array[0]?.matches(identity)) && 		// must not be information-locked on a different identity
-				clues.some(clue => cardTouched(identity, state.variant, clue)) &&				// at least one clue matches
-				(!variantRegexes.pinkish.test(state.variant.suits[identity.suitIndex]) || forcePink ||	// pink rank match
-					possible.every(p => variantRegexes.pinkish.test(state.variant.suits[p.suitIndex])) ||
+				clues.some(clue => cardTouched(identity, variant, clue)) &&				// at least one clue matches
+				(!variantRegexes.pinkish.test(variant.suits[identity.suitIndex]) || forcePink ||	// pink rank match
+					possible.every(p => variantRegexes.pinkish.test(variant.suits[p.suitIndex])) ||
 					!(clues.every(c1 => clues.every(c2 => c1.type === c2.type && c1.value === c2.value)) &&
 						clues.length > 0 &&
 						clues[0].type === CLUE.RANK && clues[0].value !== identity.rank));
@@ -184,8 +184,8 @@ export class HGroup_Player extends Player {
 	 * @param {number[]} connected 		Orders of cards that have previously connected
 	 * @param {number[]} ignoreOrders 	Orders of cards to ignore when searching.
 	 */
-	find_finesse(state, playerIndex, connected = [], ignoreOrders = []) {
-		const order = state.hands[playerIndex].find(o => !this.thoughts[o].touched && !connected.includes(o));
+	find_finesse({ hands }, playerIndex, connected = [], ignoreOrders = []) {
+		const order = hands[playerIndex].find(o => !this.thoughts[o].touched && !connected.includes(o));
 
 		return (order !== undefined && !ignoreOrders.includes(order)) ? order : undefined;
 	}

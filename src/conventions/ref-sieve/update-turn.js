@@ -98,7 +98,7 @@ function resolve_card_retained(game, waiting_connection) {
 		}
 
 		if (last_action?.type === 'clue')
-			return { remove: true };
+			return { remove: true, remove_finesse: true };
 
 		if (last_action?.type === 'play') {
 			const { order: reacting_order } = last_action;
