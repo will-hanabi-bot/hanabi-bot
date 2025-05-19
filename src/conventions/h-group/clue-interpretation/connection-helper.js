@@ -120,9 +120,10 @@ export function generate_symmetric_connections(state, sym_possibilities, existin
  * @param {FocusPossibility[]} inf_possibilities
  * @param {number[]} selfRanks 		The ranks needed to play by the target (as a self-finesse).
  * @param {number} ownBlindPlays 	The number of blind plays we need to make in the actual connection.
+ * @param {boolean} loaded
  * @returns {SymFocusPossibility[]}
  */
-export function find_symmetric_connections(game, action, focusResult, inf_possibilities, selfRanks, ownBlindPlays) {
+export function find_symmetric_connections(game, action, focusResult, inf_possibilities, selfRanks, ownBlindPlays, loaded) {
 	const { common, state } = game;
 
 	const { clue, giver, target } = action;
@@ -163,7 +164,7 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 		if (visible_dupe)
 			continue;
 
-		if (chop && (clue.type === CLUE.COLOUR ? colour_save(game, id, action, focus) : rank_save(game, id, action, focus))) {
+		if (chop && (clue.type === CLUE.COLOUR ? colour_save(game, id, action, focus, loaded) : rank_save(game, id, action, focus, loaded))) {
 			non_self_connections.push({ ...id.raw(), connections: [], fake: false });
 			continue;
 		}
@@ -299,7 +300,7 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 					draft.superposition = true;
 
 				const uncertain = (() => {
-					if (card.uncertain || giver === state.ourPlayerIndex || card.rewinded)
+					if (card.uncertain || giver === state.ourPlayerIndex || card.rewinded || certain)
 						return false;
 
 					if (reacting === state.ourPlayerIndex) {

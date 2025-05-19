@@ -111,6 +111,12 @@ export class IdentitySet {
 	 */
 	map(func) { return this.array.map(func); }
 
+	/**
+	 * @template T
+	 * @param {(i: BasicCard) => T[]} func
+	 */
+	flatMap(func) { return this.array.flatMap(func); }
+
 	/** @param {(i: BasicCard) => boolean} func */
 	filter(func) { return this.array.filter(func); }
 

@@ -37,8 +37,9 @@ const stall_to_severity = {
  * @param {FocusResult} focusResult
  * @param {number} severity
  * @param {Game} prev_game
+ * @param {boolean} loaded
  */
-function isStall(game, action, focusResult, severity, prev_game) {
+function isStall(game, action, focusResult, severity, prev_game, loaded) {
 	const { common, me, state } = game;
 	const { clue, giver, list, target } = action;
 	const { focus, chop } = focusResult;
@@ -49,7 +50,7 @@ function isStall(game, action, focusResult, severity, prev_game) {
 		return;
 
 	// We are giving a save clue, not a stall
-	if (chop && giver === state.ourPlayerIndex && (clue.type === CLUE.COLOUR ? colour_save : rank_save)(game, state.deck[focus], action, focus))
+	if (chop && giver === state.ourPlayerIndex && (clue.type === CLUE.COLOUR ? colour_save : rank_save)(game, state.deck[focus], action, focus, loaded))
 		return;
 
 	// Play clue, not a stall
@@ -176,8 +177,9 @@ function other_expected_clue(game, prev_game, giver, max_stall, original_clue) {
  * @param {ClueAction} action
  * @param {FocusResult} focusResult
  * @param {Game} prev_game
+ * @param {boolean} loaded
  */
-export function stalling_situation(game, action, focusResult, prev_game) {
+export function stalling_situation(game, action, focusResult, prev_game, loaded) {
 	const { common: prev_common, state: prev_state } = prev_game;
 	const { common, state } = game;
 	const { giver, clue, target, noRecurse } = action;
@@ -186,11 +188,11 @@ export function stalling_situation(game, action, focusResult, prev_game) {
 
 	logger.info('severity', severity);
 
-	const stall = isStall(game, action, focusResult, severity, prev_game);
-	const loaded = prev_common.thinksPlayables(prev_state, giver, { assume: false }).length > 0 ||
+	const stall = isStall(game, action, focusResult, severity, prev_game, loaded);
+	const giver_loaded = prev_common.thinksPlayables(prev_state, giver, { assume: false }).length > 0 ||
 		(prev_common.thinksTrash(prev_state, giver).length > 0 && prev_state.clue_tokens < 8);
 
-	if (stall === undefined || loaded)
+	if (stall === undefined || giver_loaded)
 		return { stall, thinks_stall: new Set() };
 
 	if (noRecurse)

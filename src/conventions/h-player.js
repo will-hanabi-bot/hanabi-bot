@@ -64,13 +64,15 @@ export class HGroup_Player extends Player {
 	 * Returns the value of the chop card, 4 if the hand is locked, and 0 if no chop but loaded.
 	 * @param {State} state
 	 * @param {number} playerIndex
-	 * @param {{afterClue?: boolean}} options
+	 * @param {{afterClue?: boolean, no_chop?: number}} options
 	 */
 	chopValue(state, playerIndex, options = {}) {
 		const hand = state.hands[playerIndex];
 		const chop = this.chop(hand, options);
 
-		return chop !== undefined ? cardValue(state, this, state.deck[chop], chop) : (this.thinksLoaded(state, playerIndex) ? 0 : 4);
+		return chop !== undefined ?
+			cardValue(state, this, state.deck[chop], chop) :
+			(options.no_chop !== undefined ? options.no_chop : (this.thinksLoaded(state, playerIndex) ? 0 : 4));
 	}
 
 	/**

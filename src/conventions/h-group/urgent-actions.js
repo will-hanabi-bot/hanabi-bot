@@ -211,7 +211,7 @@ export function find_gd(game, target) {
  * @param {number} [finessed_order]
  */
 export function find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities, finessed_order = -1) {
-	const { common, state, tableID } = game;
+	const { common, me, state, tableID } = game;
 	const prioritySize = Object.keys(PRIORITY).length;
 	const urgent_actions = /** @type {PerformAction[][]} */ (Array.from({ length: prioritySize * 2 + 1 }, _ => []));
 	const urgent_clues = /** @type {Clue[][]} */ (Array.from({ length: prioritySize * 2 + 1 }, _ => []));
@@ -229,11 +229,24 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 
 		// They are locked (or will be locked), we should try to unlock
 		if (locked) {
-			const playable = playable_priorities.flat()[0];
-			if (playable !== undefined && state.hands[target].some(order => anxiety_targetable(game, target, order))) {
-				urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: playable });
-				continue;
+			let anxiety = false;
+
+			for (const o of playable_priorities.flat()) {
+				const id = me.thoughts[o].identity({ infer: true });
+
+				if (id === undefined)
+					continue;
+
+				const stacks = state.play_stacks.with(id.suitIndex, id.rank);
+				if (state.hands[target].some(order => stacks[state.deck[order].suitIndex] + 1 === state.deck[order].rank && anxiety_targetable(game, target, order))) {
+					urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: o });
+					anxiety = true;
+					break;
+				}
 			}
+
+			if (anxiety)
+				continue;
 
 			const unlock_order = find_unlock(game, target);
 			if (unlock_order !== undefined && (finessed_order === -1 || finessed_order == unlock_order)) {

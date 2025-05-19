@@ -75,6 +75,26 @@ describe('reverse finesse', () => {
 		assert.equal(donald_1.result.bad_touch.length, 1);
 	});
 
+	it('still plays into finesses when the copy is bad touched', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y5', 'r5', 'b4', 'p2'],
+			['r3', 'p1', 'y4', 'r1'],
+			['p4', 'b3', 'r2', 'p4']
+		], {
+			level: { min: 2 },
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues purple to Bob');	// Finessing p1
+		takeTurn(game, 'Donald clues 1 to Cathy');		// Bad touching p1
+
+		const action = await game.take_action();
+
+		// Even though p1 is touched in Cathy's hand, we should still play into the finesse.
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
+	});
+
 	it(`doesn't make finesse assumptions`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],

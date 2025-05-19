@@ -23,8 +23,6 @@ import { produce } from '../StateProxy.js';
  */
 export function card_elim(state) {
 	const certain_map = /** @type {Map<string, { order: number, unknown_to: number[] }[]>} */ (new Map());
-	let uncertain_ids = state.base_ids;
-	let uncertain_map = /** @type {Map<number, IdentitySet>} */ (new Map());
 
 	/** @type {Map<number, Card>} */
 	const newThoughts = new Map();
@@ -43,7 +41,7 @@ export function card_elim(state) {
 	const idMap = new Map();
 
 	/** @type {{ order: number, playerIndex: number }[]} */
-	const cross_elim_candidates = [];
+	let cross_elim_candidates = [];
 
 	let all_identities = state.base_ids;
 	for (const order of state.hands.flat()) {
@@ -72,6 +70,56 @@ export function card_elim(state) {
 
 	let eliminated = state.base_ids;
 
+	/** 
+	 * @param {Identity} id
+	 * @param {number[]} exclude
+	 */
+	const update_map = (id, exclude) => {
+		const id_hash = logCard(id);
+		let changed = false;
+
+		/** @type {Identity[]} */
+		const recursive_ids = [];
+
+		/** @type {number[]} */
+		const cross_elim_removals = [];
+
+		const remainingCandidates = idMap.get(id_hash).filter(({ order, playerIndex }) => {
+			const { possible, inferred, reset } = getThoughts(order);
+
+			const no_elim = exclude.includes(playerIndex) || certain_map.get(id_hash)?.some(c => c.order === order || c.unknown_to.includes(playerIndex));
+			if (no_elim)
+				return true;
+
+			changed = true;
+
+			updateThoughts(order, (draft) => {
+				draft.possible = possible.subtract(id);
+				draft.inferred = inferred.subtract(id);
+			});
+
+			const updated_card = getThoughts(order);
+
+			if (updated_card.inferred.length === 0 && !reset) {
+				newThoughts.set(order, updated_card.reset_inferences());
+			}
+			// Card can be further eliminated
+			else if (updated_card.possible.length === 1) {
+				const recursive_id = updated_card.identity();
+
+				Utils.mapInsertArr(certain_map, logCard(recursive_id), { order, unknown_to: [] });
+				recursive_ids.push(recursive_id);
+				cross_elim_removals.push(order);
+			}
+			return false;
+		});
+
+		idMap.set(id_hash, remainingCandidates);
+		cross_elim_candidates = cross_elim_candidates.filter(c => !cross_elim_removals.includes(c.order));
+
+		return { changed, recursive_ids };
+	};
+
 	/**
 	 * The "typical" empathy operation. If there are enough known instances of an identity, it is removed from every card (including future cards).
 	 * Returns true if at least one card was modified.
@@ -79,30 +127,138 @@ export function card_elim(state) {
 	 */
 	const basic_elim = (identities) => {
 		let changed = false;
-		const recursive_ids = [];
+		let recursive_ids = [];
 
 		for (const id of identities) {
 			const id_hash = logCard(id);
-
-			const known_count = state.baseCount(id) + (certain_map.get(id_hash)?.length ?? 0) + (uncertain_ids.has(id) ? 1 : 0);
+			const known_count = state.baseCount(id) + (certain_map.get(id_hash)?.length ?? 0);
 			const total_count = cardCount(state.variant, id);
 
 			if (known_count !== total_count)
 				continue;
 
 			eliminated = eliminated.union(id);
+			({ changed, recursive_ids } = update_map(id, []));
+		}
 
-			const remainingCandidates = idMap.get(id_hash).filter(({ order, playerIndex }) => {
+		if (recursive_ids.length > 0)
+			basic_elim(recursive_ids);
+
+		return changed;
+	};
+
+	/**
+	 * The "sudoku" empathy operation, involving 2 parts.
+	 * Symmetric info - if Alice has [r5,g5] and Bob has [r5,g5], then everyone knows how r5 and g5 are distributed.
+	 * Naked pairs - If Alice has 3 cards with [r4,g5], then everyone knows that both r4 and g5 cannot be elsewhere (will be eliminated in basic_elim).
+	 * Returns true if at least one card was modified.
+	 */
+	const cross_elim = () => {
+		if (cross_elim_candidates.length <= 1)
+			return;
+
+		/** @param {IdentitySet} identities */
+		const total_multiplicity = (identities) => identities.reduce((acc, id) => acc += cardCount(state.variant, id) - state.baseCount(id), 0);
+
+		/**
+		 * @param {{ order: number, playerIndex: number }[]} entries
+		 * @param {IdentitySet} identities
+		 */
+		const perform_elim = (entries, identities) => {
+			let changed = false;
+
+			// There are N cards for N identities - everyone knows they are holding what they cannot see
+			const groups = Utils.groupBy(entries, ({ order }) => JSON.stringify(state.deck[order].identity() ?? getThoughts(order).identity()));
+
+			for (const [id_hash, group] of Object.entries(groups)) {
+				if (id_hash === 'undefined')
+					continue;
+
+				/** @type {Identity} */
+				const id = JSON.parse(id_hash);
+				const certains = certain_map.get(logCard(id))?.filter(c => !group.some(g => g.order === c.order)).length ?? 0;
+
+				if (!idMap.has(logCard(id)) || group.length < total_multiplicity(state.base_ids.union(id)) - certains)
+					continue;
+
+				({ changed } = update_map(id, group.map(g => g.playerIndex)));
+			}
+
+			// Now elim all the cards outside of this entry
+			for (const id of identities) {
+				if (!idMap.has(logCard(id)))
+					continue;
+
+				({ changed } = update_map(id, entries.map(e => e.playerIndex)));
+			}
+
+			changed = basic_elim(identities.array) || changed;
+
+			return changed;
+		};
+
+		/**
+		 * @param {{order: number, playerIndex: number}[]} contained
+		 * @param {IdentitySet} acc_ids
+		 * @param {Set<number>} certains
+		 * @param {number} nextIndex
+		 */
+		const gen_subset = (contained = [], acc_ids = state.base_ids, certains = new Set(), nextIndex = 0) => {
+			const multiplicity = total_multiplicity(acc_ids);
+
+			// Impossible to reach multiplicity
+			if (multiplicity - certains.size > contained.length + (cross_elim_candidates.length - nextIndex))
+				return false;
+
+			if (contained.length >= 2 && multiplicity - certains.size === contained.length) {
+				const changed = perform_elim(contained, acc_ids);
+				if (changed)
+					return true;
+			}
+
+			if (nextIndex >= cross_elim_candidates.length)
+				return false;
+
+			// Check all remaining subsets that contain the next item
+			const item = cross_elim_candidates[nextIndex];
+			const new_acc_ids = acc_ids.union(getThoughts(item.order).possible);
+			const new_certains = getThoughts(item.order).possible.subtract(acc_ids).flatMap(id => certain_map.get(logCard(id))?.map(c => c.order) ?? []);
+
+			const included = gen_subset(contained.concat(item), new_acc_ids, certains.union(new Set(new_certains)), nextIndex + 1);
+			if (included)
+				return true;
+
+			// Check all remaining subsets that skip the next item
+			return gen_subset(contained, acc_ids, certains, nextIndex + 1);
+		};
+
+		return gen_subset();
+	};
+
+	/**
+	 * When all the cards have been drawn, everyone knows what cards everyone has (but not their arrangement).
+	 * @param {Identity[]} identities
+	 */
+	const endgame_elim = (identities) => {
+		if (state.cardsLeft > 0 || this.playerIndex !== -1)
+			return false;
+
+		/** @type {Identity[]} */
+		const self_ids = [];
+
+		/** @type {number[]} */
+		const cross_elim_removals = [];
+
+		/**
+		 * @param {number[]} hand
+		 * @param {Identity} id
+		 */
+		const perform_elim = (hand, id) => {
+			for (const order of hand) {
 				const { possible, inferred, reset } = getThoughts(order);
 
-				const no_elim = !possible.has(id) ||
-					certain_map.get(id_hash)?.some(c => c.order === order || c.unknown_to.includes(playerIndex)) ||
-					uncertain_map.get(order)?.has(id);
-
-				if (no_elim)
-					return true;
-
-				changed = true;
+				if (!possible.has(id) || state.deck[order].matches(id) || getThoughts(order).matches(id))
+					continue;
 
 				updateThoughts(order, (draft) => {
 					draft.possible = possible.subtract(id);
@@ -119,123 +275,42 @@ export function card_elim(state) {
 					const recursive_id = updated_card.identity();
 
 					Utils.mapInsertArr(certain_map, logCard(recursive_id), { order, unknown_to: [] });
-					recursive_ids.push(recursive_id);
-					cross_elim_candidates.splice(cross_elim_candidates.findIndex(c => c.order === order), 1);
+					cross_elim_removals.push(order);
 				}
-				return false;
-			});
-			idMap.set(id_hash, remainingCandidates);
+
+				const entry = idMap.get(logCard(id));
+				entry.splice(entry.findIndex(e => e.order === order), 1);
+			}
+
+			cross_elim_candidates = cross_elim_candidates.filter(c => !cross_elim_removals.includes(c.order));
+		};
+
+		for (const id of identities) {
+			let total = state.baseCount(id);
+
+			for (let i = 0; i < state.numPlayers; i++) {
+				const count = state.hands[i].filter(o => state.deck[o].matches(id) || getThoughts(o).matches(id)).length;
+				total += count;
+
+				if (i === state.ourPlayerIndex)
+					continue;
+
+				// Their cards don't have this identity and they know they don't have it
+				if (count === 0)
+					perform_elim(state.hands[i], id);
+			}
+
+			// We have some of these cards
+			if (total !== cardCount(state.variant, id))
+				self_ids.push(id);
+			else
+				perform_elim(state.hands[state.ourPlayerIndex], id);
 		}
-
-		if (recursive_ids.length > 0)
-			changed ||= basic_elim(recursive_ids);
-
-		return changed;
 	};
 
-	/**
-	 * The "sudoku" empathy operation, involving 2 parts.
-	 * Symmetric info - if Alice has [r5,g5] and Bob has [r5,g5], then everyone knows how r5 and g5 are distributed.
-	 * Naked pairs - If Alice has 3 cards with [r4,g5], then everyone knows that both r4 and g5 cannot be elsewhere (will be eliminated in basic_elim).
-	 * Returns true if at least one card was modified.
-	 */
-	const cross_elim = () => {
-		uncertain_ids = state.base_ids;
-		uncertain_map = new Map();
-
-		if (cross_elim_candidates.length <= 1)
-			return;
-
-		/** @param {IdentitySet} identities */
-		const total_multiplicity = (identities) => identities.reduce((acc, id) => acc += cardCount(state.variant, id) - state.baseCount(id), 0);
-
-		/**
-		 * @param {{ order: number, playerIndex: number }[]} entries
-		 * @param {IdentitySet} identities
-		 */
-		const perform_elim = (entries, identities) => {
-			let changed = false;
-
-			// There are N cards for N identities - everyone knows they are holding what they cannot see
-			const groups = Utils.groupBy(entries, ({ order }) => JSON.stringify(state.deck[order].identity()));
-
-			for (const [id_hash, group] of Object.entries(groups)) {
-				if (id_hash === 'undefined')
-					continue;
-
-				/** @type {Identity} */
-				const id = JSON.parse(id_hash);
-
-				if (group.length < total_multiplicity(state.base_ids.union(id)))
-					continue;
-
-				for (const { order, playerIndex } of entries) {
-					// Players can't elim if one of their cards is part of it
-					if (group.some(e => e.playerIndex === playerIndex) || !getThoughts(order).possible.has(id))
-						continue;
-
-					const { possible, inferred, reset } = getThoughts(order);
-					updateThoughts(order, (draft) => {
-						draft.possible = possible.subtract(id);
-						draft.inferred = inferred.intersect(possible);
-					});
-
-					const updated_card = getThoughts(order);
-
-					if (updated_card.inferred.length === 0 && !reset)
-						newThoughts.set(order, updated_card.reset_inferences());
-
-					changed = true;
-				}
-			}
-
-			if (!changed) {
-				for (const { order } of entries)
-					uncertain_map.set(order, state.base_ids.union(identities));
-
-				uncertain_ids = uncertain_ids.union(identities);
-			}
-
-			changed ||= basic_elim(identities.array);
-			return changed;
-		};
-
-		/**
-		 * @param {{order: number, playerIndex: number}[]} contained
-		 * @param {IdentitySet} acc_ids
-		 * @param {number} nextIndex
-		 */
-		const gen_subset = (contained = [], acc_ids = state.base_ids, nextIndex = 0) => {
-			const multiplicity = total_multiplicity(acc_ids);
-
-			// Impossible to reach multiplicity
-			if (multiplicity > contained.length + (cross_elim_candidates.length - nextIndex))
-				return false;
-
-			if (contained.length >= 2 && multiplicity === contained.length) {
-				const changed = perform_elim(contained, acc_ids);
-				if (changed)
-					return true;
-			}
-
-			if (nextIndex < cross_elim_candidates.length) {
-				// Check all remaining subsets that contain the next item
-				const item = cross_elim_candidates[nextIndex];
-				const included = gen_subset(contained.concat(item), acc_ids.union(getThoughts(item.order).possible), nextIndex + 1);
-				if (included)
-					return true;
-
-				// Check all remaining subsets that skip the next item
-				return gen_subset(contained, acc_ids, nextIndex + 1);
-			}
-			return false;
-		};
-
-		return gen_subset();
-	};
-
+	endgame_elim(all_identities.array);
 	basic_elim(all_identities.array);
-	while (cross_elim());
+	while (cross_elim() || endgame_elim(all_identities.array));
 
 	const { all_possible, all_inferred } = this;
 	const newAP = all_possible.subtract(eliminated);
@@ -424,6 +499,12 @@ export function good_touch_elim(state, only_self = false) {
 					continue;
 				}
 
+				if (old_card.finessed && playerIndex === state.ourPlayerIndex && !Array.from(matches).some(o => newPlayer.thoughts[o].focused)) {
+					logger.warn(`tried to gt eliminate ${id_hash} from finessed card on us (order ${order})! could be bad touched`);
+					elim_candidates.splice(elim_candidates.findIndex(c => c.order === order), 1);
+					continue;
+				}
+
 				// Check if can't visible elim on cm card (not visible, or same hand)
 				if (cm && !visible_elim)
 					continue;
@@ -579,7 +660,7 @@ export function find_links(state, hand = state.hands[this.playerIndex]) {
 		// We have enough inferred cards to eliminate elsewhere
 		// TODO: Sudoku elim from this
 		if (orders.length >= identities.length) {
-			logger.info('adding link', orders, 'inferences', identities.map(logCard), state.playerNames[this.playerIndex]);
+			logger.info('adding link', orders, 'inferences', identities.map(logCard), state.playerNames[this.playerIndex] ?? 'common');
 
 			links.push({ orders, identities: identities.map(c => c.raw()), promised: false });
 			for (const o of orders)

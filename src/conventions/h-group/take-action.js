@@ -1,4 +1,4 @@
-import { ACTION, CLUE } from '../../constants.js';
+import { ACTION } from '../../constants.js';
 import { ACTION_PRIORITY, LEVEL } from './h-constants.js';
 import { select_play_clue, determine_playable_card, order_1s, find_clue_value, find_positional_discard } from './action-helper.js';
 import { find_gd, find_unlock, find_urgent_actions } from './urgent-actions.js';
@@ -6,6 +6,7 @@ import { find_clues } from './clue-finder/clue-finder.js';
 import { find_sarcastics } from '../shared/sarcastic.js';
 import { inBetween, minimum_clue_value, older_queued_finesse, stall_severity, unknown_1 } from './hanabi-logic.js';
 import { cardValue, isTrash } from '../../basics/hanabi-util.js';
+import { connectable_simple } from '../../basics/helper.js';
 
 import logger from '../../tools/logger.js';
 import { logCard, logClue, logHand, logPerformAction } from '../../tools/log.js';
@@ -314,7 +315,7 @@ export async function take_action(game) {
 
 		const gen_required = me.chopValue(state, nextNextPlayerIndex) >= 4 &&
 			!common.thinksLocked(state, nextNextPlayerIndex) &&
-			!game.players[nextNextPlayerIndex].thinksLoaded(state, nextNextPlayerIndex, { assume: false }) &&
+			!connectable_simple(game, state.ourPlayerIndex, nextNextPlayerIndex) &&
 			find_unlock(game, nextNextPlayerIndex) === undefined;
 
 		// Generate for next next player
@@ -449,11 +450,10 @@ export async function take_action(game) {
 			const { action } = result;
 
 			if (action.type === ACTION.COLOUR || action.type === ACTION.RANK) {
-				const stall_clue = best_play_clue ??
-					best_stall_clue(stall_clues, 4) ??
-					{ type: CLUE.RANK, target: nextPlayerIndex, value: state.deck[state.hands[nextPlayerIndex].at(-1)].rank };
+				const stall_clue = best_play_clue ?? best_stall_clue(stall_clues, 4) ?? any_clue(state);
 
-				return Utils.clueToAction(stall_clue, tableID);
+				if (stall_clue !== undefined)
+					return Utils.clueToAction(stall_clue, tableID);
 			}
 
 			return { tableID, type: action.type, target: action.target };
@@ -474,7 +474,7 @@ export async function take_action(game) {
 				const playerIndex = (state.ourPlayerIndex + i) % state.numPlayers;
 				const connectable = state.hands[playerIndex].some(o => {
 					const id = game.players[playerIndex].thoughts[o].identity({ infer: true });
-					return id !== undefined && id.rank === play_stacks[id.suitIndex] + 1;
+					return id !== undefined && id.suitIndex === card_id.suitIndex && id.rank === play_stacks[id.suitIndex] + 1;
 				});
 
 				if (connectable) {
@@ -616,7 +616,7 @@ export async function take_action(game) {
 		state.clue_tokens <= 2;
 
 	if (should_shout) {
-		const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex);
+		const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex, { no_chop: 4 });
 
 		if (cardValue(state, me, state.deck[next_chop], next_chop) >= 1 && new_chop_value === 0) {
 			logger.highlight('yellow', `performing shout discard on ${logCard(state.deck[next_chop])}`);
@@ -634,7 +634,7 @@ export async function take_action(game) {
 			if (chop === undefined || cardValue(state, me, state.deck[chop]) === 0 || state.isPlayable(state.deck[chop]))
 				return -1;
 
-			const new_chop_value = me.withThoughts(chop, (draft) => { draft.chop_moved = true; }).chopValue(state, target);
+			const new_chop_value = me.withThoughts(chop, (draft) => { draft.chop_moved = true; }).chopValue(state, target, { no_chop: 4 });
 			return new_chop_value === 0 ? find_clue_value(clue.result) : -1;
 		}, 0);
 
@@ -731,16 +731,9 @@ export async function take_action(game) {
 			if (validStall)
 				return Utils.clueToAction(validStall, tableID);
 
-			// Give any legal clue
-			for (let i = 1; i < state.numPlayers; i++) {
-				const playerIndex = (state.ourPlayerIndex + i) % state.numPlayers;
-				const valid_clues = state.allValidClues(playerIndex);
-
-				logger.warn('unable to find any good clue, giving any valid clue!');
-
-				if (valid_clues.length > 0)
-					return Utils.clueToAction(valid_clues[0], tableID);
-			}
+			const anyStall = any_clue(state);
+			if (anyStall !== undefined)
+				return Utils.clueToAction(anyStall, tableID);
 
 			// Bomb discardable slot, or slot 1
 			const target = discardable ?? state.ourHand[0];
@@ -754,6 +747,22 @@ export async function take_action(game) {
 	}
 
 	return take_discard(game, state.ourPlayerIndex, trash_orders);
+}
+
+/**
+ * Returns any valid clue.
+ * @param {State} state
+ */
+function any_clue(state) {
+	for (let i = 1; i < state.numPlayers; i++) {
+		const playerIndex = (state.ourPlayerIndex + i) % state.numPlayers;
+		const valid_clues = state.allValidClues(playerIndex);
+
+		logger.warn('unable to find any good clue, giving any valid clue!');
+
+		if (valid_clues.length > 0)
+			return valid_clues[0];
+	}
 }
 
 /**

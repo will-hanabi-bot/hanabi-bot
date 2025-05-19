@@ -2,8 +2,8 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import * as ExAsserts from '../extra-asserts.js';
 
-import { ACTION } from '../../src/constants.js';
-import { PLAYER, setup, takeTurn } from '../test-utils.js';
+import { ACTION, CLUE } from '../../src/constants.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn, VARIANTS } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
 
 import logger from '../../src/tools/logger.js';
@@ -281,5 +281,35 @@ describe('generation discards', () => {
 
 		// Alice should play slot 5 (r4 -> r5) rather than generating for Cathy.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] }, `Expected (Play slot 5), got (${logPerformAction(action)}).`);
+	});
+
+	it(`doesn't perform a gen discard if next player can connect`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r4', 'r2', 'i1', 'g5'],
+			['r3', 'b3', 'r5', 'i2'],
+			['r3', 'y4', 'b5', 'g4']
+		], {
+			level: { min: 7 },
+			clue_tokens: 1,
+			play_stacks: [0, 0, 1, 0, 0],
+			variant: VARIANTS.PRISM,
+			starting: PLAYER.DONALD,
+			init: (game) => {
+				// Alice knows about g2 in slot 4.
+				preClue(game, game.state.hands[PLAYER.ALICE][3], [{ type: CLUE.COLOUR, value: COLOUR.GREEN, giver: PLAYER.BOB }, { type: CLUE.RANK, value: 2, giver: PLAYER.DONALD }]);
+
+				// Bob knows about i1 in slot 3.
+				preClue(game, game.state.hands[PLAYER.BOB][2], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }, { type: CLUE.RANK, value: 1, giver: PLAYER.DONALD }]);
+			}
+		});
+
+		// Getting y2, but could be y1 (or y2, if Alice finesses).
+		takeTurn(game, 'Donald clues yellow to Cathy');
+
+		const action = await game.take_action();
+
+		// Alice should play slot 4 (g2) instead of generating for Cathy. Bob also cannot scream.
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] }, `Expected (Play slot 4), got (${logPerformAction(action)}).`);
 	});
 });

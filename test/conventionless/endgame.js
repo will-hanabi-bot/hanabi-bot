@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, expandShortCard, preClue, setup } from '../test-utils.js';
+import { COLOUR, PLAYER, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
 import * as ExAsserts from '../extra-asserts.js';
 
@@ -172,6 +172,60 @@ describe('more complex endgames where all cards are seen', () => {
 		// Alice should play r4.
 		const { action } = solve_game(game, PLAYER.ALICE);
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
+	});
+});
+
+describe('endgame elim', () => {
+	it('correctly eliminates identities when all cards have been drawn', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],	// our hand is r5, b1, r4, g4
+			['b4', 'y2', 'b1', 'g5'],
+			['r3', 'y5', 'r4', 'r2'],
+			['g2', 'g1', 'y1', 'y4']
+		], {
+			play_stacks: [3, 3, 3, 5, 5],
+			discarded: [
+				'r1', 'r1',
+				'y1', 'y4',
+				'g1', 'g3', 'g4',
+				'b2', 'b3',
+				'p1', 'p1', 'p2', 'p3', 'p4'
+			],
+			starting: PLAYER.CATHY,
+			clue_tokens: 0,
+			init: (game) => {
+				// Alice has r4 and g4 known in slots 3 and 4.
+				preClue(game, game.state.hands[PLAYER.ALICE][2], [{ type: CLUE.RANK, value: 4, giver: PLAYER.DONALD }, { type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB }]);
+				preClue(game, game.state.hands[PLAYER.ALICE][3], [{ type: CLUE.RANK, value: 4, giver: PLAYER.DONALD }, { type: CLUE.COLOUR, value: COLOUR.GREEN, giver: PLAYER.BOB }]);
+
+				// Bob's g5 is rank clued.
+				preClue(game, game.state.hands[PLAYER.BOB][3], [{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }]);
+
+				// Cathy's y5 is colour clued.
+				preClue(game, game.state.hands[PLAYER.CATHY][2], [{ type: CLUE.COLOUR, value: COLOUR.YELLOW, giver: PLAYER.ALICE }]);
+
+				// Donald's y4 is rank clued.
+				preClue(game, game.state.hands[PLAYER.DONALD][3], [{ type: CLUE.RANK, value: 4, giver: PLAYER.ALICE }]);
+
+				game.state.cardsLeft = 1;
+			}
+		});
+
+		// Cathy draws the last card, starting the final round.
+		takeTurn(game, 'Cathy discards r2', 'y3');
+
+		takeTurn(game, 'Donald plays y4');
+
+		// Bob's g5 should be fully known.
+		ExAsserts.cardHasPossibilities(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['g5']);
+
+		// Our slots 1 and 2 should both be [r5, b1].
+		ExAsserts.cardHasPossibilities(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r5', 'b1']);
+		ExAsserts.cardHasPossibilities(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r5', 'b1']);
+
+		// We should play slot 4 (g4) to connect to g5.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
 	});
 });
 

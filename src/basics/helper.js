@@ -214,6 +214,7 @@ export function connectable_simple(game, start, target, identity) {
 	if (start === target)
 		return game.players[target].thinksPlayables(game.state, target, { assume: false }).length > 0;
 
+	const nextPlayerIndex = game.state.nextPlayerIndex(start);
 	const playables = game.players[start].thinksPlayables(game.state, start, { assume: false });
 
 	for (const order of playables) {
@@ -222,14 +223,15 @@ export function connectable_simple(game, start, target, identity) {
 		if (id === undefined)
 			continue;
 
-		const new_game = produce(game, (draft) => {
-			draft.state.play_stacks[id.suitIndex]++;
-		});
+		// Simulate playing the card
+		const new_game = game.simulate_action({ type: 'play', order, suitIndex: id.suitIndex, rank: id.rank, playerIndex: start })
+			.simulate_action({ type: 'turn', currentPlayerIndex: nextPlayerIndex, num: game.state.turn_count });
 
-		if (connectable_simple(new_game, game.state.nextPlayerIndex(start), target, identity))
+		if (connectable_simple(new_game, nextPlayerIndex, target, identity))
 			return true;
 	}
-	return connectable_simple(game, game.state.nextPlayerIndex(start), target, identity);
+
+	return connectable_simple(game, nextPlayerIndex, target, identity);
 }
 
 /**

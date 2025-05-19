@@ -304,25 +304,20 @@ export function interpret_discard(game, action) {
 		const targets = check_positional_discard(game, action, before_trash, old_chop, slot);
 
 		if (targets.length > 0) {
-			const playable_possibilities = game.players[playerIndex].hypo_stacks
-				.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
-				.filter(id => !isTrash(state, common, id, -1, { infer: true }) && !state.hands[playerIndex].some(o => ((card = state.deck[o]) =>
-					!state.isBasicTrash(card) && card.playedBefore(id))()));		// Disallow selfish pos discards
-
 			/** @type {Connection[]} */
 			const connections = [];
 
-			for (const r of targets) {
-				const order = state.hands[r][slot - 1];
+			for (const { reacting, possibilities } of targets) {
+				const order = state.hands[reacting][slot - 1];
 				common.updateThoughts(order, (draft) => {
 					draft.finessed = true;
 					draft.focused = true;
 					draft.old_inferred = draft.inferred;
-					draft.inferred = common.thoughts[order].inferred.intersect(playable_possibilities);
+					draft.inferred = common.thoughts[order].inferred.intersect(possibilities);
 				});
 
-				logger.info('interpreting pos on', state.playerNames[r], 'slot', slot);
-				connections.push({ type: 'positional', reacting: r, order, identities: common.thoughts[order].inferred.array });
+				logger.info('interpreting pos on', state.playerNames[reacting], 'slot', slot);
+				connections.push({ type: 'positional', reacting, order, identities: common.thoughts[order].inferred.array });
 			}
 
 			const actual_card = state.deck[connections.at(-1).order];
@@ -330,7 +325,7 @@ export function interpret_discard(game, action) {
 			common.waiting_connections.push({
 				connections,
 				giver: playerIndex,
-				target: targets.at(-1),
+				target: targets.at(-1).reacting,
 				conn_index: 0,
 				turn: state.turn_count,
 				focus: connections.at(-1).order,
@@ -353,7 +348,7 @@ export function interpret_discard(game, action) {
  * @param {number[]} before_trash
  * @param {number} old_chop
  * @param {number} slot
- * @returns {number[]} The player indices that are called to play.
+ * @returns {{ reacting: number, possibilities: Identity[] }[]} The player indices that are called to play, and their identities.
  */
 function check_positional_discard(game, action, before_trash, old_chop, slot) {
 	const { common, state, me } = game;
@@ -372,43 +367,52 @@ function check_positional_discard(game, action, before_trash, old_chop, slot) {
 	logger.debug('expected discard', expected_discard);
 
 	const num_plays = (action.failed && order !== expected_discard) ? 2 : 1;
-	const reacting = [];
+
+	/** @type {{ reacting: number, possibilities: Identity[] }[]} */
+	const targets = [];
+
+	/** @param {number} index */
+	const playable_possibilities = (index) => {
+		const player = game.players[index];
+
+		// Connecting plays on discarder or target would be slow, so disregard
+		const slow_hypo_plays = Array.from(player.hypo_plays).filter(o => [index, playerIndex].some(i => state.hands[i].includes(o)));
+
+		return player.hypo_stacks
+			.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
+			.filter(id => !isTrash(state, common, id, -1, { infer: true })
+				&& !slow_hypo_plays.some(o => (state.deck[o].identity() ?? player.thoughts[o].identity({ infer: true }))?.playedBefore(id)));
+	};
 
 	for (let i = 1; i < state.numPlayers; i++) {
 		const index = (playerIndex + i) % state.numPlayers;
 		const target_order = state.hands[index][slot - 1];
 
-		const playable_possibilities = game.players[index].hypo_stacks
-			.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
-			.filter(id => !isTrash(state, common, id, -1, { infer: true }));
-
 		if (target_order === undefined || index === state.ourPlayerIndex || game.next_ignore[0]?.some(({ order }) => order === target_order))
 			continue;
 
+		const possibilities = playable_possibilities(index);
+
 		// Find the latest player with an unknown playable
-		if (playable_possibilities.some(i => state.deck[target_order].matches(i)) && !common.thinksPlayables(state, index).includes(target_order))
-			reacting.push(index);
+		if (possibilities.some(i => state.deck[target_order].matches(i)) && !common.thinksPlayables(state, index).includes(target_order))
+			targets.push({ reacting: index, possibilities });
 	}
 
 	// If we haven't found a target, check if we can be the target.
-	if (reacting.length < num_plays && playerIndex !== state.ourPlayerIndex) {
-		const playable_possibilities = game.me.hypo_stacks
-			.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }))
-			.filter(id => !isTrash(state, common, id, -1, { infer: true }));
+	if (targets.length < num_plays && playerIndex !== state.ourPlayerIndex) {
+		const possibilities = playable_possibilities(state.ourPlayerIndex);
 
-		if (state.ourHand.length >= slot &&
-			me.thoughts[state.ourHand[slot - 1]].inferred.some(i => playable_possibilities.some(p => i.matches(p)))
-		)
-			reacting.push(state.ourPlayerIndex);
+		if (state.ourHand.length >= slot && me.thoughts[state.ourHand[slot - 1]].inferred.some(i => possibilities.some(p => i.matches(p))))
+			targets.push({ reacting: state.ourPlayerIndex, possibilities });
 
-		if (reacting.length !== num_plays) {
-			logger.warn(`weird discard detected, but not enough positional discard targets! (found [${reacting}], need ${num_plays})`);
+		if (targets.length !== num_plays) {
+			logger.warn(`weird discard detected, but not enough positional discard targets! (found [${targets.map(t => state.playerNames[t.reacting])}], need ${num_plays})`);
 			return [];
 		}
 	}
 
 	// Only take the last N reacting players.
-	return reacting.slice(-num_plays);
+	return targets.slice(-num_plays);
 }
 
 /**

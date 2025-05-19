@@ -264,7 +264,7 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 	game.catchup = true;
 	Object.assign(game, game.handle_action(action));
 
-	if (action.type === 'play' || action.type === 'discard') {
+	if (state.cardsLeft > 0 && (action.type === 'play' || action.type === 'discard')) {
 		if (draw === 'xx' && state.currentPlayerIndex !== state.ourPlayerIndex)
 			throw new Error(`Missing draw for ${state.playerNames[state.currentPlayerIndex]}'s action (${logAction(action)}).`);
 

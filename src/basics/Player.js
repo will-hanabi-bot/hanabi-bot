@@ -259,10 +259,10 @@ export class Player {
 				const replaceable = dependents.map(wc =>
 					this.waiting_connections.find(wc2 => wc !== wc2 && wc2.focus === wc.focus && wc2.connections.every(conn2 => conn2.order !== o)));
 
-				if (replaceable.every(r => r !== undefined))
+				if (replaceable.length > 0 && replaceable.every(r => r !== undefined))
 					logger.debug(`order ${o} has connections replaceable with ${replaceable.map(wc => wc.connections.map(logConnection).join(' -> '))}`);
 
-				return replaceable.every(r => r !== undefined);
+				return replaceable.length > 0 && replaceable.every(r => r !== undefined);
 			};
 
 			return card.possibilities.every(p => (card.chop_moved ? state.isBasicTrash(p) : false) || state.isPlayable(p)) &&	// cm cards can ignore trash ids
@@ -294,7 +294,7 @@ export class Player {
 			if (this.thoughts[o].trash)
 				return true;
 
-			const poss = this.thoughts[o].possibilities;
+			const poss = this.thoughts[o].uncertain ? this.thoughts[o].possible : this.thoughts[o].possibilities;
 
 			// Every possibility is trash or duplicated somewhere
 			const trash = poss.every(p => state.isBasicTrash(p) || visible_elsewhere(p, o));

@@ -25,8 +25,9 @@ import { logCard, logConnections } from '../../../tools/log.js';
  * @param {Identity} identity
  * @param {ClueAction} action
  * @param {number} focus
+ * @param {boolean} loaded
  */
-export function colour_save(game, identity, action, focus) {
+export function colour_save(game, identity, action, focus, loaded) {
 	const { common, state } = game;
 	const { suitIndex, rank } = identity;
 	const { clue, list, target } = action;
@@ -56,7 +57,7 @@ export function colour_save(game, identity, action, focus) {
 	}
 
 	// Don't consider loaded save with brown
-	if (/Brown|Muddy|Cocoa/.test(state.variant.suits[suitIndex]) && common.thinksLoaded(state, target))
+	if (/Brown|Muddy|Cocoa/.test(state.variant.suits[suitIndex]) && loaded)
 		return false;
 
 	if (state.includesVariant(/Dark Rainbow|Dark Prism/) && /Dark Rainbow|Dark Prism/.test(state.variant.suits[suitIndex])) {
@@ -90,8 +91,9 @@ export function colour_save(game, identity, action, focus) {
  * @param {ClueAction} action
  * @param {FocusResult} focusResult
  * @param {Set<number>} thinks_stall
+ * @param {boolean} loaded
  */
-function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall) {
+function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, loaded) {
 	const { common, state } = game;
 	const { focus, chop } = focusResult;
 	const focus_thoughts = common.thoughts[focus];
@@ -178,7 +180,7 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall) {
 	// Save clue on chop
 	if (chop) {
 		for (let rank = state.play_stacks[suitIndex] + 1; rank <= Math.min(state.max_ranks[suitIndex], 5); rank++) {
-			if (colour_save(game, { suitIndex, rank }, action, focus))
+			if (colour_save(game, { suitIndex, rank }, action, focus, loaded))
 				focus_possible.push({ suitIndex, rank, save: true, connections: [], interp: CLUE_INTERP.SAVE });
 		}
 	}
@@ -191,22 +193,22 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall) {
  * @param {Identity} identity
  * @param {ClueAction} action
  * @param {number} focus
+ * @param {boolean} loaded
  */
-export function rank_save(game, identity, action, focus) {
+export function rank_save(game, identity, action, focus, loaded) {
 	const { common, state } = game;
 	const { suitIndex, rank } = identity;
-	const { target } = action;
 	const focus_thoughts = common.thoughts[focus];
 
 	if (!focus_thoughts.possible.has(identity))
 		return false;
 
-	// Don't consider save on k3, k4 with rank
-	if (state.variant.suits[suitIndex] === 'Black' && (rank === 3 || rank === 4))
+	// Don't consider save on k3, k4 (or dark i3, i4) with rank
+	if (/Black|Dark Pink/.test(state.variant.suits[suitIndex]) && (rank === 3 || rank === 4))
 		return false;
 
 	// Don't consider loaded save with 3,4 in whitish variants (also dark rainbow/prism)
-	const loaded_34 = common.thinksLoaded(state, target) &&
+	const loaded_34 = loaded &&
 		state.includesVariant(Utils.combineRegex(variantRegexes.whitish, /Dark Rainbow|Dark Prism/)) &&
 		(rank === 3 || rank === 4);
 
@@ -224,8 +226,9 @@ export function rank_save(game, identity, action, focus) {
  * @param {ClueAction} action
  * @param {FocusResult} focusResult
  * @param {Set<number>} thinks_stall
+ * @param {boolean} loaded
  */
-function find_rank_focus(game, rank, action, focusResult, thinks_stall) {
+function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) {
 	const { common, state } = game;
 	const { giver, target } = action;
 	const { focus, chop, positional } = focusResult;
@@ -238,7 +241,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall) {
 	// Save clue on chop
 	if (chop) {
 		for (let suitIndex = 0; suitIndex < state.variant.suits.length; suitIndex++) {
-			if (rank_save(game, { suitIndex, rank }, action, focus)) {
+			if (rank_save(game, { suitIndex, rank }, action, focus, loaded)) {
 				focus_possible.push({ suitIndex, rank, save: true, connections: [], interp: CLUE_INTERP.SAVE });
 				looksSave = true;
 			}
@@ -372,8 +375,9 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall) {
  * @param {ClueAction} action
  * @param {FocusResult} focusResult
  * @param {Set<number>} thinks_stall
+ * @param {boolean} loaded
  */
-export function find_focus_possible(game, action, focusResult, thinks_stall) {
+export function find_focus_possible(game, action, focusResult, thinks_stall, loaded) {
 	const { common, state } = game;
 	const { clue } = action;
 	logger.debug('play/hypo/max stacks in clue interpretation:', state.play_stacks, common.hypo_stacks, state.max_ranks);
@@ -382,8 +386,8 @@ export function find_focus_possible(game, action, focusResult, thinks_stall) {
 		state.variant.suits
 			.filter(s => Utils.combineRegex(variantRegexes.rainbowish, variantRegexes.prism).test(s))
 			.concat(colourableSuits(state.variant)[clue.value])
-			.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall)) :
-		find_rank_focus(game, clue.value, action, focusResult, thinks_stall);
+			.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded)) :
+		find_rank_focus(game, clue.value, action, focusResult, thinks_stall, loaded);
 
 	// Remove play duplicates (since save overrides play)
 	const filtered_fps = focus_possible.filter((p1, index1) => {
