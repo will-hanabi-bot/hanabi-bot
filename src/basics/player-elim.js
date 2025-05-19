@@ -223,8 +223,10 @@ export function card_elim(state) {
 			const item = cross_elim_candidates[nextIndex];
 			const new_acc_ids = acc_ids.union(getThoughts(item.order).possible);
 			const new_certains = getThoughts(item.order).possible.subtract(acc_ids).flatMap(id => certain_map.get(logCard(id))?.map(c => c.order) ?? []);
+			const next_contained = contained.concat(item);
+			const next_certains = certains.union(new Set(new_certains)).difference(new Set(next_contained.map(e => e.order)));
 
-			const included = gen_subset(contained.concat(item), new_acc_ids, certains.union(new Set(new_certains)), nextIndex + 1);
+			const included = gen_subset(next_contained, new_acc_ids, next_certains, nextIndex + 1);
 			if (included)
 				return true;
 

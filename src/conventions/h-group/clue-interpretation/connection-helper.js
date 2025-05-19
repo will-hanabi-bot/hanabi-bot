@@ -446,12 +446,12 @@ export function isSimpler(me, fp1, fp2, playerIndex) {
 	if (truth1 !== truth2)
 		return truth1 ? -1 : 1;
 
-	const [finesses1, finesses2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.type === 'finesse').length);
+	const [finesses1, finesses2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.reacting === playerIndex && conn.type === 'finesse').length);
 
 	if (finesses1 !== finesses2)
 		return finesses1 - finesses2;
 
-	const [prompts1, prompts2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.type === 'prompt').length);
+	const [prompts1, prompts2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.reacting === playerIndex && conn.type === 'prompt').length);
 
 	return prompts1 - prompts2;
 }

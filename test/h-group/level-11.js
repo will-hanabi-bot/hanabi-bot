@@ -933,6 +933,44 @@ describe('bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['g2']);
 	});
 
+	it('disambiguates a finesse when demonstrated', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p2', 'b4', 'y1', 'p4', 'g4'],
+			['r3', 'p3', 'g1', 'y2', 'b3']
+		], {
+			level: { min: 11 },
+			play_stacks: [1, 1, 0, 0, 0],
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Alice (slot 1)');
+		takeTurn(game, 'Alice plays p1 (slot 2)');
+		takeTurn(game, 'Bob plays p2 (slot 1)', 'r5');
+
+		// Slot 2 (was slot 1) is known to be p3 as a double finesse.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['p3']);
+	});
+
+	it('disambiguates a bluff when not demonstrated', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p2', 'b4', 'y1', 'p4', 'g4'],
+			['r3', 'p3', 'g1', 'y2', 'b3']
+		], {
+			level: { min: 11 },
+			play_stacks: [1, 1, 0, 0, 0],
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Alice (slot 1)');
+		takeTurn(game, 'Alice plays p1 (slot 2)');
+		takeTurn(game, 'Bob clues green to Cathy');
+
+		// Slot 2 (was slot 1) is known to be [r3,y3] as a bluff.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3']);
+	});
+
 	it('does not allow a second round when a bluff is not played into', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
