@@ -1,4 +1,5 @@
 import { LEVEL } from './h-constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { team_elim } from '../../basics/helper.js';
 import { order_1s } from './action-helper.js';
 
@@ -76,14 +77,14 @@ export function interpret_play(game, action) {
 		}
 	}
 
-	if (common.thoughts[order].finessed)
+	if (common.thoughts[order].blind_playing)
 		game.finesses_while_finessed[playerIndex] = [];
 
 	if (game.level >= LEVEL.BASIC_CM && rank === 1) {
 		const ocm_order = check_ocm(game, action);
 
 		if (ocm_order !== -1)
-			common.updateThoughts(ocm_order, (draft) => { draft.chop_moved = true; });
+			common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 	}
 
 	const newGame = Basics.onPlay(game, action);

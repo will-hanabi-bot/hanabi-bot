@@ -156,8 +156,7 @@ export function early_game_clue(game, giver, exceptTarget = -1) {
 
 	const { state } = game;
 	const hypo_game = produce(game, (draft) => {
-		draft.state.screamed_at = false;
-		draft.state.generated = false;
+		draft.state.discard_state = undefined;
 	});
 
 	/**
@@ -222,7 +221,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 
 		const early_expected_clue = state.early_game && early_game_clue(game, target);
 		const potential_cluers = playersBetween(state.numPlayers, state.ourPlayerIndex, target).filter(i =>
-			i !== target && !state.hands[i].some(o => common.thoughts[o].finessed && state.isPlayable(state.deck[o]))).length;
+			i !== target && !state.hands[i].some(o => common.thoughts[o].blind_playing && state.isPlayable(state.deck[o]))).length;
 
 		const nextPriority = (potential_cluers === 0 && !early_expected_clue) ? 0 : prioritySize;
 		const locked = state.hands[target].every(o => common.thoughts[o].saved || state.isCritical(state.deck[o])) && !common.thinksLoaded(state, target);
@@ -398,7 +397,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 			// Temporarily chop move the chop card
 			const chop = me.chop(hand);
 			const old_chop_value = cardValue(state, me, state.deck[chop]);
-			const new_chop_value = me.withThoughts(chop, (draft) => { draft.chop_moved = true; }).chopValue(state, target);
+			const new_chop_value = me.simulateCM([chop]).chopValue(state, target);
 
 			// Make sure the old chop is equal or better than the new one
 			if (old_chop_value >= new_chop_value) {
@@ -428,7 +427,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 		const save_card = state.deck[game.players[target].chop(state.hands[target])];
 		const chop = common.chop(state.ourHand);
 
-		const screamed_player = game.players[target].withThoughts(save_card.order, (draft) => { draft.chop_moved = true; });
+		const screamed_player = game.players[target].simulateCM([save_card.order]);
 
 		const valid_scream = (state.isCritical(save_card) || me.hypo_stacks[save_card.suitIndex] + 1 === save_card.rank) &&
 			(state.clue_tokens === 0 || (state.clue_tokens === 1 && screamed_player.thinksLocked(state, target))) &&
@@ -472,13 +471,13 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 
 	const bad_save = hypo_me.thinksLocked(hypo_state, target) ?
 		me.chopValue(state, target) < cardValue(state, hypo_me, state.deck[hypo_common.lockedDiscard(hypo_state, hypo_state.hands[target])]) :
-		me.chopValue(state, target) < hypo_me.chopValue(hypo_state, target, { afterClue: true });
+		me.chopValue(state, target) < hypo_me.chopValue(hypo_state, target);
 
 	// Do not save at 1 clue if new chop or sacrifice discard are better than old chop
 	if (state.clue_tokens === 1 && save.cm.length === 0 && bad_save)
 		return;
 
-	const hypo_chop = state.deck[hypo_me.chop(hypo_state.hands[target], { afterClue: true })];
+	const hypo_chop = state.deck[hypo_me.chop(hypo_state.hands[target])];
 
 	const only_save = save.result.interp !== CLUE_INTERP.CM_TRASH &&
 		!hypo_me.thinksLocked(hypo_state, target) &&
@@ -489,7 +488,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 		const urgent = !early_expected_clue && potential_cluers === 1;
 
 		if (urgent)
-			logger.info('setting up double save!', logCard(state.deck[hypo_me.chop(hypo_state.hands[target], { afterClue: true })]));
+			logger.info('setting up double save!', logCard(state.deck[hypo_me.chop(hypo_state.hands[target])]));
 
 		return { urgency: PRIORITY.ONLY_SAVE + (urgent ? 0 : prioritySize), clue: save };
 	}

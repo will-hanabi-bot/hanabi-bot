@@ -296,6 +296,9 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 				break;
 			}
 
+			if (card === undefined)
+				console.log('order', order, connecting);
+
 			if (card.newly_clued && common.thoughts[order].possible.length > 1 && focus_thoughts.inferred.has(identity)) {
 				// Trying to use a newly known/playable connecting card, but the focused card could be that
 				// e.g. If two 4s are clued (all other 4s visible), the other 4 should not connect and render this card with only one inference
@@ -394,5 +397,5 @@ export function find_focus_possible(game, action, focusResult, thinks_stall, loa
 		return !focus_possible.some((p2, index2) => index2 !== index1 && p1.suitIndex === p2.suitIndex && p1.rank === p2.rank && p2.save);
 	});
 
-	return finalize_connections(filtered_fps);
+	return finalize_connections(state, action, filtered_fps);
 }

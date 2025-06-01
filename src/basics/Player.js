@@ -1,6 +1,6 @@
 import { unknownIdentities } from './hanabi-util.js';
 import { IdentitySet } from './IdentitySet.js';
-import { Card } from './Card.js';
+import { Card, CARD_STATUS } from './Card.js';
 import { cardCount } from '../variants.js';
 import * as Utils from '../tools/util.js';
 import * as Elim from './player-elim.js';
@@ -157,6 +157,22 @@ export class Player {
 	}
 
 	/**
+	 * Returns a copy of the player with the orders chop moved.
+	 * @param {number[]} orders
+	 */
+	simulateCM(orders) {
+		const copy = this.shallowCopy();
+		copy.thoughts = copy.thoughts.slice();
+
+		for (const order of orders) {
+			copy.thoughts[order] = produce(this.thoughts[order], (draft) => {
+				draft.updateStatus(CARD_STATUS.CM);
+			});
+		}
+		return copy;
+	}
+
+	/**
 	 * Finds the order referred to by the given order.
 	 * @param {'left' | 'right'} direction
 	 * @param {number[]} hand
@@ -218,6 +234,7 @@ export class Player {
 
 			const unsafe_linked = linked_orders.has(o) &&
 				(state.strikes === 2 ||
+					state.endgameTurns !== -1 ||
 					card.possible.some(p => state.play_stacks[p.suitIndex] + 1 < p.rank && p.rank <= state.max_ranks[p.suitIndex]) ||
 					Array.from(linked_orders).some(o => this.thoughts[o].focused && o !== o));
 
@@ -265,7 +282,7 @@ export class Player {
 				return replaceable.length > 0 && replaceable.every(r => r !== undefined);
 			};
 
-			return card.possibilities.every(p => (card.chop_moved ? state.isBasicTrash(p) : false) || state.isPlayable(p)) &&	// cm cards can ignore trash ids
+			return card.possibilities.every(p => (card.status === CARD_STATUS.CM ? state.isBasicTrash(p) : false) || state.isPlayable(p)) &&	// cm cards can ignore trash ids
 				card.possibilities.some(p => state.isPlayable(p)) &&	// Exclude empty case
 				((options.assume ?? true) || known_playable() || ((!card.uncertain || playerIndex === state.ourPlayerIndex) && !conflicting_conn())) &&
 				(options.symmetric || state.hasConsistentInferences(card));
@@ -285,7 +302,7 @@ export class Player {
 
 				return card.matches(identity, { infer: true }) &&
 					state.deck[o].matches(identity, { assume: true }) &&
-					(state.deck[o].clued || (card.finessed && !card.uncertain)) &&
+					(state.deck[o].clued || (card.blind_playing && !card.uncertain)) &&
 					o !== order &&
 					!this.links.some(link => link.orders.includes(order));
 			});
@@ -428,7 +445,7 @@ export class Player {
 					const playable = state.hasConsistentInferences(card) &&
 						(delayed_playable(card.possible.array) ||
 							delayed_playable(card.inferred.subtract(fake_wcs.flatMap(wc => wc.inference)).array) ||
-							(card.finessed && delayed_playable([card])) ||
+							(card.blind_playing && delayed_playable([card])) ||
 							this.play_links.some(pl => pl.connected === order && pl.orders.every(o => unknown_plays.has(o))));
 
 					if (!playable)

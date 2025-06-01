@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import * as ExAsserts from '../../extra-asserts.js';
 
 import { PLAYER, VARIANTS, setup, takeTurn } from '../../test-utils.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
 import logger from '../../../src/tools/logger.js';
@@ -26,7 +27,7 @@ describe('loaded play clues', () => {
 		takeTurn(game, 'Bob clues 3 to Alice (slot 5)');
 
 		// Since Alice is loaded, this finesses slot 1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Alice plays r1 (slot 2)');
 

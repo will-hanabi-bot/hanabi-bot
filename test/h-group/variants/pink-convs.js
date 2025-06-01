@@ -4,6 +4,7 @@ import * as ExAsserts from '../../extra-asserts.js';
 
 import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../../test-utils.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
 
@@ -59,7 +60,7 @@ describe('pink promise', () => {
 			variant: VARIANTS.PINK
 		});
 
-		game.common.updateThoughts(game.state.hands[PLAYER.ALICE][4], (draft) => { draft.chop_moved = true; });
+		game.common.updateThoughts(game.state.hands[PLAYER.ALICE][4], (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 
 		takeTurn(game, 'Bob clues 5 to Alice (slots 1,2,3,5)');
 
@@ -81,7 +82,7 @@ describe('pink promise', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slot 3)');
 
 		// Alice's slots 4 and 5 should be chop moved.
-		assert.ok([3, 4].every(i => game.common.thoughts[game.state.hands[PLAYER.ALICE][i]].chop_moved, true));
+		assert.ok([3, 4].every(i => game.common.thoughts[game.state.hands[PLAYER.ALICE][i]].status, CARD_STATUS.CM));
 	});
 
 	it(`doesn't give illegal 5cms`, () => {
@@ -233,7 +234,7 @@ describe('pink prompts', () => {
 
 		// Alice should finesse slot 1 as i2.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['i2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('prompts when two rank mismatches', () => {
@@ -306,7 +307,7 @@ describe('pink prompts', () => {
 
 		// Alice should understand Cathy's i2 is prompted, and not self-finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['i3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('understands a known bluff when rank mismatches', () => {
@@ -349,8 +350,8 @@ describe('pink trash', () => {
 		takeTurn(game, 'Cathy clues 1 to Alice (slots 2,3)');
 
 		// Alice's slots 3 and 4 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].chop_moved, true);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
 
 		// Alice's slots 2 and 3 should be known trash.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r1', 'y1', 'g1', 'b1', 'i1']);
@@ -400,7 +401,7 @@ describe('pink choice tempo clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1']);
 
 		// Alice is not TCCM'd.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].chop_moved, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});
 
 	it('understands a pink choice finesse', () => {
@@ -426,7 +427,7 @@ describe('pink choice tempo clues', () => {
 
 		// Alice knows that she only has i1, and she is not TCCM'd.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].chop_moved, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});
 
 	it('interprets a pink choice tempo clue over a pink fix', () => {

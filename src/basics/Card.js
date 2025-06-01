@@ -106,6 +106,19 @@ export class ActualCard extends BasicCard {
 	}
 }
 
+export const CARD_STATUS = /** @type {const} */({
+	CLUED: 'clued',
+	FINESSED: 'finessed',
+	BLUFFED: 'bluffed',
+	MAYBE_F: 'maybe finessed',
+	MAYBE_BLUFFED: 'maybe bluffed',
+	F_MAYBE_BLUFF: 'finessed, maybe bluffed',
+	CM: 'chop moved',
+	CALLED_TO_PLAY: 'called to play',
+	CALLED_TO_DC: 'called to discard',
+	GD: `gentleman's discarded`
+});
+
 /**
  * Class for a single card (i.e. a suitIndex and rank). Other attributes are optional.
  */
@@ -152,20 +165,18 @@ export class Card extends ActualCard {
 	 */
 	info_lock;
 
+	/** @type {typeof CARD_STATUS[keyof typeof CARD_STATUS] | undefined} */
+	status;
+
+	/** @type {typeof CARD_STATUS[keyof typeof CARD_STATUS] | undefined} */
+	last_status;
+
 	// Boolean flags about the state of the card
 	focused = false;
-	finessed = false;
-	possibly_finessed = false;
-	bluffed = false;
-	possibly_bluffed = false;
-	chop_moved = false;
 	reset = false;			// Whether the card has previously lost all inferences
 	chop_when_first_clued = false;
-	was_cm = false;
 	superposition = false;	// Whether the card is currently in a superposition
 	hidden = false;
-	called_to_play = false;
-	called_to_discard = false;
 	permission_to_discard = false;
 	certain_finessed = false;
 	trash = false;
@@ -253,12 +264,39 @@ export class Card extends ActualCard {
 
 	/** Returns whether the card has been "touched" (i.e. clued or finessed). */
 	get touched() {
-		return this.clued || this.finessed || this.known || this.called_to_play;
+		return this.known ||
+			this.status === CARD_STATUS.CLUED ||
+			this.status === CARD_STATUS.FINESSED ||
+			this.status === CARD_STATUS.BLUFFED ||
+			this.status === CARD_STATUS.F_MAYBE_BLUFF ||
+			this.status === CARD_STATUS.CALLED_TO_PLAY ||
+			this.status === CARD_STATUS.GD;
 	}
 
 	/** Returns whether the card has been "saved" (i.e. clued, finessed or chop moved). */
 	get saved() {
-		return this.clued || this.finessed || this.chop_moved || this.known || this.called_to_play;
+		return this.touched || this.status === CARD_STATUS.CM;
+	}
+
+	get blind_playing() {
+		return this.status === CARD_STATUS.FINESSED ||
+			this.status === CARD_STATUS.BLUFFED ||
+			this.status === CARD_STATUS.CALLED_TO_PLAY;
+	}
+
+	/** @param {typeof CARD_STATUS[keyof typeof CARD_STATUS] | undefined} status */
+	updateStatus(status) {
+		this.last_status = this.status;
+		this.status = status;
+	}
+
+	revertStatus() {
+		if (this.clued)
+			this.status = CARD_STATUS.CLUED;
+		else
+			this.status = this.last_status;
+
+		this.last_status = undefined;
 	}
 
 	/**
@@ -320,14 +358,22 @@ export class Card extends ActualCard {
 		else
 			note = '...';
 
-		if (this.finessed)
-			note = `[f] [${note}]`;
-
-		if (this.chop_moved)
-			note = `[cm] [${note}]`;
-
-		if (this.called_to_discard)
-			note = 'dc';
+		switch (this.status) {
+			case CARD_STATUS.FINESSED:
+			case CARD_STATUS.BLUFFED:
+			case CARD_STATUS.CALLED_TO_PLAY:
+				note = `[f] [${note}]`;
+				break;
+			case CARD_STATUS.GD:
+				note = `[gd] [${note}]`;
+				break;
+			case CARD_STATUS.CM:
+				note = `[cm] [${note}]`;
+				break;
+			case CARD_STATUS.CALLED_TO_DC:
+				note = 'dc';
+				break;
+		}
 
 		return note;
 	}
@@ -346,8 +392,8 @@ export class Card extends ActualCard {
 				draft.info_lock = undefined;
 			}
 
-			if (draft.finessed) {
-				draft.finessed = false;
+			if (draft.status === CARD_STATUS.FINESSED) {
+				draft.revertStatus();
 				draft.hidden = false;
 				if (!broke_info_lock && info_lock) {
 					draft.inferred = info_lock;

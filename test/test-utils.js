@@ -1,4 +1,5 @@
 import { CLUE, MAX_H_LEVEL } from '../src/constants.js';
+import { CARD_STATUS } from '../src/basics/Card.js';
 import { State } from '../src/basics/State.js';
 import { cardCount, find_possibilities, shortForms } from '../src/variants.js';
 import * as Utils from '../src/tools/util.js';
@@ -455,6 +456,7 @@ export function preClue(game, order, clues, fully_known = false) {
 	common.updateThoughts(order, (draft) => {
 		draft.inferred = possibilities;
 		draft.possible = possibilities;
+		draft.status = CARD_STATUS.CLUED;
 		update(draft, clues);
 	});
 }

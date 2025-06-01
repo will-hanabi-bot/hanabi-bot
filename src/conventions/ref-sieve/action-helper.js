@@ -1,4 +1,5 @@
 import { CLUE_INTERP } from './rs-constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { bad_touch_result, elim_result, playables_result } from '../../basics/clue-result.js';
 import * as Utils from '../../tools/util.js';
 
@@ -6,7 +7,6 @@ import logger from '../../tools/logger.js';
 import { logAction, logCard, logClue } from '../../tools/log.js';
 import { cardValue } from '../../basics/hanabi-util.js';
 import { produce } from '../../StateProxy.js';
-
 
 /**
  * @typedef {import('../ref-sieve.js').default} Game
@@ -50,7 +50,7 @@ function best_value(new_game, i, value) {
 
 		return (state.isBasicTrash(id) || state.hands.some((hand, pi) => {
 			const loaded = common.thinksLoaded(state, pi);
-			return hand.some((o, i) => o !== chop && state.deck[o].matches(id) && !common.thoughts[o].called_to_discard && (i !== 0 || loaded));
+			return hand.some((o, i) => o !== chop && state.deck[o].matches(id) && common.thoughts[o].status !== CARD_STATUS.CALLED_TO_DC && (i !== 0 || loaded));
 		}));
 	};
 
@@ -83,7 +83,7 @@ function best_value(new_game, i, value) {
 	}
 
 	const discard = common.thinksTrash(state, playerIndex)[0] ??
-		state.hands[playerIndex].find(o => common.thoughts[o].called_to_discard) ??
+		state.hands[playerIndex].find(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) ??
 		state.hands[playerIndex][0];
 
 	const { suitIndex, rank } = state.deck[discard];
@@ -160,7 +160,7 @@ export function get_result(game, hypo_game, action) {
 
 	// Card that looks playable but actually isn't
 	const bad_playable = state.hands[target].find(o =>
-		hypo_common.thoughts[o].finessed && !hypo_me.hypo_plays.has(o));
+		hypo_common.thoughts[o].blind_playing && !hypo_me.hypo_plays.has(o));
 
 	if (bad_playable !== undefined) {
 		logger.info(clue_str, 'results in', logCard(me.thoughts[bad_playable]), 'looking playable when it isn\'t');

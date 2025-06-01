@@ -10,6 +10,7 @@ import { find_sarcastics } from '../shared/sarcastic.js';
 import { Worker } from 'worker_threads';
 import * as path from 'path';
 import { shortForms } from '../../variants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 
 /**
  * @typedef {import('../ref-sieve.js').default} Game
@@ -56,7 +57,7 @@ export function find_all_discards(game, playerIndex) {
 	if (trash.length > 0)
 		return trash.map(o => ({ order: o, misplay: false }));
 
-	const discardable = state.hands[playerIndex].find(o => common.thoughts[o].called_to_discard) ??
+	const discardable = state.hands[playerIndex].find(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) ??
 		state.hands[playerIndex][0];
 
 	return [{ order: discardable, misplay: false }];
@@ -77,7 +78,7 @@ export async function take_action(game) {
 	// Add cards called to discard
 	for (const order of state.ourHand) {
 		const card = me.thoughts[order];
-		if (!trash_orders.includes(order) && card.called_to_discard && card.possible.some(p => !state.isCritical(p)))
+		if (!trash_orders.includes(order) && card.status === CARD_STATUS.CALLED_TO_DC && card.possible.some(p => !state.isCritical(p)))
 			trash_orders.push(order);
 	}
 

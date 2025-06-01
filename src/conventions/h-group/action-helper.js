@@ -1,3 +1,4 @@
+import { CARD_STATUS } from '../../basics/Card.js';
 import { isTrash } from '../../basics/hanabi-util.js';
 import { connectable_simple } from '../../basics/helper.js';
 import { unknown_1 } from './hanabi-logic.js';
@@ -76,22 +77,22 @@ export function order_1s(state, player, orders, options = { no_filter: false }) 
 		if (first_clued_turn(order1) !== first_clued_turn(order2))
 			return first_clued_turn(order2) - first_clued_turn(order1);
 
-		if (c1.finessed && c2.finessed)
+		if (c1.blind_playing && c2.blind_playing)
 			return c1.finesse_index - c2.finesse_index;
 
-		if (c1.finessed)
+		if (c1.blind_playing)
 			return -1;
 
-		if (c2.finessed)
+		if (c2.blind_playing)
 			return 1;
 
-		if ((c1.chop_moved || c1.was_cm) && (c2.chop_moved || c2.was_cm))
+		if ((c1.status === CARD_STATUS.CM || c1.last_status === CARD_STATUS.CM) && (c2.status === CARD_STATUS.CM || c2.last_status === CARD_STATUS.CM))
 			return order2 - order1;
 
-		if (c1.was_cm)
+		if (c1.status === CARD_STATUS.CM || c1.last_status === CARD_STATUS.CM)
 			return 1;
 
-		if (c2.was_cm)
+		if (c2.status === CARD_STATUS.CM || c2.last_status === CARD_STATUS.CM)
 			return -1;
 
 		if (c1.chop_when_first_clued && c2.chop_when_first_clued)
@@ -132,7 +133,7 @@ export function determine_playable_card(game, playable_orders) {
 	for (const order of playable_orders) {
 		const card = game.me.thoughts[order];
 
-		const in_finesse = card.finessed ||
+		const in_finesse = card.blind_playing ||
 			(!common.play_links.some(play_link => play_link.orders.includes(order)) && common.dependentConnections(order).some(wc =>
 				!wc.symmetric && wc.connections.some((conn, i) => i >= wc.conn_index && conn.type === 'finesse')));
 
@@ -142,7 +143,7 @@ export function determine_playable_card(game, playable_orders) {
 		}
 
 		// Blind playing unknown chop moved cards should be a last resort with < 2 strikes
-		if (card.chop_moved && !card.clued && card.possible.some(p => state.playableAway(p) !== 0)) {
+		if (card.status === CARD_STATUS.CM && !card.clued && card.possible.some(p => state.playableAway(p) !== 0)) {
 			if (state.strikes !== 2)
 				priorities[5].push(order);
 
@@ -205,10 +206,10 @@ export function determine_playable_card(game, playable_orders) {
 	// Speed-up clues first, then oldest finesse to newest
 	priorities[0].sort((o1, o2) => {
 		const [c1, c2] = [o1, o2].map(o => me.thoughts[o]);
-		if (c1.finessed && !c2.finessed)
+		if (c1.blind_playing && !c2.blind_playing)
 			return -1;
 
-		if (c2.finessed && !c1.finessed)
+		if (c2.blind_playing && !c1.blind_playing)
 			return 1;
 
 		if (c1.clued && !c2.clued)

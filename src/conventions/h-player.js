@@ -33,17 +33,11 @@ export class HGroup_Player extends Player {
 	}
 	/**
 	 * Returns the index (0-indexed) of the chop card, or -1 if the hand doesn't have a chop.
-	 * 
-	 * The 'afterClue' option can be set to true to find chop after a clue.
-	 * Otherwise, the default behaviour finds chop which could be a newly clued card.
 	 * @param {number[]} hand
-	 * @param {{afterClue?: boolean}} options
 	 */
-	chopIndex(hand, options = {}) {
+	chopIndex(hand) {
 		for (let i = hand.length - 1; i >= 0; i--) {
-			const { clued, newly_clued, chop_moved, finessed, known } = this.thoughts[hand[i]];
-
-			if (chop_moved || (clued && (options.afterClue ? true : !newly_clued)) || finessed || known)
+			if (this.thoughts[hand[i]].status !== undefined)
 				continue;
 
 			return i;
@@ -54,25 +48,24 @@ export class HGroup_Player extends Player {
 	/**
 	 * Returns the chop card, or undefined if the hand doesn't have a chop.
 	 * @param {number[]} hand
-	 * @param {{afterClue?: boolean}} options
 	 */
-	chop(hand, options = {}) {
-		return hand[this.chopIndex(hand, options)];
+	chop(hand) {
+		return hand[this.chopIndex(hand)];
 	}
 
 	/**
 	 * Returns the value of the chop card, 4 if the hand is locked, and 0 if no chop but loaded.
 	 * @param {State} state
 	 * @param {number} playerIndex
-	 * @param {{afterClue?: boolean, no_chop?: number}} options
+	 * @param {{no_chop?: number}} options
 	 */
 	chopValue(state, playerIndex, options = {}) {
 		const hand = state.hands[playerIndex];
-		const chop = this.chop(hand, options);
+		const chop = this.chop(hand);
 
-		return chop !== undefined ?
-			cardValue(state, this, state.deck[chop], chop) :
-			(options.no_chop !== undefined ? options.no_chop : (this.thinksLoaded(state, playerIndex) ? 0 : 4));
+		return chop !== undefined ? cardValue(state, this, state.deck[chop], chop) :
+			(options.no_chop !== undefined ? options.no_chop :
+			(this.thinksLoaded(state, playerIndex) ? 0 : 4));
 	}
 
 	/**
@@ -117,7 +110,7 @@ export class HGroup_Player extends Player {
 		const playables = super.thinksPlayables(state, playerIndex, options);
 
 		return playables.filter(o => {
-			if (!this.thoughts[o].finessed)
+			if (!this.thoughts[o].blind_playing)
 				return true;
 
 			// Playables that are queued behind a finesse aren't playable

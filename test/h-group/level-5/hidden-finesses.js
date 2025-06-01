@@ -6,9 +6,9 @@ import * as ExAsserts from '../../extra-asserts.js';
 
 import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import { team_elim } from '../../../src/basics/helper.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
-
 import logger from '../../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -179,12 +179,12 @@ describe('hidden finesse', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['y1', 'g1']);
 
 		// Slot 1 should be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Alice plays y1 (slot 3)');
 
 		// Alice's slot 2 should still be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('correctly realizes a layered finesse', async () => {
@@ -207,7 +207,7 @@ describe('hidden finesse', () => {
 		takeTurn(game, 'Donald discards b2', 'b5');
 
 		// Slots 1 should be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 
 		const action = await game.take_action();
 
@@ -218,7 +218,7 @@ describe('hidden finesse', () => {
 		takeTurn(game, 'Alice plays g1 (slot 1)');
 
 		// Alice's slot 2 should still be finessed as y3.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y3']);
 	});
 

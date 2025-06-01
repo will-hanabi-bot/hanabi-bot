@@ -1,4 +1,5 @@
 import { DISCARD_INTERP, LEVEL, PLAY_INTERP } from './h-constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { isTrash } from '../../basics/hanabi-util.js';
 import { team_elim } from '../../basics/helper.js';
 import { interpret_sarcastic } from '../shared/sarcastic.js';
@@ -51,7 +52,7 @@ function check_transfer(game, action) {
 
 		logger.info(`discarded connecting card ${logCard({ suitIndex, rank })}, cancelling waiting connection for inference ${logCard(inference)}`);
 
-		const replaceable = !common.thoughts[order].bluffed &&
+		const replaceable = common.thoughts[order].status !== CARD_STATUS.BLUFFED &&
 			(state.deck[order].clued || (game.level >= LEVEL.SPECIAL_DISCARDS && common.thoughts[order].touched)) &&
 			rank > state.play_stacks[suitIndex] && rank <= state.max_ranks[suitIndex] &&
 			!failed;
@@ -180,7 +181,7 @@ export function interpret_discard(game, action) {
 		const ocm_order = check_ocm(game, action);
 
 		if (ocm_order !== -1) {
-			common.updateThoughts(ocm_order, (draft) => { draft.chop_moved = true; });
+			common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 			game.interpretMove(PLAY_INTERP.CM_ORDER);
 		}
 	}
@@ -230,7 +231,7 @@ export function interpret_discard(game, action) {
 			if (failed) {
 				Object.assign(common, common.undo_hypo_stacks(identity));
 			}
-			else if (!common.thoughts[order].bluffed) {
+			else if (common.thoughts[order].status !== CARD_STATUS.BLUFFED) {
 				/** @type {typeof DISCARD_INTERP[keyof typeof DISCARD_INTERP]} */
 				let interp = DISCARD_INTERP.SARCASTIC;
 
@@ -277,7 +278,7 @@ export function interpret_discard(game, action) {
 			const chop = common.chop(state.hands[nextPlayerIndex]);
 
 			if (interp === DISCARD_INTERP.SCREAM || interp === DISCARD_INTERP.SHOUT) {
-				state.screamed_at = true;
+				state.discard_state = interp;
 
 				if (chop === undefined) {
 					logger.warn(`${state.playerNames[nextPlayerIndex]} has no chop!`);
@@ -285,12 +286,12 @@ export function interpret_discard(game, action) {
 				}
 				else {
 					logger.info(`interpreting ${interp}!`);
-					common.updateThoughts(chop, (draft) => { draft.chop_moved = true; });
+					common.updateThoughts(chop, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 				}
 			}
 			else if (interp === DISCARD_INTERP.GENERATION) {
 				logger.info(`interpreting ${interp}!`);
-				state.generated = true;
+				state.discard_state = interp;
 			}
 
 			if (interp !== DISCARD_INTERP.NONE) {
@@ -300,7 +301,7 @@ export function interpret_discard(game, action) {
 		}
 	}
 
-	if (!state.screamed_at && !state.generated && game.level >= LEVEL.ENDGAME && (state.inEndgame() || state.maxScore - state.score < 4)) {
+	if (state.discard_state === undefined && game.level >= LEVEL.ENDGAME && (state.inEndgame() || state.maxScore - state.score < 4)) {
 		const targets = check_positional_discard(game, action, before_trash, old_chop, slot);
 
 		if (targets.length > 0) {
@@ -310,7 +311,9 @@ export function interpret_discard(game, action) {
 			for (const { reacting, possibilities } of targets) {
 				const order = state.hands[reacting][slot - 1];
 				common.updateThoughts(order, (draft) => {
-					draft.finessed = true;
+					if (draft.status !== CARD_STATUS.CLUED)
+						draft.updateStatus(CARD_STATUS.CALLED_TO_PLAY);
+
 					draft.focused = true;
 					draft.old_inferred = draft.inferred;
 					draft.inferred = common.thoughts[order].inferred.intersect(possibilities);
@@ -358,7 +361,7 @@ function check_positional_discard(game, action, before_trash, old_chop, slot) {
 
 	// Locked hand, blind played a chop moved card that could be good, discarded expected card
 	const not_intended = expected_discard === undefined || (action.failed ?
-		(card.chop_moved && card.old_possible?.some(i => !state.isBasicTrash(i)) && card.old_possible?.some(i => state.isPlayable(i))) :
+		(card.status === CARD_STATUS.CM && card.old_possible?.some(i => !state.isBasicTrash(i)) && card.old_possible?.some(i => state.isPlayable(i))) :
 		order === expected_discard);
 
 	if (not_intended)
@@ -438,7 +441,7 @@ function check_sdcm(game, action, before_trash, old_chop) {
 		if (state.clue_tokens !== 2 || nextChop === undefined)
 			return false;
 
-		const screamed_player = game.players[nextPlayerIndex].withThoughts(nextChop, (draft) => { draft.chop_moved = true; });
+		const screamed_player = game.players[nextPlayerIndex].simulateCM([nextChop]);
 		return screamed_player.thinksLocked(state, nextPlayerIndex);
 	};
 
@@ -457,18 +460,15 @@ function check_sdcm(game, action, before_trash, old_chop) {
 	if (state.numPlayers === 2)
 		return res;
 
-	if (common.thinksLoaded(state, nextPlayerIndex)) {
+	if (state.clue_tokens === 1 && common.thinksLoaded(state, nextPlayerIndex)) {
 		logger.warn(`${state.playerNames[playerIndex]} discarded with a playable/kt at 0 clues but next player was safe! (echo?)`);
 		return GENERATION;
 	}
 
 	const next2Chop = common.chop(state.hands[nextPlayerIndex2]);
 
-	if (next2Chop === undefined)
+	if (next2Chop === undefined || nextPlayerIndex2 === state.ourPlayerIndex || common.thinksLoaded(state, nextPlayerIndex2))
 		return res;
 
-	if (nextPlayerIndex2 === state.ourPlayerIndex || common.thinksLoaded(state, nextPlayerIndex2))
-		return res;
-
-	return (common.chopValue(state, nextPlayerIndex2) < 4) ? res : GENERATION;
+	return (state.clue_tokens === 1 && common.chopValue(state, nextPlayerIndex2) === 4) ? GENERATION : res;
 }

@@ -54,7 +54,7 @@ export function remove_finesse(game, waiting_connection) {
 			draft.inferred = new_inferred;
 
 			if (card_reset) {
-				draft.finessed = false;
+				draft.revertStatus();
 				draft.hidden = false;
 
 				if (draft.old_inferred !== undefined) {
@@ -120,10 +120,10 @@ export function resolve_card_retained(game, waiting_connection) {
 	const last_reacting_action = game.last_actions[reacting];
 	const new_finesse_queued = connections.slice(conn_index).find(conn =>
 		conn.type === 'finesse' && state.hands[conn.reacting].some(o => {
-			const { inferred, finessed, finesse_index } = common.thoughts[o];
+			const { inferred, blind_playing, finesse_index } = common.thoughts[o];
 
 			// A newer finesse exists on this player that is not part of the same suit.
-			return finessed && finesse_index > common.thoughts[conn.order].finesse_index && !inferred.some(i => i.suitIndex === conn.identities[0].suitIndex);
+			return blind_playing && finesse_index > common.thoughts[conn.order].finesse_index && !inferred.some(i => i.suitIndex === conn.identities[0].suitIndex);
 		}));
 
 	// Didn't play into finesse
@@ -179,24 +179,24 @@ export function resolve_card_retained(game, waiting_connection) {
 			}
 
 			if (!selfPassback) {
-				// Find all waiting connections using this order and merge their possible identities
-				const linked_ids = common.waiting_connections.filter(wc => wc.focus === focus)
-					.flatMap(wc => wc.connections.find((conn, i) => i >= wc.conn_index && conn.order === order)?.identities)
+				// Find all waiting connections using this order OR self-identities, and merge their possible identities
+				const linked_ids = common.waiting_connections.filter(wc => wc.focus === focus && wc !== waiting_connection)
+					.flatMap(wc => wc.connections.filter((conn, i) => i >= wc.conn_index && (conn.order === order || conn.self)).flatMap(conn => conn.identities))
 					.filter(i => i !== undefined);
 
-				/** @param {number} finesse */
-				const allowable_hesitation = (finesse) => {
+				/** @param {number} playerIndex */
+				const allowable_hesitation = (playerIndex) => {
+					const finesse = common.find_finesse(state, playerIndex);
 					if (finesse === undefined)
 						return undefined;
 
 					// Returns an identity that the player could be hesitating for on the given finesse order, if it exists.
-					const id = state.deck[finesse].identity();
-					return linked_ids.find(i => (id === undefined) ? common.thoughts[finesse].inferred.has(i) : id.matches(i));
+					// const id = state.deck[finesse].identity();
+					return linked_ids.find(i => common.thoughts[finesse].inferred.has(i));
 				};
 
 				for (let playerIndex = state.nextPlayerIndex(reacting); playerIndex != giver; playerIndex = state.nextPlayerIndex(playerIndex)) {
-					const finesse = common.find_finesse(state, playerIndex);
-					const hesitation_poss = allowable_hesitation(finesse);
+					const hesitation_poss = allowable_hesitation(playerIndex);
 
 					if (hesitation_poss) {
 						logger.warn(`${state.playerNames[reacting]} didn't play into ${type} but allowable hesitation on ${state.playerNames[playerIndex]} ${logCard(hesitation_poss)}`);
@@ -213,12 +213,12 @@ export function resolve_card_retained(game, waiting_connection) {
 				const play = common.thoughts[reacting_order];
 				const expected_play = common.thoughts[order];
 
-				if (play.finessed && play.finesse_index < expected_play.finesse_index) {
+				if (play.blind_playing && play.finesse_index < expected_play.finesse_index) {
 					logger.warn(`${state.playerNames[reacting]} played into older finesse ${play.finesse_index} < ${expected_play.finesse_index}, continuing to wait`);
 					return { remove: false };
 				}
 
-				if (play.finessed && expected_play.hidden && expected_play.clued && play.finesse_index === expected_play.finesse_index) {
+				if (play.blind_playing && expected_play.hidden && expected_play.clued && play.finesse_index === expected_play.finesse_index) {
 					logger.warn(`${state.playerNames[reacting]} jumped ahead in layered finesse, continuing to wait`);
 					return { remove: false };
 				}
@@ -294,7 +294,7 @@ export function resolve_card_retained(game, waiting_connection) {
 
 		return { remove: true, remove_finesse: true };
 	}
-	else if (last_reacting_action?.type === 'discard' && !last_reacting_action.intentional && !state.screamed_at && !state.generated) {
+	else if (last_reacting_action?.type === 'discard' && !last_reacting_action.intentional && state.discard_state === undefined) {
 		const unplayable_identities = identities.filter(i => !state.isBasicTrash(i) && !state.isPlayable(i));
 		if (unplayable_identities.length > 0) {
 			logger.warn('discarded but not all possibilities playable', unplayable_identities.map(logCard));
@@ -395,7 +395,7 @@ export function resolve_other_play(game, playerIndex, waiting_connection) {
 			else {
 				logger.error(`no old inferences on card ${logCard(draft)} ${order} (while resolving other play)! current inferences ${draft.inferred.map(logCard)}`);
 			}
-			draft.finessed = false;
+			draft.revertStatus();
 		}
 	});
 

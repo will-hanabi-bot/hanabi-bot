@@ -1,5 +1,6 @@
 import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP } from '../h-constants.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { bad_touch_result, cm_result, elim_result, playables_result } from '../../../basics/clue-result.js';
 import { isTrash } from '../../../basics/hanabi-util.js';
 import { determine_focus } from '../hanabi-logic.js';
@@ -34,7 +35,7 @@ function acceptable_clue(game, hypo_game, action, result) {
 
 	/** @param {Game} game */
 	const get_finessed_orders = (game) =>
-		game.state.hands.flatMap(hand => hand.filter(o => ((c = game.common.thoughts[o]) => !c.clued && (c.finessed || c.bluffed))()));
+		game.state.hands.flatMap(hand => hand.filter(o => game.common.thoughts[o].blind_playing));
 
 	const finessed_before_clue = get_finessed_orders(game);
 	const finessed_after_clue = get_finessed_orders(hypo_game);
@@ -60,7 +61,7 @@ function acceptable_clue(game, hypo_game, action, result) {
 
 		const old_card = common.thoughts[order];
 
-		const allowable_trash = card.chop_moved ||													// Chop moved (might have become trash)
+		const allowable_trash = card.status === CARD_STATUS.CM ||									// Chop moved (might have become trash)
 			old_card.reset || !state.hasConsistentInferences(old_card) || old_card.inferred.length === 0 ||	// Didn't match inference even before clue
 			(visible_card.clued && isTrash(state, game.me, visible_card, order, { infer: true })) ||		// Previously-clued duplicate or recently became basic trash
 			bad_touch.includes(order) ||																// Bad touched

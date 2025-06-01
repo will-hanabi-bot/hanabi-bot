@@ -56,7 +56,7 @@ function remove_finesse_conns(common, waiting_connection) {
 			draft.inferred = new_inferred;
 
 			if (card_reset) {
-				draft.finessed = false;
+				draft.revertStatus();
 				draft.hidden = false;
 
 				if (draft.old_inferred !== undefined) {
@@ -107,12 +107,12 @@ function resolve_card_retained(game, waiting_connection) {
 				const play = common.thoughts[reacting_order];
 				const expected_play = common.thoughts[order];
 
-				if (play.finessed && play.finesse_index < expected_play.finesse_index) {
+				if (play.blind_playing && play.finesse_index < expected_play.finesse_index) {
 					logger.warn(`${state.playerNames[reacting]} played into older finesse ${play.finesse_index} < ${expected_play.finesse_index}, continuing to wait`);
 					return { remove: false };
 				}
 
-				if (play.finessed && expected_play.hidden && expected_play.clued && play.finesse_index === expected_play.finesse_index) {
+				if (play.blind_playing && expected_play.hidden && expected_play.clued && play.finesse_index === expected_play.finesse_index) {
 					logger.warn(`${state.playerNames[reacting]} jumped ahead in layered finesse, continuing to wait`);
 					return { remove: false };
 				}
@@ -157,7 +157,7 @@ function resolve_card_retained(game, waiting_connection) {
 		return { remove: true, remove_finesse: true };
 	}
 
-	if (last_action?.type === 'discard' && !last_action.failed && !last_action.intentional && !state.screamed_at && !state.generated) {
+	if (last_action?.type === 'discard' && !last_action.failed && !last_action.intentional && state.discard_state === undefined) {
 		const unplayable_identities = identities.filter(i => !state.isBasicTrash(i) && !state.isPlayable(i));
 		if (unplayable_identities.length > 0) {
 			logger.warn('discarded but not all possibilities playable', unplayable_identities.map(logCard));

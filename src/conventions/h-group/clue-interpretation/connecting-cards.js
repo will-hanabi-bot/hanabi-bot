@@ -74,15 +74,11 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 		if (globally_known)
 			return { type: 'known', reacting: playerIndex, order: globally_known, identities: [identity] };
 
-		// Don't use our own links
-		if (giver === state.ourPlayerIndex && playerIndex === state.ourPlayerIndex)
-			continue;
-
 		/** @type {Link} */
 		let known_link;
 
 		const known_linked = state.hands[playerIndex].find(order => {
-			if (ignoreOrders.includes(order) || !state.deck[order].matches(identity))
+			if (ignoreOrders.includes(order) || !state.deck[order].matches(identity, { assume: true }))
 				return false;
 
 			known_link = common.links.find(link =>
@@ -93,8 +89,17 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 			return known_link !== undefined;
 		});
 
-		if (known_linked)
-			return { type: 'playable', reacting: playerIndex, order: known_linked, linked: known_link.orders, identities: [identity] };
+		if (known_linked !== undefined) {
+			// This card could be linked for another identity (i.e. if we have multiple 1s and are clued a 2), we can't build on anything.
+			const conflicting_link = common.links.find(link =>
+				link !== known_link &&
+				link.promised &&
+				!link.identities.some(i => i.suitIndex === identity.suitIndex && i.rank === identity.rank) &&
+				link.orders.includes(known_linked));
+
+			if (conflicting_link === undefined)
+				return { type: 'playable', reacting: playerIndex, order: known_linked, linked: known_link.orders, identities: [identity] };
+		}
 	}
 
 	// Visible and already going to be played (excluding giver)
@@ -111,7 +116,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 			return !ignoreOrders.includes(order) &&
 				card.touched &&
 				card.inferred.has(identity) &&
-				(card.inferred.every(c => state.isPlayable(c)) || common.hypo_plays.has(order) || card.finessed) &&
+				(card.inferred.every(c => state.isPlayable(c)) || common.hypo_plays.has(order) || card.blind_playing) &&
 				!card.uncertain;
 		});
 		const match = playables.find(o => state.deck[o].matches(identity));
@@ -257,10 +262,22 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 
 			if (giver === state.ourPlayerIndex) {
 				if (bluff) {
-					const likely_duplicated = state.hands[giver].some(o => {
-						const card = me.thoughts[o];
-						return card.touched && card.inferred.length <= 2 && card.inferred.has(finesse_card);
-					});
+					let likely_duplicated = false, multi_possible = 0;
+					for (const order of state.hands[giver]) {
+						const card = me.thoughts[order];
+
+						if (!card.touched)
+							continue;
+
+						if (card.inferred.has(finesse_card)) {
+							multi_possible++;
+
+							if (card.inferred.length <= 2 || multi_possible === 2) {
+								likely_duplicated = true;
+								break;
+							}
+						}
+					}
 
 					if (likely_duplicated) {
 						logger.warn(`disallowed bluff on ${logCard(finesse_card)} ${finesse}, likely duplicated in giver's hand`);
@@ -427,7 +444,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 
 			if (ignoreOrders.includes(order) || connected.includes(order) ||
 				!card.matches(identity, { assume: true }) ||										// If we know the card (from a rewind), it must match
-				(!(card.inferred.every(i => state.isPlayable(i)) && card.clued) && !card.finessed))	// Must be playable
+				(!(card.inferred.every(i => state.isPlayable(i)) && card.clued) && !card.blind_playing))	// Must be playable
 				continue;
 
 			if (card.inferred.has(identity)) {

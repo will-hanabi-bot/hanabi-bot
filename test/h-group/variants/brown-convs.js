@@ -117,6 +117,6 @@ describe('brown tempo clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['n1']);
 
 		// Slot 2 should not be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].chop_moved, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});
 });

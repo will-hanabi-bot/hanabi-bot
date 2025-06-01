@@ -1,4 +1,4 @@
-import { ActualCard, Card } from './basics/Card.js';
+import { ActualCard, Card, CARD_STATUS } from './basics/Card.js';
 import { cardCount, find_possibilities } from './variants.js';
 import { team_elimP } from './basics/helper.js';
 
@@ -47,8 +47,10 @@ export function onClue(game, action) {
 
 		newCommon = newCommon.withThoughts(order, (draft) => {
 			if (list.includes(order)) {
-				if (!common.thoughts[order].clued)
+				if (!common.thoughts[order].clued) {
 					draft.firstTouch = { giver, turn: state.turn_count };
+					draft.updateStatus(CARD_STATUS.CLUED);
+				}
 
 				update_card(draft);
 			}

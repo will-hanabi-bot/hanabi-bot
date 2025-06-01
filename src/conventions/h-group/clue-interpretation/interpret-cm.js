@@ -1,4 +1,5 @@
 import { CLUE } from '../../../constants.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { isTrash, knownAs } from '../../../basics/hanabi-util.js';
 import { variantRegexes } from '../../../variants.js';
 import * as Utils from '../../../tools/util.js';
@@ -40,6 +41,7 @@ export function interpret_tcm(game, action, focus_order) {
 			mod_common = mod_common.withThoughts(order, (draft) => {
 				draft.newly_clued = false;
 				draft.clued = false;
+				draft.revertStatus();
 			}, false);
 		}
 	}
@@ -65,7 +67,7 @@ export function interpret_tcm(game, action, focus_order) {
 	for (let i = oldest_trash_index + 1; i < state.hands[target].length; i++) {
 		const order = state.hands[target][i];
 
-		if (!state.deck[order].clued && !common.thoughts[order].chop_moved)
+		if (!state.deck[order].clued && common.thoughts[order].status !== CARD_STATUS.CM)
 			cm_orders.push(order);
 	}
 
@@ -148,7 +150,7 @@ export function interpret_tccm(game, oldCommon, target, list, focused_card) {
 		return [];
 	}
 
-	const chop = common.chop(state.hands[target], { afterClue: true });
+	const chop = common.chop(state.hands[target]);
 
 	if (oldCommon.thinksLocked(state, target)) {
 		logger.info('target was locked, not tccm');
@@ -207,7 +209,7 @@ export function interpret_tccm(game, oldCommon, target, list, focused_card) {
 		}
 	} */
 
-	if (state.hands.some(hand => hand.some(o => !oldCommon.thoughts[o].finessed && common.thoughts[o].finessed))) {
+	if (state.hands.some(hand => hand.some(o => !oldCommon.thoughts[o].blind_playing && common.thoughts[o].blind_playing))) {
 		logger.info('caused finesse, not tccm');
 		return [];
 	}
@@ -230,7 +232,7 @@ export function perform_cm(state, player, cm_orders) {
 		player.updateThoughts(order, (draft) => {
 			// Remove all commonly trash identities
 			draft.inferred = inferred.subtract(inferred.filter(i => isTrash(state, player, i, order, { infer: true })));
-			draft.chop_moved = true;
+			draft.updateStatus(CARD_STATUS.CM);
 		});
 	}
 }

@@ -1,4 +1,5 @@
 import { CLUE } from '../../constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { cardCount, colourableSuits, variantRegexes } from '../../variants.js';
 import { knownAs, visibleFind } from '../../basics/hanabi-util.js';
 import { order_1s } from './action-helper.js';
@@ -84,15 +85,15 @@ export function determine_focus(game, hand, player, list, clue) {
 
 	let focus =
 		sorted_list.find(o => !player.thoughts[o].known && !state.deck[o].clued) ??	// leftmost newly clued
-		sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
+		sorted_list.find(o => player.thoughts[o].status === CARD_STATUS.CM) ??		// leftmost chop moved
 		sorted_list[0];															// leftmost reclued
 
 	// 5 stalls in pinkish variants have the focus as the rightmost unclued 5
 	if (clue.type === CLUE.RANK && clue.value === 5 && state.includesVariant(variantRegexes.pinkish)) {
 		if (stall_severity(state, common, state.ourPlayerIndex) > 0) {
 			focus =
-				sorted_list.findLast(o => !player.thoughts[o].known && !state.deck[o].clued && !player.thoughts[o].chop_moved) ??	// rightmost newly clued
-				sorted_list.find(o => player.thoughts[o].chop_moved) ??					// leftmost chop moved
+				sorted_list.findLast(o => !player.thoughts[o].known && player.thoughts[o].status === undefined) ??	// rightmost newly clued
+				sorted_list.find(o => player.thoughts[o].status === CARD_STATUS.CM) ??					// leftmost chop moved
 				sorted_list[0];															// leftmost reclued
 		}
 	}
@@ -121,7 +122,7 @@ export function stall_severity(state, player, giver, new_player = player) {
 
 	const chop = player.chop(state.hands[giver]);
 	// Use player after clue, because the clue may have given information about the dd card.
-	if (state.screamed_at || (state.dda !== undefined && chop !== undefined && new_player.thoughts[chop].possible.has(state.dda)))
+	if (state.discard_state === 'scream' || state.discard_state === 'shout' || (state.dda !== undefined && chop !== undefined && new_player.thoughts[chop].possible.has(state.dda)))
 		return 2;
 
 	if (state.early_game)
@@ -220,7 +221,7 @@ export function valuable_tempo_clue(game, clue, playables, focus) {
 
 	const valuable = playables.length > 1 ||
 		(state.deck[focus].rank !== 5 && prompt !== focus) ||
-		playables.some(p => ((card = common.thoughts[p.card.order]) => card.chop_moved && card.newly_clued)());
+		playables.some(p => ((card = common.thoughts[p.card.order]) => card.last_status === CARD_STATUS.CM && card.newly_clued)());
 
 	return { tempo: true, valuable };
 }
@@ -261,8 +262,8 @@ export function older_queued_finesse(state, playerIndex, player, new_finesse_ord
 		if (state.deck[o].clued || state.hands[playerIndex].every((c1, index1) => index1 <= index || state.deck[c1].clued))
 			return false;
 
-		const { finessed, finesse_index } = player.thoughts[o];
-		return finessed &&
+		const { blind_playing, finesse_index } = player.thoughts[o];
+		return blind_playing &&
 			finesse_index < player.thoughts[new_finesse_order].finesse_index;		// The finesse must have been older
 	});
 }

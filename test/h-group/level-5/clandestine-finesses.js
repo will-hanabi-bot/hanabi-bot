@@ -5,7 +5,9 @@ import { PLAYER, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
+
 import logger from '../../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -142,9 +144,9 @@ describe('clandestine finesses', () => {
 		takeTurn(game, 'Bob clues 2 to Cathy');
 
 		// Donald's y1 should be finessed, not our slot 1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][2]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][2]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.DONALD][2]], ['y1']);
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 });

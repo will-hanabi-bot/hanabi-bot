@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import PlayfulSieve from '../../src/conventions/playful-sieve.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 
 import logger from '../../src/tools/logger.js';
 
@@ -18,7 +19,7 @@ describe('ref play', () => {
 
 		takeTurn(game, 'Alice clues green to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, CARD_STATUS.CALLED_TO_PLAY);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][1]], ['r1', 'y1', 'b1', 'p1']);
 	});
 
@@ -30,7 +31,7 @@ describe('ref play', () => {
 
 		takeTurn(game, 'Alice clues purple to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CALLED_TO_PLAY);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r1', 'y1', 'g1', 'b1']);
 	});
 
@@ -42,7 +43,7 @@ describe('ref play', () => {
 
 		takeTurn(game, 'Alice clues blue to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CALLED_TO_PLAY);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b1']);
 	});
 
@@ -56,7 +57,7 @@ describe('ref play', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slot 5)');
 		takeTurn(game, 'Alice clues red to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CALLED_TO_PLAY);
 
 		takeTurn(game, 'Bob plays b1', 'p1');
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['y1', 'b2', 'p1']);
@@ -74,7 +75,7 @@ describe('ref play', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 2)');
 
 		const slot3 = game.common.thoughts[game.state.hands[PLAYER.ALICE][2]];
-		assert.equal(slot3.finessed, true);
+		assert.equal(slot3.status, CARD_STATUS.CALLED_TO_PLAY);
 	});
 });
 
@@ -89,7 +90,7 @@ describe('ref discard', () => {
 
 		takeTurn(game, 'Alice clues 3 to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].called_to_discard, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, CARD_STATUS.CALLED_TO_DC);
 	});
 
 	it('understands a gapped referential discard', () => {
@@ -102,7 +103,7 @@ describe('ref discard', () => {
 
 		takeTurn(game, 'Alice clues 3 to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].called_to_discard, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CALLED_TO_DC);
 	});
 
 	it('retains a call to discard after getting a play', () => {
@@ -119,7 +120,7 @@ describe('ref discard', () => {
 		takeTurn(game, 'Bob plays b2', 'p1');
 
 		// Bob's slot 3 should still be called to discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].called_to_discard, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CALLED_TO_DC);
 	});
 
 	it('retains a call to discard after a sarcastic discard', () => {
@@ -136,7 +137,7 @@ describe('ref discard', () => {
 		takeTurn(game, 'Bob discards b2', 'p1');
 
 		// Bob's slot 3 should still be called to discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].called_to_discard, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CALLED_TO_DC);
 	});
 });
 
@@ -155,7 +156,7 @@ describe('trash push', () => {
 		const slot4 = game.common.thoughts[game.state.hands[PLAYER.ALICE][3]];
 		const playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
 
-		assert.equal(slot4.finessed, true);
+		assert.equal(slot4.status, CARD_STATUS.CALLED_TO_PLAY);
 		assert.ok(playables.includes(slot4.order));
 	});
 
@@ -175,7 +176,7 @@ describe('trash push', () => {
 		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
 		const playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
 
-		assert.equal(slot2.finessed, true);
+		assert.equal(slot2.status, CARD_STATUS.CALLED_TO_PLAY);
 		assert.ok(playables.includes(slot2.order));
 	});
 
@@ -195,7 +196,7 @@ describe('trash push', () => {
 		const slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
 		const playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
 
-		assert.equal(slot1.finessed, true);
+		assert.equal(slot1.status, CARD_STATUS.CALLED_TO_PLAY);
 		assert.ok(playables.includes(slot1.order));
 	});
 });

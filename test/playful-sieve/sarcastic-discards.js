@@ -46,7 +46,7 @@ describe('sarcastic discards', () => {
 		// Alice should write [g1] on slot 1, in addition to being playable.
 		const slot1 = state.common.thoughts[state.hands[PLAYER.ALICE][0]];
 		ExAsserts.cardHasInferences(slot1, ['g2']);
-		assert.equal(slot1.finessed, true);
+		assert.equal(slot1.status, CARD_STATUS.FINESSED);
 	});*/
 
 	it('sarcastic discards to a clued card', async () => {
@@ -103,6 +103,6 @@ describe('sarcastic discards', () => {
 		// Alice should expect g2 in slot 5, as a Gentleman's Discard.
 		const slot5 = state.common.thoughts[state.hands[PLAYER.ALICE][4]];
 		ExAsserts.cardHasInferences(slot5, ['g2']);
-		assert.equal(slot5.finessed, true);
+		assert.equal(slot5.status, CARD_STATUS.FINESSED);
 	});
 });*/

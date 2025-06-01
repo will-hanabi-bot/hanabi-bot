@@ -1,3 +1,4 @@
+import { CARD_STATUS } from '../../basics/Card.js';
 import { visibleFind } from '../../basics/hanabi-util.js';
 
 import logger from '../../tools/logger.js';
@@ -84,8 +85,8 @@ function apply_locked_discard(state, common, playerIndex) {
 	// Chop move all cards
 	for (const order of state.hands[other]) {
 		const card = newCommon.thoughts[order];
-		if (!card.clued && !card.finessed && !card.chop_moved)
-			newCommon = newCommon.withThoughts(order, (draft) => { draft.chop_moved = true; });
+		if (card.status === undefined)
+			newCommon = newCommon.withThoughts(order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 	}
 
 	return newCommon;

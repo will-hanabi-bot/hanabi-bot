@@ -1,16 +1,16 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import PlayfulSieve from '../../src/conventions/playful-sieve.js';
 
 import { ACTION, CLUE } from '../../src/constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
-import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -48,7 +48,7 @@ describe('giving clues while locked', () => {
 
 		takeTurn(game, 'Alice clues 5 to Bob');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].called_to_discard, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, CARD_STATUS.CALLED_TO_DC);
 	});
 
 	it('understands colour stalls', () => {
@@ -64,10 +64,10 @@ describe('giving clues while locked', () => {
 		takeTurn(game, 'Alice clues red to Bob');
 
 		// Bob should not be called to play slot 5.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, undefined);
 
 		// Slot 1 should have permission to discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].called_to_discard, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.CALLED_TO_DC);
 	});
 
 	it('doesn\'t take locked hand ptd on a known playable', () => {
@@ -80,8 +80,8 @@ describe('giving clues while locked', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 5)');
 		takeTurn(game, 'Alice clues blue to Bob');
 
-		// Bob's slot 1 should not have permission to discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].called_to_discard, false);
+		// Bob's slot 1 should not have permission to discard (should still be called to play).
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.CALLED_TO_PLAY);
 	});
 });
 
@@ -204,29 +204,18 @@ describe('unlock promise', () => {
 		], {
 			starting: PLAYER.BOB,
 			play_stacks: [0, 1, 0, 0, 0],
-			discarded: ['r3']
+			discarded: ['r3'],
+			init: (game) => {
+				for (const order of game.state.hands[PLAYER.BOB]) {
+					const card = game.state.deck[order];
+					preClue(game, order, [
+						{ type: CLUE.RANK, value: card.rank, giver: PLAYER.ALICE },
+						{ type: CLUE.COLOUR, value: card.suitIndex, giver: PLAYER.ALICE }
+					]);
+				}
+				team_elim(game);
+			}
 		});
-
-		for (const order of game.state.hands[PLAYER.BOB]) {
-			const card = game.state.deck[order];
-			const clue = { type: CLUE.RANK, value: card.rank, giver: PLAYER.ALICE, turn: -1 };
-
-			game.state.deck = game.state.deck.with(order, produce(card, (draft) => {
-				draft.clued = true;
-				draft.clues.push(clue);
-			}));
-
-			const { possible, inferred } = game.common.thoughts[order];
-			const ids = game.state.variant.suits.map((_, suitIndex) => ({ suitIndex, rank: card.rank }));
-			game.common.updateThoughts(order, (draft) => {
-				draft.clued = true;
-				draft.clues.push(clue);
-				draft.possible = possible.intersect(ids);
-				draft.inferred = inferred.intersect(ids);
-			});
-		}
-
-		team_elim(game);
 
 		takeTurn(game, 'Bob clues 2 to Alice (slots 2,3)');
 		takeTurn(game, 'Alice discards y1 (slot 4)');

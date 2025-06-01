@@ -1,4 +1,5 @@
 import { ACTION, CLUE } from '../../constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { clue_value } from './action-helper.js';
 import { isTrash } from '../../basics/hanabi-util.js';
 import { unlock_promise } from './interpret-play.js';
@@ -34,7 +35,7 @@ export async function take_action(game) {
 	// Add cards called to discard
 	for (const order of state.ourHand) {
 		const card = me.thoughts[order];
-		if (!trash_orders.includes(order) && card.called_to_discard && card.possible.some(p => !state.isCritical(p)))
+		if (!trash_orders.includes(order) && card.status === CARD_STATUS.CALLED_TO_DC && card.possible.some(p => !state.isCritical(p)))
 			trash_orders.push(order);
 	}
 
@@ -114,7 +115,7 @@ export async function take_action(game) {
 	const sarcastic_chop = playable_orders.find(o => me.thoughts[o].identity({ infer: true })?.matches(chop_card));
 
 	if (common.thinksLoaded(state, partner) ||
-		partner_hand.some(o => common.thoughts[o].called_to_discard) ||
+		partner_hand.some(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) ||
 		(chop_away === 0 && state.turn_count !== 1 && !sarcastic_chop)
 	) {
 		if (common.thinksLoaded(state, partner)) {
@@ -126,7 +127,7 @@ export async function take_action(game) {
 				logger.info('partner loaded on trash:', common.thinksTrash(state, partner).map(o => logCard(state.deck[o])));
 		}
 		else {
-			logger.info('partner loaded', (partner_hand.some(o => common.thoughts[o].called_to_discard) ? 'on ptd' : 'on playable slot 1'));
+			logger.info('partner loaded', (partner_hand.some(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) ? 'on ptd' : 'on playable slot 1'));
 		}
 
 		// TODO: If in endgame, check if a clue needs to be given before playing.
@@ -281,7 +282,7 @@ function determine_playable_card(game, playable_orders) {
 		const card = me.thoughts[order];
 
 		// Part of a finesse
-		if (card.finessed) {
+		if (card.blind_playing) {
 			priorities[5].push(order);
 			continue;
 		}

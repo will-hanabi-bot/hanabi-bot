@@ -6,6 +6,7 @@ import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import { ACTION_PRIORITY as PRIORITY } from '../../src/conventions/h-group/h-constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { determine_playable_card } from '../../src/conventions/h-group/action-helper.js';
 import { find_urgent_actions } from '../../src/conventions/h-group/urgent-actions.js';
@@ -143,7 +144,7 @@ describe('trash chop move', () => {
 		takeTurn(game, 'Bob clues red to Cathy');
 
 		// Cathy's slot 5 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
 	});
 
 	it('recognizes a delayed tcm on self', () => {
@@ -161,7 +162,7 @@ describe('trash chop move', () => {
 		takeTurn(game, 'Cathy clues red to Alice (slot 4)');
 
 		// Alice's slot 5 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 	});
 
 	it('assumes trash on the tcm focus', () => {
@@ -181,7 +182,7 @@ describe('trash chop move', () => {
 		takeTurn(game, 'Donald clues yellow to Alice (slot 3)');
 
 		// Alice's slot 4 should be chop moved, and slot 3 should not (necessarily) be playable.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
 		assert.equal(game.common.thinksPlayables(game.state, PLAYER.ALICE).length, 0);
 	});
 });
@@ -347,7 +348,7 @@ describe('interpreting order chop move', () => {
 		takeTurn(game, 'Bob plays g1', 'r1');		// OCM on Cathy
 
 		// Cathy's slot 5 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
 	});
 
 	it('will interpret an ocm skipping a player', () => {
@@ -365,7 +366,7 @@ describe('interpreting order chop move', () => {
 		takeTurn(game, 'Bob plays b1', 'r1');		// OCM on Alice
 
 		// Alice's slot 4 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
 	});
 
 	it('will interpret an ocm that bombs', () => {
@@ -382,7 +383,7 @@ describe('interpreting order chop move', () => {
 		takeTurn(game, 'Bob bombs g1', 'r1');		// OCM on Cathy
 
 		// Cathy's slot 5 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
 	});
 });
 
@@ -397,7 +398,7 @@ describe('interpreting chop moves', () => {
 		});
 
 		// Alice's slots 4 and 5 are chop moved
-		[3, 4].forEach(index => game.common.updateThoughts(game.state.hands[PLAYER.ALICE][index], (draft) => { draft.chop_moved = true; }));
+		[3, 4].forEach(index => game.common.updateThoughts(game.state.hands[PLAYER.ALICE][index], (draft) => { draft.updateStatus(CARD_STATUS.CM); }));
 
 		takeTurn(game, 'Bob clues purple to Alice (slots 2,5)');
 
@@ -415,7 +416,7 @@ describe('interpreting chop moves', () => {
 		});
 
 		// Alice's slots 4 and 5 are chop moved
-		[3, 4].forEach(index => game.common.updateThoughts(game.state.hands[PLAYER.ALICE][index], (draft) => { draft.chop_moved = true; }));
+		[3, 4].forEach(index => game.common.updateThoughts(game.state.hands[PLAYER.ALICE][index], (draft) => { draft.updateStatus(CARD_STATUS.CM); }));
 
 		takeTurn(game, 'Bob clues purple to Alice (slots 4,5)');
 
@@ -435,7 +436,7 @@ describe('interpreting chop moves', () => {
 		// Alice's slots 4 and 5 are chop moved
 		for (const index of [3,4]) {
 			for (const player of game.allPlayers)
-				player.updateThoughts(game.state.hands[PLAYER.ALICE][index], (draft) => { draft.chop_moved = true; });
+				player.updateThoughts(game.state.hands[PLAYER.ALICE][index], (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 		}
 
 		takeTurn(game, 'Bob clues purple to Alice (slots 2,3,4,5)');

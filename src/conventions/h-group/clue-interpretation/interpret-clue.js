@@ -1,5 +1,6 @@
 import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP, LEVEL } from '../h-constants.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { interpret_tcm, interpret_5cm, interpret_tccm, perform_cm } from './interpret-cm.js';
 import { stalling_situation } from './interpret-stall.js';
@@ -55,7 +56,7 @@ function apply_good_touch(game, action, oldThoughts) {
 			const card = common.thoughts[order];
 
 			// Check if a layered finesse was revealed on us
-			if (card.finessed && oldThoughts[order].inferred.length >= 1 && card.inferred.length === 0) {
+			if (oldThoughts[order].blind_playing && oldThoughts[order].inferred.length >= 1 && card.inferred.length === 0) {
 				// TODO: Possibly try rewinding older reasoning until rewind works?
 				const action_index = card.reasoning_turn.at(list.includes(order) ? -2 : -1);
 				const new_game = game.rewind(action_index, [{ type: 'finesse', list, clue: action.clue }]) ??
@@ -224,9 +225,9 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 	game.interpretMove(interp);
 
 	// If a save clue was given to the next player after a scream, then the discard was actually for generation.
-	if (interp === CLUE_INTERP.SAVE && giver !== state.ourPlayerIndex && target === state.nextPlayerIndex(giver) && state.screamed_at && state.numPlayers > 2) {
-		const old_chop = state.hands[giver].find(o => common.thoughts[o].chop_moved);
-		common.thoughts.splice(old_chop, 1, produce(common.thoughts[old_chop], (draft) => { draft.chop_moved = false; }));
+	if (interp === CLUE_INTERP.SAVE && giver !== state.ourPlayerIndex && target === state.nextPlayerIndex(giver) && state.discard_state === 'scream' && state.numPlayers > 2) {
+		const old_chop = state.hands[giver].find(o => common.thoughts[o].status === CARD_STATUS.CM);
+		common.thoughts.splice(old_chop, 1, produce(common.thoughts[old_chop], (draft) => { draft.status = undefined; }));
 
 		logger.highlight('yellow', `undoing scream discard chop move on ${old_chop} due to generation!`);
 	}
@@ -238,29 +239,41 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 
 /**
  * Finalizes the bluff connections.
+ * @param {State} state
+ * @param {ClueAction} action
  * @param {FocusPossibility[]} focus_possibilities
  */
-export function finalize_connections(focus_possibilities) {
+export function finalize_connections(state, action, focus_possibilities) {
+	const { giver } = action;
 	const bluff_orders = focus_possibilities.filter(fp => fp.connections[0]?.bluff).flatMap(fp => fp.connections[0].order);
 
-	if (bluff_orders.length === 0)
-		return focus_possibilities;
-
-	return focus_possibilities.filter(({ connections }) => {
+	return focus_possibilities.reduce((acc, fp) => {
+		const { connections } = fp;
 		const first_conn = connections[0];
 		// A non-bluff connection is invalid if it requires a self finesse after a potential bluff play.
 		// E.g. if we could be bluffed for a 3 in one suit, we can't assume we have the connecting 2 in another suit.
 		const invalid = connections.length >= 2 &&
 			first_conn.type === 'finesse' &&
 			!first_conn.bluff &&
-			bluff_orders.includes(first_conn.order) &&
+			(bluff_orders.length > 0 && bluff_orders.includes(first_conn.order)) &&
 			connections[1].self;
 
-		if (invalid)
+		if (invalid) {
 			logger.highlight('green', `removing ${connections.map(logConnection).join(' -> ')} self finesse due to possible bluff interpretation`);
+		}
+		else {
+			// Not possibly bluff if containing finesses (guaranteed finesse) or we gave the clue (guaranteed bluff)
+			const bluff_corrected = first_conn?.possibly_bluff &&
+				(connections.filter(conn => conn.type === 'finesse').length > 1 || giver === state.ourPlayerIndex);
 
-		return !invalid;
-	});
+			if (bluff_corrected)
+				acc.push({ ...fp, connections: connections.with(0, { ...first_conn, possibly_bluff: false }) });
+			else
+				acc.push(fp);
+		}
+
+		return acc;
+	}, /** @type {FocusPossibility[]} */([]));
 }
 
 /**
@@ -291,7 +304,7 @@ function urgent_save(game, action, focus, oldCommon, old_game) {
 		Utils.maxOn(state.hands[index], order => {
 			const card = common.thoughts[order];
 
-			if (card.finessed && (includeHidden || !card.hidden) && card.inferred.every(id => played.has(id) || play_stacks[id.suitIndex] + 1 === id.rank))
+			if (card.blind_playing && (includeHidden || !card.hidden) && card.inferred.every(id => played.has(id) || play_stacks[id.suitIndex] + 1 === id.rank))
 				return -card.finesse_index;
 
 			return -10000;
@@ -749,7 +762,7 @@ export function interpret_clue(game, action) {
 			simplest_connections = all_connections;
 		}
 
-		const finalized_connections = finalize_connections(simplest_connections);
+		const finalized_connections = finalize_connections(state, action, simplest_connections);
 
 		// No inference, but a finesse isn't possible
 		if (finalized_connections.length === 0) {
@@ -851,18 +864,6 @@ export function interpret_clue(game, action) {
 
 		if (modified)
 			logger.info(`advanced waiting connection due to speed-up clue: [${wc.connections.map(logConnection).join(' -> ')}]`);
-	}
-
-	// Remove chop move on clued cards
-	for (const player of game.allPlayers) {
-		for (const order of list) {
-			if (player.thoughts[order].chop_moved) {
-				player.updateThoughts(order, (draft) => {
-					draft.chop_moved = false;
-					draft.was_cm = true;
-				});
-			}
-		}
 	}
 
 	try {

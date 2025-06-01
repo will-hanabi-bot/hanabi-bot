@@ -1,3 +1,4 @@
+import { CARD_STATUS } from './Card.js';
 import { cardCount } from '../variants.js';
 
 /**
@@ -64,7 +65,7 @@ export function isSaved(state, player, identity, order = -1, options = {}) {
 		return state.deck[o].matches(identity, { assume: true }) && card.matches(identity, options) && o !== order &&
 			!player.links.some(link => link.identities.some(i =>		// This card is linked for the identity
 				i.suitIndex === identity.suitIndex && i.rank === identity.rank && link.orders.includes(order))) &&
-			(card.touched || (!options.ignoreCM && card.chop_moved));
+			(card.touched || (!options.ignoreCM && card.status === CARD_STATUS.CM));
 	});
 }
 

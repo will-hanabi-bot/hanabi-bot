@@ -5,10 +5,10 @@ import * as ExAsserts from '../extra-asserts.js';
 import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../test-utils.js';
 import { CLUE } from '../../src/constants.js';
 import { CLUE_INTERP } from '../../src/conventions/ref-sieve/rs-constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import RefSieve from '../../src/conventions/ref-sieve.js';
 
 import logger from '../../src/tools/logger.js';
-
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -24,7 +24,7 @@ describe('finesses', () => {
 
 		// Bob's b1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['b1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('recognizes a finesse via fill-in', () => {
@@ -42,7 +42,7 @@ describe('finesses', () => {
 
 		// Bob's b1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['b1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('plays into an unknown finesse', () => {
@@ -58,7 +58,7 @@ describe('finesses', () => {
 
 		// We should be finessed in slot 1 for r1.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it(`doesn't play into a satisfied finesse`, () => {
@@ -74,7 +74,7 @@ describe('finesses', () => {
 		takeTurn(game, 'Donald clues yellow to Cathy');		// finessing Bob's r1
 
 		// We shouldn't be finessed in slot 1 for r1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('writes the correct notes on potential finesses', () => {
@@ -113,7 +113,7 @@ describe('finesses', () => {
 
 		// Bob's slot 1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('plays into a finesse via fill-in', () => {
@@ -133,7 +133,7 @@ describe('finesses', () => {
 
 		// Alice's slot 1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('understands a prompt + finesse', () => {
@@ -156,7 +156,7 @@ describe('finesses', () => {
 
 		// Cathy's slot 1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('understands a prompt + finesse', () => {
@@ -179,7 +179,7 @@ describe('finesses', () => {
 
 		// Cathy's slot 1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
 	});
 });
 
@@ -199,7 +199,7 @@ describe('self-finesses', () => {
 
 		// Bob's slot 1 should be finessed.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it(`doesn't give self-finesses that look direct`, () => {

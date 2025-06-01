@@ -46,8 +46,7 @@ export function handle_action(action) {
 				draft.last_actions[giver] = action;
 
 				draft.state.dda = undefined;
-				draft.state.screamed_at = false;
-				draft.state.generated = false;
+				draft.state.discard_state = undefined;
 
 				// Remove the newly_clued flag
 				for (const order of list) {
@@ -78,8 +77,7 @@ export function handle_action(action) {
 
 				// Assume one cannot SDCM after being screamed at
 				draft.state.dda = undefined;
-				draft.state.screamed_at = false;
-				draft.state.generated = false;
+				draft.state.discard_state = undefined;
 			});
 
 			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
@@ -140,7 +138,7 @@ export function handle_action(action) {
 			newGame = produce(newGame, (draft) => {
 				draft.last_actions[playerIndex] = action;
 				draft.state.dda = undefined;
-				draft.state.screamed_at = false;
+				draft.state.discard_state = undefined;
 			});
 			break;
 		}

@@ -1,3 +1,4 @@
+import { CARD_STATUS } from '../../basics/Card.js';
 import * as Utils from '../../tools/util.js';
 
 import logger from '../../tools/logger.js';
@@ -63,6 +64,7 @@ export function interpret_gd(game, discardAction, find_finesse) {
 	for (const order of orders) {
 		common.updateThoughts(order, (draft) => {
 			draft.inferred = common.thoughts[order].inferred.intersect(order === orders.at(-1) ? identity : state.deck[order].identity());
+			draft.updateStatus(CARD_STATUS.GD);
 			draft.known = true;
 			draft.trash = false;
 		});

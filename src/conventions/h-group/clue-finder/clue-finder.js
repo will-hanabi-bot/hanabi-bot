@@ -69,7 +69,7 @@ export function save_clue_value(game, hypo_game, save_clue, all_clues) {
 	if (saved_trash.length > Math.min(1, chop_moved.length - saved_trash.length))
 		return -10;
 
-	const new_chop_card = state.deck[hypo_game.common.chop(hypo_game.state.hands[target], { afterClue: true })];
+	const new_chop_card = state.deck[hypo_game.common.chop(hypo_game.state.hands[target])];
 
 	// Target doesn't have trash and their new chop is more valuable than their old one (having a playable is not good enough)
 	if (hypo_game.players[target].thinksTrash(hypo_game.state, target).length === 0 && (new_chop_card ? cardValue(state, me, new_chop_card) : 4) > cardValue(state, me, old_chop_card))
@@ -171,7 +171,7 @@ export function get_clue_interp(game, clue, giver, options) {
 	});
 
 	// Do not focus cards that are part of a finesse
-	if (giver_player.thoughts[focus].finessed || in_finesse !== undefined) {
+	if (giver_player.thoughts[focus].blind_playing || in_finesse !== undefined) {
 		logger.debug('skipping clue', logClue(clue), 'in finesse', in_finesse?.connections.map(logConnection).join(' -> '));
 		return;
 	}
@@ -249,7 +249,7 @@ export function get_clue_interp(game, clue, giver, options) {
 				}
 			}
 
-			if (chop && hand.some(o => o < focus && common.thoughts[o].finessed)) {
+			if (chop && hand.some(o => o < focus && common.thoughts[o].blind_playing)) {
 				logger.warn('giving a save to a card in front of a finessed card!');
 				return;
 			}
@@ -289,7 +289,7 @@ export function get_clue_interp(game, clue, giver, options) {
 
 			if (playables.length === 0) {
 				logger.warn('play clue with no playables!');
-				new_interp = elim > 0 ? CLUE_INTERP.STALL_FILLIN : CLUE_INTERP.STALL_BURN;
+				new_interp = new_touched.length > 0 || elim > 0 ? CLUE_INTERP.STALL_FILLIN : CLUE_INTERP.STALL_BURN;
 			}
 
 			// if (game.level < LEVEL.CONTEXT || avoidable_dupe == 0)

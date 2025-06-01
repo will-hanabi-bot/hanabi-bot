@@ -1,4 +1,5 @@
 import { CLUE } from '../../../constants.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 
@@ -68,7 +69,7 @@ export function valid_bluff(game, action, identity, reacting, connected, symmetr
 		!(clue.type === CLUE.COLOUR && reacting === target) &&				// must not be self-colour bluff
 		!state.hands[reacting].some(o => {								// must not be confused with an existing finesse
 			const card = game.players[reacting].thoughts[o];
-			return card.finessed && card.possible.has(identity);
+			return card.blind_playing && card.possible.has(identity);
 		});
 }
 
@@ -284,9 +285,10 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 				draft.old_inferred ??= common.thoughts[order].inferred;
 
 				if (type === 'finesse') {
-					draft.finessed = true;
-					draft.bluffed ||= bluff;
-					draft.possibly_bluffed ||= possibly_bluff;
+					draft.updateStatus(possibly_bluff ? (reacting === state.ourPlayerIndex ? CARD_STATUS.F_MAYBE_BLUFF : CARD_STATUS.MAYBE_BLUFFED) :
+						bluff ? CARD_STATUS.BLUFFED :
+						CARD_STATUS.FINESSED);
+
 					draft.finesse_index = state.turn_count;
 					draft.hidden = hidden;
 					draft.certain_finessed ||= certain;
@@ -325,7 +327,7 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 						const card = common.thoughts[order];
 						const id = card.identity({ infer: true });
 
-						if (id !== undefined && card.finessed && stacks[id.suitIndex] + 1 === id.rank)
+						if (id !== undefined && card.blind_playing && stacks[id.suitIndex] + 1 === id.rank)
 							stacks[id.suitIndex]++;
 
 						return stacks;
@@ -343,7 +345,7 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 					draft.reasoning_turn.push(state.turn_count);
 			});
 
-			if (type === 'finesse' && state.hands[giver].some(o => common.thoughts[o].finessed))
+			if (type === 'finesse' && state.hands[giver].some(o => common.thoughts[o].blind_playing))
 				game.finesses_while_finessed[giver].push(state.deck[order]);
 
 			if (bluff || hidden) {

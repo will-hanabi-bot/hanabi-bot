@@ -5,6 +5,7 @@ import * as Basics from '../../basics.js';
 
 import logger from '../../tools/logger.js';
 import { logCard } from '../../tools/log.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 
 /**
  * @typedef {import('../ref-sieve.js').default} Game
@@ -37,7 +38,7 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
 	const playables_sorted = playables.sort((a, b) => common.thoughts[a].reasoning_turn.at(-1) - common.thoughts[b].reasoning_turn.at(-1));
 
 	// Playing oldest (or only) playable, not guaranteed unlock
-	if (common.thinksTrash(state, unlocked_player).length + state.hands[unlocked_player].filter(o => common.thoughts[o].called_to_discard).length === 0 &&
+	if (common.thinksTrash(state, unlocked_player).length + state.hands[unlocked_player].filter(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC).length === 0 &&
 		order === playables_sorted[0]
 	) {
 		logger.highlight('cyan', 'playing oldest/only safe playable, not unlocking');
@@ -111,9 +112,9 @@ export function interpret_play(game, action) {
 		let newGame = Basics.onPlay(game, action);
 
 		for (const o of state.hands[playerIndex]) {
-			if (common.thoughts[o].called_to_discard) {
+			if (common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) {
 				newGame.common = newGame.common.withThoughts(o, (draft) => {
-					draft.called_to_discard = false;
+					draft.status = undefined;
 				});
 			}
 		}

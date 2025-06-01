@@ -1,4 +1,5 @@
 import { CLUE } from '../../constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { IdentitySet } from '../../basics/IdentitySet.js';
 import { isTrash } from '../../basics/hanabi-util.js';
 import { checkFix, team_elim } from '../../basics/helper.js';
@@ -37,7 +38,7 @@ function interpret_locked_clue(game, action) {
 
 	if (clue.type === CLUE.RANK) {
 		// Rank fill-in/trash reveal, no additional meaning
-		if (known_trash.length + hand.filter(o => common.thoughts[o].called_to_discard).length > 0)
+		if (known_trash.length + hand.filter(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC).length > 0)
 			return;
 
 		// Referential discard (check not trash push?)
@@ -50,12 +51,12 @@ function interpret_locked_clue(game, action) {
 				return;
 
 			logger.info('locked ref discard on slot', target_index + 1, logCard(state.deck[hand[0]]));
-			common.updateThoughts(hand[target_index], (draft) => { draft.called_to_discard = true; });
+			common.updateThoughts(hand[target_index], (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 		}
 		// Fill-in (possibly locked hand ptd)
 		else {
 			if (locked_hand_ptd)
-				common.updateThoughts(locked_hand_ptd, (draft) => { draft.called_to_discard = true; });
+				common.updateThoughts(locked_hand_ptd, (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 
 			logger.info('rank fill in', locked_hand_ptd ? `while unloaded, giving lh ptd on slot ${hand.findIndex(o => o === locked_hand_ptd) + 1}` : '');
 		}
@@ -69,21 +70,21 @@ function interpret_locked_clue(game, action) {
 			common.updateThoughts(slot1.order, (draft) => { draft.inferred = common.thoughts[slot1.order].inferred.intersect({ suitIndex, rank: common.hypo_stacks[suitIndex] + 1 }); });
 
 			if (locked_hand_ptd) {
-				common.updateThoughts(locked_hand_ptd, (draft) => { draft.called_to_discard = true; });
+				common.updateThoughts(locked_hand_ptd, (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 				logger.info('locked hand ptd on slot', hand.findIndex(o => o === locked_hand_ptd) + 1);
 			}
 		}
 		else {
 			// Colour fill-in/trash reveal, no additional meaning
-			if (known_trash.length + hand.filter(o => common.thoughts[o].called_to_discard).length > 0) {
-				const loaded = known_trash.length > 0 ? `kt ${known_trash.map(o => logCard(state.deck[o]))}` : `ptd on slot ${hand.findIndex(o => common.thoughts[o].called_to_discard) + 1}`;
+			if (known_trash.length + hand.filter(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC).length > 0) {
+				const loaded = known_trash.length > 0 ? `kt ${known_trash.map(o => logCard(state.deck[o]))}` : `ptd on slot ${hand.findIndex(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) + 1}`;
 				logger.info('colour fill in while loaded on', loaded);
 				return;
 			}
 
 			// Fill-in (possibly locked hand ptd)
 			if (locked_hand_ptd)
-				common.updateThoughts(locked_hand_ptd, (draft) => { draft.called_to_discard = true; });
+				common.updateThoughts(locked_hand_ptd, (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 
 			logger.info('colour fill in', slot1.saved ? '' : `while unloaded, giving lh ptd on slot ${hand.findIndex(o => o === locked_hand_ptd) + 1}`);
 		}
@@ -110,6 +111,7 @@ export function interpret_clue(game, action) {
 
 	const no_info = touch.every(o => state.deck[o].clues.some(c => Utils.objEquals(c, Utils.objPick(clue, ['type', 'value']))));
 
+	// ctd is auto-revoked on clue
 	const newGame = Basics.onClue(game, action);
 	Basics.mutate(game, newGame);
 
@@ -121,15 +123,10 @@ export function interpret_clue(game, action) {
 
 	for (const order of hand) {
 		const card = common.thoughts[order];
-
-		// Revoke ctd if clued
-		if (card.called_to_discard && card.clued)
-			common.updateThoughts(order, (draft) => { draft.called_to_discard = false; });
-
 		const last_action = game.last_actions[giver];
 
 		// Revoke finesse if newly clued after a possibly matching play
-		if (oldCommon.thoughts[order].finessed && card.newly_clued && last_action?.type === 'play') {
+		if (oldCommon.thoughts[order].blind_playing && card.newly_clued && last_action?.type === 'play') {
 			const identity = state.deck[last_action.order];
 
 			logger.warn('revoking finesse?', card.possible.map(logCard), logCard(identity));
@@ -137,7 +134,7 @@ export function interpret_clue(game, action) {
 			if (card.possible.has(identity)) {
 				common.updateThoughts(order, (draft) => {
 					draft.inferred = IdentitySet.create(state.variant.suits.length, identity);
-					draft.finessed = false;
+					draft.status = undefined;
 					draft.certain_finessed = true;
 					draft.reset = true;
 				});
@@ -183,8 +180,8 @@ export function interpret_clue(game, action) {
 		for (const order of hand) {
 			const card = common.thoughts[order];
 
-			if (!card.clued && !card.finessed && !card.chop_moved)
-				common.updateThoughts(order, (draft) => { draft.called_to_discard = true; });
+			if (card.status === undefined)
+				common.updateThoughts(order, (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 		}
 	}
 	else {
@@ -198,7 +195,7 @@ export function interpret_clue(game, action) {
 				if (target_index === 0 && !common.thinksLoaded(state, target)) {
 					for (const order of hand) {
 						if (!state.deck[order].clued)
-							common.updateThoughts(order, (draft) => { draft.chop_moved = true; });
+							common.updateThoughts(order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 					}
 					logger.highlight('yellow', 'lock!');
 					action.lock = true;
@@ -248,7 +245,7 @@ export function interpret_clue(game, action) {
 					const { inferred } = common.thoughts[hand[target_index]];
 					common.updateThoughts(hand[target_index], (draft) => {
 						draft.old_inferred = inferred;
-						draft.finessed = true;
+						draft.updateStatus(CARD_STATUS.CALLED_TO_PLAY);
 						draft.focused = true;
 						draft.inferred = inferred.intersect(playable_possibilities);
 					});
@@ -259,7 +256,7 @@ export function interpret_clue(game, action) {
 			else {
 				// Fill-in (anti-finesse)
 				logger.info('colour fill in, anti-finesse on slot 1', logCard(state.deck[hand[0]]));
-				common.updateThoughts(hand[0], (draft) => { draft.called_to_discard = true; });
+				common.updateThoughts(hand[0], (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 			}
 		}
 		// Referential discard (right)
@@ -270,6 +267,23 @@ export function interpret_clue(game, action) {
 					common.updateThoughts(hand[newly_touched[0]], (draft) => { draft.focused = true; });
 					logger.info('direct rank play');
 				}
+				else if (common.thinksLoaded(state, target, { symmetric: true })) {
+					const target_order = Math.max(...list.filter(o => state.deck[o].newly_clued));
+					const playable_possibilities = state.play_stacks.map((rank, suitIndex) => ({ suitIndex, rank: rank + 1 }));
+
+					if (target_order !== -Infinity && playable_possibilities.some(i => i.rank === clue.value)) {
+						const { inferred } = common.thoughts[target_order];
+
+						common.updateThoughts(target_order, (draft) => {
+							draft.focused = true;
+							draft.inferred = inferred.intersect(playable_possibilities);
+						});
+						logger.info('loaded rank play');
+					}
+					else {
+						logger.info(`appeared like loaded rank play, but couldn't reach target!`);
+					}
+				}
 				else {
 					const referred = newly_touched.map(index => Math.max(0, Utils.nextIndex(hand, o => !state.deck[o].clued, index)));
 					const target_index = referred.reduce((min, curr) => Math.min(min, curr));
@@ -279,7 +293,7 @@ export function interpret_clue(game, action) {
 						action.lock = true;
 					}
 					else {
-						common.updateThoughts(hand[target_index], (draft) => { draft.called_to_discard = true; });
+						common.updateThoughts(hand[target_index], (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 						logger.info(`ref discard on ${state.playerNames[target]}'s slot ${target_index + 1}`);
 					}
 				}
@@ -287,7 +301,7 @@ export function interpret_clue(game, action) {
 			else {
 				// Fill-in (anti-finesse)
 				logger.info('rank fill in, anti-finesse on slot 1', logCard(state.deck[hand[0]]));
-				common.updateThoughts(hand[0], (draft) => { draft.called_to_discard = true; });
+				common.updateThoughts(hand[0], (draft) => { draft.updateStatus(CARD_STATUS.CALLED_TO_DC); });
 			}
 		}
 	}

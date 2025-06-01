@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import * as ExAsserts from '../../test/extra-asserts.js';
 
-import { COLOUR, PLAYER, expandShortCard, preClue, setup } from '../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
 
 import { ACTION, CLUE } from '../../src/constants.js';
@@ -11,7 +11,6 @@ import { find_all_clues } from '../../src/conventions/h-group/take-action.js';
 
 import { Fraction } from '../../src/tools/fraction.js';
 import logger from '../../src/tools/logger.js';
-import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -54,27 +53,20 @@ describe('simple endgames with 1 undrawn identity', () => {
 			discarded: ['p3', 'p4'],
 			clue_tokens: 5,
 			init: (game) => {
-				const { common, state } = game;
-				const a_slot5 = common.thoughts[state.hands[PLAYER.ALICE][4]];
-				common.updateThoughts(state.hands[PLAYER.ALICE][4], (draft) => {
-					draft.inferred = a_slot5.inferred.intersect(expandShortCard('p4'));
-					draft.possible = a_slot5.possible.intersect(expandShortCard('p4'));
-					draft.clued = true;
-				});
+				// Alice has known p4 in slot 5.
+				preClue(game, game.state.hands[PLAYER.ALICE][4], [
+					{ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 4, giver: PLAYER.CATHY }]);
 
-				const b_slot5 = common.thoughts[state.hands[PLAYER.BOB][4]];
-				common.updateThoughts(state.hands[PLAYER.BOB][4], (draft) => {
-					draft.inferred = b_slot5.inferred.intersect(expandShortCard('p3'));
-					draft.possible = b_slot5.possible.intersect(expandShortCard('p3'));
-					draft.clued = true;
-				});
+				// Bob has known p3 in slot 5.
+				preClue(game, game.state.hands[PLAYER.BOB][4], [
+					{ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.ALICE },
+					{ type: CLUE.RANK, value: 3, giver: PLAYER.CATHY }]);
 
-				const c_slot3 = common.thoughts[state.hands[PLAYER.CATHY][2]];
-				common.updateThoughts(state.hands[PLAYER.CATHY][2], (draft) => {
-					draft.inferred = c_slot3.inferred.intersect(expandShortCard('p5'));
-					draft.possible = c_slot3.possible.intersect(expandShortCard('p5'));
-					draft.clued = true;
-				});
+				// Cathy has known p5 in slot 3.
+				preClue(game, game.state.hands[PLAYER.CATHY][2], [
+					{ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }]);
 
 				game.state.cardsLeft = 2;
 			}
@@ -94,20 +86,15 @@ describe('simple endgames with 1 undrawn identity', () => {
 			play_stacks: [2, 5, 5, 5, 5],
 			discarded: ['r3', 'r4'],
 			init: (game) => {
-				const { common, state } = game;
-				const a_slot4 = common.thoughts[state.hands[PLAYER.ALICE][3]];
-				common.updateThoughts(state.hands[PLAYER.ALICE][3], (draft) => {
-					draft.inferred = a_slot4.inferred.intersect(expandShortCard('r3'));
-					draft.possible = a_slot4.possible.intersect(expandShortCard('r3'));
-					draft.clued = true;
-				});
+				// Alice has known p4 in slot 4.
+				preClue(game, game.state.hands[PLAYER.ALICE][3], [
+					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 3, giver: PLAYER.CATHY }]);
 
-				const a_slot5 = common.thoughts[state.hands[PLAYER.ALICE][4]];
-				common.updateThoughts(state.hands[PLAYER.ALICE][4], (draft) => {
-					draft.inferred = a_slot5.inferred.intersect(expandShortCard('r5'));
-					draft.possible = a_slot5.possible.intersect(expandShortCard('r5'));
-					draft.clued = true;
-				});
+				// Alice has known r5 in slot 5.
+				preClue(game, game.state.hands[PLAYER.ALICE][4], [
+					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 5, giver: PLAYER.CATHY }]);
 
 				game.state.cardsLeft = 2;
 			}
@@ -130,23 +117,10 @@ describe('simple endgames with 1 undrawn identity', () => {
 			discarded: ['r3', 'r4'],
 			clue_tokens: 1,
 			init: (game) => {
-				const { common, state } = game;
-				const update = (giver, rank) => (draft) => {
-					draft.clued = true;
-					draft.clues.push({ giver, type: CLUE.RANK, value: rank, turn: -1 });
-					draft.clues.push({ giver, type: CLUE.COLOUR, value: COLOUR.RED, turn: -1 });
-				};
-
-				// Bob's slot 5 is known r3.
-				const b_slot5 = state.hands[PLAYER.BOB][4];
-				state.deck = state.deck.with(b_slot5, produce(state.deck[b_slot5], update(PLAYER.ALICE, 3)));
-
-				const { inferred, possible } = common.thoughts[b_slot5];
-				common.updateThoughts(b_slot5, (draft) => {
-					draft.inferred = inferred.intersect(expandShortCard('r3'));
-					draft.possible = possible.intersect(expandShortCard('r3'));
-					update(PLAYER.ALICE, 3)(draft);
-				});
+				// Bob has known r3 in slot 5.
+				preClue(game, game.state.hands[PLAYER.BOB][4], [
+					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE },
+					{ type: CLUE.RANK, value: 3, giver: PLAYER.CATHY }]);
 
 				game.state.cardsLeft = 3;
 			}

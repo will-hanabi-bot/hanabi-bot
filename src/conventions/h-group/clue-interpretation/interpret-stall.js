@@ -1,6 +1,7 @@
 import { CLUE } from '../../../constants.js';
 import { LEVEL, STALL_INDICES } from '../h-constants.js';
 import { CLUE_INTERP } from '../h-constants.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { find_clue_value } from '../action-helper.js';
 import { get_result } from '../clue-finder/determine-clue.js';
 import { colour_save, rank_save } from './focus-possible.js';
@@ -65,7 +66,7 @@ function isStall(game, action, focusResult, severity, prev_game, loaded) {
 		return;
 
 	// 5 Stall given
-	if (severity >= 1 && clue.type === CLUE.RANK && clue.value === 5 && focused_card.newly_clued && !focus_thoughts.chop_moved && !chop) {
+	if (severity >= 1 && clue.type === CLUE.RANK && clue.value === 5 && focused_card.newly_clued && focus_thoughts.status !== CARD_STATUS.CM && !chop) {
 		logger.info('5 stall!');
 		return CLUE_INTERP.STALL_5;
 	}

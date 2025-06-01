@@ -1,3 +1,4 @@
+import { CARD_STATUS } from '../../basics/Card.js';
 import { isTrash } from '../../basics/hanabi-util.js';
 import { interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
@@ -73,7 +74,7 @@ export function interpret_discard(game, action) {
 	if (!common.thinksLocked(state, other) &&
 		common.thinksPlayables(state, other).length == 0 &&
 		!other_had_trash &&
-		!state.hands[other].some(o => common.thoughts[o].called_to_discard)
+		!state.hands[other].some(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC)
 	) {
 		const playable_possibilities = state.play_stacks.map((rank, suitIndex) => {
 			return { suitIndex, rank: rank + 1 };
@@ -85,7 +86,7 @@ export function interpret_discard(game, action) {
 
 		common.updateThoughts(state.hands[other][0], (chop) => {
 			chop.old_inferred = chop.inferred;
-			chop.finessed = true;
+			chop.updateStatus(CARD_STATUS.CALLED_TO_PLAY);
 			chop.inferred = chop.inferred.intersect(playable_possibilities);
 		});
 	}

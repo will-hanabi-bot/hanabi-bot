@@ -1,3 +1,4 @@
+import { CARD_STATUS } from '../../basics/Card.js';
 import { bad_touch_result, elim_result, playables_result } from '../../basics/clue-result.js';
 import { cardValue } from '../../basics/hanabi-util.js';
 
@@ -33,7 +34,7 @@ export function get_result(game, clue) {
 	const { playables } = playables_result(hypo_state, common, hypo_common);
 
 	// Card that looks playable but actually isn't
-	const bad_playable = state.hands[partner].find(o => ((card = hypo_common.thoughts[o]) => card.finessed && !card.inferred.has(me.thoughts[o]))());
+	const bad_playable = state.hands[partner].find(o => ((card = hypo_common.thoughts[o]) => card.blind_playing && !card.inferred.has(me.thoughts[o]))());
 
 	if (bad_playable) {
 		logger.info(logClue(clue), 'results in', logCard(me.thoughts[bad_playable]), 'looking playable when it isn\'t');
@@ -41,7 +42,7 @@ export function get_result(game, clue) {
 	}
 
 	const new_discards = hypo_state.hands[partner].filter(o =>
-		hypo_common.thoughts[o].called_to_discard && !common.thoughts[o].called_to_discard);
+		hypo_common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC && common.thoughts[o].status !== CARD_STATUS.CALLED_TO_DC);
 
 	const good_touch = new_touched.length - (bad_touch.length + trash.length);
 

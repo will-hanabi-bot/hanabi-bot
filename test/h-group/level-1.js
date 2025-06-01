@@ -11,7 +11,6 @@ import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.j
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
-import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -26,25 +25,13 @@ describe('save clue', () => {
 			play_stacks: [1, 5, 1, 0, 5],
 			clue_tokens: 2,
 			init: (game) => {
-				const { state } = game;
-
 				// Bob's last 3 cards are clued.
-				for (const index of [2,3,4]) {
-					const order = state.hands[PLAYER.BOB][index];
-					state.deck = state.deck.with(order, produce(state.deck[order], (draft) => { draft.clued = true; }));
-					for (const player of game.allPlayers)
-						player.updateThoughts(order, (draft) => { draft.clued = true; });
-
-				}
+				for (const index of [2,3,4])
+					preClue(game, game.state.hands[PLAYER.BOB][index], []);
 
 				// Cathy's last 2 cards are clued.
-				for (const index of [3,4]) {
-					const order = state.hands[PLAYER.CATHY][index];
-					state.deck = state.deck.with(order, produce(state.deck[order], (draft) => { draft.clued = true; }));
-					for (const player of game.allPlayers)
-						player.updateThoughts(order, (draft) => { draft.clued = true; });
-
-				}
+				for (const index of [3,4])
+					preClue(game, game.state.hands[PLAYER.CATHY][index], []);
 			}
 		});
 
@@ -62,11 +49,8 @@ describe('save clue', () => {
 			level: { min: 1 },
 			discarded: ['g4'],
 			init: (game) => {
-				const { state } = game;
-
 				// Bob's p2 is clued.
-				const order = state.hands[PLAYER.BOB][2];
-				state.deck = state.deck.with(order, produce(state.deck[order], (draft) => { draft.clued = true; }));
+				preClue(game, game.state.hands[PLAYER.BOB][2], []);
 			}
 		});
 
@@ -111,7 +95,7 @@ describe('save clue', () => {
 
 		// Our slot 1 should not only be y1.
 		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].inferred.length > 1, true);
-		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('does not give 2 Saves when a duplicate is visible', () => {

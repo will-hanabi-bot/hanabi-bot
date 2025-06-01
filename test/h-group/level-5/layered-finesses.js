@@ -1,15 +1,16 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, expandShortCard, PLAYER, setup, takeTurn } from '../../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { clue_safe } from '../../../src/conventions/h-group/clue-finder/clue-safe.js';
 
 import logger from '../../../src/tools/logger.js';
-import { produce } from '../../../src/StateProxy.js';
+
 logger.setLevel(logger.LEVELS.ERROR);
 
 describe('layered finesse', () => {
@@ -123,12 +124,12 @@ describe('layered finesse', () => {
 
 		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
 		ExAsserts.cardHasInferences(slot2, ['g3']);
-		assert.equal(slot2.finessed, true);
+		assert.equal(slot2.status, CARD_STATUS.FINESSED);
 
 		// Double-check that Alice also thinks slot 2 is g3 and finessed
 		const alice_slot2 = game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][1]];
 		ExAsserts.cardHasInferences(alice_slot2, ['g3']);
-		assert.equal(alice_slot2.finessed, true);
+		assert.equal(alice_slot2.status, CARD_STATUS.FINESSED);
 	});
 
 	it('understands when it dupes a card in its own layered finesse', () => {
@@ -154,7 +155,7 @@ describe('layered finesse', () => {
 		// Slot 2 should still be finessed as r3.
 		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
 		ExAsserts.cardHasInferences(slot2, ['r3']);
-		assert.equal(slot2.finessed, true);
+		assert.equal(slot2.status, CARD_STATUS.FINESSED);
 	});
 
 	it('does not try giving layered finesses on the same card', () => {
@@ -204,12 +205,11 @@ describe('layered finesse', () => {
 		takeTurn(game, 'Bob clues yellow to Alice (slots 2,5)');		// y4 save
 		takeTurn(game, 'Cathy discards b4', 'b1');
 
-		// Alice's slot 2 (the yellow card) should be finessed as y1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		// Alice's slot 2 (the yellow card) should be known y1.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y1']);
 
 		// Alice's slot 3 should be finessed as the missing r1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r1']);
 
 		takeTurn(game, 'Alice plays r1 (slot 3)');
@@ -234,11 +234,10 @@ describe('layered finesse', () => {
 		takeTurn(game, 'Bob clues red to Alice (slots 3,5)');		// r4 save
 
 		// Alice's slot 2 should be finessed as [y1, g1, b2, p1].
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y1', 'g1', 'b2', 'p1']);
 
-		// Alice's slot 3 should be finessed as the missing r1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
+		// Alice's slot 3 should be known as the missing r1.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r1']);
 	});
 
@@ -375,19 +374,9 @@ describe('layered finesse', () => {
 			play_stacks: [0, 0, 0, 1, 0],
 			starting: PLAYER.BOB,
 			init: (game) => {
-				const { state } = game;
-
 				// Alice has a known r1 in slot 5.
-				const a_slot5 = state.hands[PLAYER.ALICE][4];
-				state.deck = state.deck.with(a_slot5, produce(state.deck[a_slot5], (draft) => { draft.clued = true; }));
-
-				for (const player of game.allPlayers) {
-					player.updateThoughts(a_slot5, (draft) => {
-						draft.clued = true;
-						draft.inferred = draft.inferred.intersect(expandShortCard('r1'));
-						draft.possible = draft.possible.intersect(['r1', 'r2', 'r3', 'r4', 'r5'].map(expandShortCard));
-					});
-				}
+				preClue(game, game.state.hands[PLAYER.ALICE][4], [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 1, giver: PLAYER.CATHY }]);
 			}
 		});
 

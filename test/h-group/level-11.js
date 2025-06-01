@@ -1,15 +1,15 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
-import { produce } from '../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -29,7 +29,7 @@ describe('bluff clues', () => {
 
 		// Cathy's slot 1 could be any of the playable 3's.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r3', 'y3', 'g3', 'b3', 'p3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		// Alice's slot 2 could be r3 or r4.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'r4']);
@@ -92,6 +92,7 @@ describe('bluff clues', () => {
 
 		// Alice's slot 1 could be any of the next 1's.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y1', 'g1', 'b1', 'p1']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it(`understands a known bluff`, () => {
@@ -108,7 +109,7 @@ describe('bluff clues', () => {
 
 		// Despite knowing that it can't be b1, the bluff is still recognized.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y1', 'g1', 'b1', 'p1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.BLUFFED);
 
 		// Alice knows it can't be b1.
 		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y1', 'g1', 'p1']);
@@ -148,10 +149,7 @@ describe('bluff clues', () => {
 
 		takeTurn(game, 'Alice clues red to Cathy');
 
-		// Bob's slot 1 could be any of the playable 3's.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, false);
-
-		// Cathy's slot 2 will be known to be r3 by Cathy after Bob doesn't play.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, undefined);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r3', 'r4']);
 
 		takeTurn(game, 'Bob discards p2', 'y5');
@@ -172,7 +170,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Alice clues red to Cathy');
 
 		// Bob's slot 1 could be any of the playable 3's.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.BLUFFED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r3', 'y3', 'g3', 'b3', 'p3']);
 
 		// Cathy's slot 2 could be r3 or r4.
@@ -199,9 +197,9 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Bob clues red to Donald');
 
 		// Cathy's slot 1 could be any playable.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r2', 'y1', 'g1', 'b1', 'p1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 
 		// Donald's slot 4 must be r2,g3.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.DONALD][3]], ['r2', 'r3']);
@@ -212,10 +210,10 @@ describe('bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.DONALD][3]], ['r3']);
 
 		// And no-one is finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, false);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, false);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].status, undefined);
 	});
 
 	it('understands receiving a bluff', () => {
@@ -233,9 +231,8 @@ describe('bluff clues', () => {
 
 		// Alice's slot 1 is assumed b3 (Bob's Truth Principle)
 		const alice_slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
-		assert.equal(alice_slot1.finessed, true);
 		ExAsserts.cardHasInferences(alice_slot1, ['b3']);
-		assert.equal(alice_slot1.possibly_bluffed, true);
+		assert.equal(alice_slot1.status, CARD_STATUS.F_MAYBE_BLUFF);
 
 		// Bob's slot 1 is symmetrically [b3,b4].
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['b3', 'b4']);
@@ -274,7 +271,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Bob clues red to Alice (slot 4)');
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r1', 'r2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays p1', 'p2');
 
@@ -284,7 +281,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Bob clues red to Alice (slots 1,5)');
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'r3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays p2', 'p3');
 
@@ -308,7 +305,7 @@ describe('bluff clues', () => {
 
 		// The only way this clue makes sense is if we have r3 to connect to the r4, r5 in Donald's hand.
 		takeTurn(game, 'Bob clues red to Donald');
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r3']);
 
 		takeTurn(game, 'Cathy plays p1', 'g1');
@@ -336,7 +333,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Bob clues red to Alice (slots 2,3)');
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r2', 'r4']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays p1', 'p2');
 
@@ -461,12 +458,13 @@ describe('bluff clues', () => {
 
 		takeTurn(game, 'Donald clues blue to Bob');
 
-		// Alice's slot 1 should is not assumed
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
+
 		// Bob's card could be b3 or b4 depending on whether Cathy plays.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['b3', 'b4']);
 		// Cathy's slot 1 must be b3.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b3']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('prioritizes playing into a bluff', async () => {
@@ -484,7 +482,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Cathy clues blue to Bob');
 
 		// Alice's slot 1 is assumed b1 (Bob's Truth Principle).
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b1']);
 
 		// Bob's slot 4 is symmetrically [b1,b2].
@@ -492,7 +490,7 @@ describe('bluff clues', () => {
 
 		const action = await game.take_action();
 
-		// Alice should play to prevent a misplay of the b2.
+		// Alice should play to prevent a misplay of the b2 instead of saving y4.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 	});
 
@@ -682,7 +680,7 @@ describe('bluff clues', () => {
 		// Since Bob has known plays a bluff should be possible on blue.
 		takeTurn(game, 'Alice clues blue to Cathy');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.BLUFFED);
 	});
 
 	it(`doesn't bluff on top of colour-clued cards which might match bluff`, () => {
@@ -732,19 +730,16 @@ describe('bluff clues', () => {
 			['r2', 'b2', 'g1', 'y3']
 		], {
 			level: { min: 11 },
-			starting: PLAYER.DONALD
+			starting: PLAYER.BOB
 		});
-
-		takeTurn(game, 'Donald clues 2 to Cathy');    // 2 save
-		takeTurn(game, 'Alice clues 5 to Bob');       // 5 save
 		takeTurn(game, 'Bob clues blue to Donald');   // finesse for b1 on us
 
-		// We expect that Cathy is bluffed
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		// We expect that Cathy is bluffed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
-		takeTurn(game, 'Cathy discards b2', 'y5');    // 5 save
+		takeTurn(game, 'Cathy discards b2', 'y5');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b1']);
 	});
 
@@ -764,8 +759,8 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Donald clues blue to Bob');
 
 		// We expect Alice is finessed on both slots
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b2']);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['b3']);
 	});
@@ -784,7 +779,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Cathy clues 3 to Donald');
 
 		// Alice should be finessed for y1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y1']);
 	});
 
@@ -802,13 +797,13 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Donald clues 3 to Cathy');
 
 		// Alice should be finessed for y1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y1']);
 
 		takeTurn(game, 'Alice plays r1 (slot 1)');
 
 		// Alice should write a layered finesse.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y1']);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['y2']);
 	});
@@ -829,7 +824,7 @@ describe('bluff clues', () => {
 		// Since Bob is only queued on 1s, Alice should be able to bluff Bob's p3 using g3.
 		takeTurn(game, 'Alice clues 3 to Donald');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, CARD_STATUS.BLUFFED);
 	});
 
 	it(`computes connections correctly`, () => {
@@ -863,11 +858,11 @@ describe('bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r1', 'y1', 'g1', 'b1', 'p1']);
 
 		// Bob cannot receive a layered finesse as he cannot tell it apart from a bluff.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, undefined);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['b1', 'b2']);
 	});
 
-	it(`prefers a bluff clue when more information is given`, async () => {
+	it(`prefers a bluff clue when more information is given 1`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['p1', 'y5', 'b4', 'p5', 'p3'],
@@ -982,30 +977,21 @@ describe('bluff clues', () => {
 			play_stacks: [2, 0, 0, 0, 0],
 			starting: PLAYER.CATHY,
 			init: (game) => {
-				const d_slot3 = game.state.hands[PLAYER.DONALD][2];
-				const { inferred, possible } = game.common.thoughts[d_slot3];
+				// Donald has known p2 in slot 3.
+				preClue(game, game.state.hands[PLAYER.DONALD][2], [
+					{ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.ALICE },
+					{ type: CLUE.RANK, value: 2, giver: PLAYER.BOB }]);
 
-				game.state.deck = game.state.deck.with(d_slot3, produce(game.state.deck[d_slot3], (draft) => {
-					draft.clues.push({ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.ALICE, turn: -1 });
-					draft.clued = true;
-				}));
-
-				game.common.updateThoughts(d_slot3, (draft) => {
-					draft.inferred = inferred.intersect(expandShortCard('p2'));
-					draft.possible = possible.intersect(['p2', 'p3', 'p4', 'p5'].map(expandShortCard));
-					draft.clues.push({ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.ALICE, turn: -1 });
-					draft.clued = true;
-				});
 				team_elim(game);
 			}
 		});
 
-		takeTurn(game, 'Cathy clues purple to Bob');		// Could be bluff on Cathy or finesse on us
+		takeTurn(game, 'Cathy clues purple to Bob');		// Could be bluff on Donald or finesse on us
 		takeTurn(game, 'Donald discards r3 (slot 4)', 'r4');
 
 		// Slot 1 should be finessed as p1.
 		const slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
-		assert.equal(slot1.finessed, true);
+		assert.equal(slot1.status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(slot1, ['p1']);
 	});
 
@@ -1058,7 +1044,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Bob clues 4 to Alice (slot 1)');		// Could be b2 prompt (Alice) -> b3 finesse (Donald), or r1 bluff (Cathy) -> b3 prompt (Alice)
 
 		// Cathy's r1 should be finessed as a possible bluff.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays r1', 'g2');
 
@@ -1083,7 +1069,7 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Donald clues red to Cathy');			// bluffing Alice (cannot be hidden finesse)
 
 		// Alice's slot 1 should be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.BLUFFED);
 	});
 
 	it(`doesn't give a self-bluff that looks like an ambiguous self-finesse`, () => {

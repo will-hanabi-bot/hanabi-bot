@@ -1,4 +1,5 @@
 import { LEVEL } from '../h-constants.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { cardTouched, direct_clues, variantRegexes } from '../../../variants.js';
 import { isSaved, isTrash, knownAs, visibleFind } from '../../../basics/hanabi-util.js';
 
@@ -55,7 +56,7 @@ export function find_fix_clues(game, play_clues, save_clues) {
 
 			const fix_unneeded = card.possible.length === 1 ||
 				card.possible.every(p => state.isBasicTrash(p)) ||
-				(card.chop_moved && !state.deck[order].clued) ||										// Card chop moved but not clued, don't fix
+				card.status === CARD_STATUS.CM ||									// Card chop moved, don't fix
 				common.dependentConnections(order).some(wc => wc.symmetric)	||		// Part of a symmetric waiting connection
 				card.inferred.length === 0 ||
 				pink_1s(order);

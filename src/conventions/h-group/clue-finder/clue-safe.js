@@ -7,7 +7,6 @@ import * as Utils from '../../../tools/util.js';
 import { team_elim } from '../../../basics/helper.js';
 import { produce } from '../../../StateProxy.js';
 
-
 /**
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../h-player.js').HGroup_Player} Player
@@ -28,7 +27,7 @@ function getFinessedOrder(game, playerIndex) {
 	const finessed_orders = state.hands[playerIndex].filter(o => {
 		const card = player.thoughts[o];
 
-		if (!card.finessed || !state.isPlayable(state.deck[o]))
+		if (!card.blind_playing || !state.isPlayable(state.deck[o]))
 			return false;
 
 		// We can't use hidden cards, since the player will wait until their real connection is playable
@@ -118,7 +117,7 @@ function getNextDiscard(game, player, startIndex, clue_tokens) {
 		!common.thinksLoaded(state, nextPlayerIndex);
 
 	if ((clue_tokens === 0 || forced_discard) && !chopUnsafe(game, player, next_discard)) {
-		logger.highlight('cyan', 'low clues, first discard', state.playerNames[next_discard], 'is safe', logCard(state.deck[game.players[next_discard].chop(state.hands[next_discard], { afterClue: true })]));
+		logger.highlight('cyan', 'low clues, first discard', state.playerNames[next_discard], 'is safe', logCard(state.deck[game.players[next_discard].chop(state.hands[next_discard])]));
 
 		const result = getNextDiscard(game, player, next_discard, 1);
 		next_discard = result.next_discard;
@@ -138,7 +137,7 @@ function getNextDiscard(game, player, startIndex, clue_tokens) {
  */
 function possible_discard(game, player, hand, potential_cluer) {
 	const { state } = game;
-	const chop = player.chop(hand, { afterClue: true });
+	const chop = player.chop(hand);
 
 	if (chop === undefined)
 		return undefined;
@@ -237,7 +236,7 @@ export function chopUnsafe(game, player, playerIndex) {
 	const { state } = game;
 
 	// Note that chop will be undefined if the entire hand is clued
-	const chop = game.players[playerIndex].chop(state.hands[playerIndex], { afterClue: true });
+	const chop = game.players[playerIndex].chop(state.hands[playerIndex]);
 
 	// Crit or unique 2 on chop
 	if (chop !== undefined) {

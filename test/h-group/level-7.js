@@ -5,6 +5,7 @@ import * as ExAsserts from '../extra-asserts.js';
 import { ACTION, CLUE } from '../../src/constants.js';
 import { COLOUR, PLAYER, preClue, setup, takeTurn, VARIANTS } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -33,7 +34,7 @@ describe('scream discard chop moves', () => {
 		// takeTurn(game, 'Alice discards y3 (slot 4)');
 
 		// // Bob's slot 5 should be chop moved.
-		// assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].chop_moved, true);
+		// assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
 	});
 
 	it(`only scream discards if critical`, async () => {
@@ -141,7 +142,7 @@ describe('scream discard chop moves', () => {
 		takeTurn(game, 'Alice discards y3 (slot 5)');
 
 		// Bob's slot 1 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.CM);
 	});
 });
 
@@ -168,7 +169,7 @@ describe('shout discard chop moves', () => {
 		takeTurn(game, 'Alice discards p1 (slot 4)');
 
 		// Bob's slot 5 should be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
 	});
 
 	it(`stalls after a shout discard`, async () => {
@@ -235,7 +236,7 @@ describe('generation discards', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][3] });
 
 		// Bob's slot 5 should not be chop moved.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].chop_moved, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, undefined);
 	});
 
 	it(`interprets generation over sdcm`, () => {
@@ -251,13 +252,13 @@ describe('generation discards', () => {
 		takeTurn(game, 'Alice clues red to Bob');
 		takeTurn(game, 'Bob discards b4', 'g3');		// Could be scream or generation
 
-		assert.equal(game.state.screamed_at, true);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, true);
+		assert.equal(game.state.discard_state, 'scream');
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
 
 		takeTurn(game, 'Cathy clues 5 to Alice (slot 5)');
 
 		// Alice now knows that it was a generation discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, undefined);
 	});
 
 	it(`doesn't perform a gen discard if they can connect`, async () => {

@@ -1,11 +1,13 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-
-import { CLUE } from '../../../src/constants.js';
 import { COLOUR, PLAYER, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
+
+import { CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
+
 import logger from '../../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -31,7 +33,7 @@ describe('other cases', () => {
 		ExAsserts.cardHasInferences(common.thoughts[state.hands[PLAYER.ALICE][3]], ['r1', 'y1', 'g1', 'b1', 'p1']);
 
 		// Donald's r1 should be finessed.
-		assert.equal(common.thoughts[state.hands[PLAYER.DONALD][0]].finessed, true);
+		assert.equal(common.thoughts[state.hands[PLAYER.DONALD][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it(`doesn't perform unknown self-prompts on target`, () => {

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { PLAYER, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION } from '../../../src/constants.js';
 
@@ -163,11 +164,11 @@ describe('queued finesse', () => {
 		// Slot 3 should be y1, and slot 4 should be g3.
 		const slot3 = game.common.thoughts[game.state.hands[PLAYER.ALICE][2]];
 		ExAsserts.cardHasInferences(slot3, ['y1']);
-		assert.equal(slot3.finessed, true);
+		assert.equal(slot3.status, CARD_STATUS.FINESSED);
 
 		const slot4 = game.common.thoughts[game.state.hands[PLAYER.ALICE][3]];
 		ExAsserts.cardHasInferences(slot4, ['g3']);
-		assert.equal(slot4.finessed, true);
+		assert.equal(slot4.status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Bob clues red to Cathy');
 		takeTurn(game, 'Cathy plays r1', 'g1');

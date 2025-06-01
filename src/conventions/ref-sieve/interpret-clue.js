@@ -1,5 +1,6 @@
 import { CLUE } from '../../constants.js';
 import { CLUE_INTERP } from './rs-constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { connect, find_own_finesses } from './connecting-cards.js';
 import { checkFix, distribution_clue } from '../../basics/helper.js';
 import * as Basics from '../../basics.js';
@@ -68,12 +69,12 @@ function ref_play(game, action, right = false) {
 
 	const FAILURE = { new_common: common, patches: [], interp: CLUE_INTERP.NONE };
 
-	if (common.thoughts[target].finessed) {
+	if (common.thoughts[target].blind_playing) {
 		logger.info('targeting an already known playable!');
 		return FAILURE;
 	}
 
-	if (common.thoughts[target].called_to_discard) {
+	if (common.thoughts[target].status === CARD_STATUS.CALLED_TO_DC) {
 		logger.info('targeting a card called to discard!');
 		return FAILURE;
 	}
@@ -109,8 +110,8 @@ function ref_discard(game, action) {
 		// Chop move all unsaved cards
 		const new_common = produce(common, (draft) => {
 			for (const o of hand) {
-				if (!common.thoughts[o].saved)
-					draft.thoughts[o].chop_moved = true;
+				if (common.thoughts[o].status === undefined)
+					draft.thoughts[o].updateStatus(CARD_STATUS.CM);
 			}
 
 			draft.thoughts[focus].focused = true;
@@ -123,7 +124,7 @@ function ref_discard(game, action) {
 	logger.info(`ref discard on ${state.playerNames[clue_target]}'s slot ${target_index + 1} (focus ${focus})`);
 
 	const new_common = produce(common, (draft) => {
-		draft.thoughts[target].called_to_discard = true;
+		draft.thoughts[target].updateStatus(CARD_STATUS.CALLED_TO_DC);
 		draft.thoughts[focus].focused = true;
 	}, (p) => { patches = patches.concat(p); });
 
@@ -194,8 +195,7 @@ function target_play(game, action, target) {
 				card.superposition = true;
 
 				if (type === 'finesse') {
-					card.finessed = true;
-					card.possibly_finessed = true;
+					card.updateStatus(CARD_STATUS.FINESSED);
 					card.firstTouch = { giver, turn: state.turn_count };
 					card.old_inferred = inferred;
 				}
@@ -216,7 +216,7 @@ function target_play(game, action, target) {
 
 		const target_card = draft.thoughts[target];
 		target_card.inferred = common.thoughts[target].inferred[target_card.superposition ? 'union' : 'intersect'](possibilities);
-		target_card.called_to_play = true;
+		target_card.updateStatus(CARD_STATUS.CALLED_TO_PLAY);
 		target_card.info_lock = common.thoughts[target].possible.intersect(possibilities);
 
 		if (!common.thoughts[target].clued)
@@ -286,11 +286,11 @@ export function interpret_clue(game, action) {
 		const prev_playables = prev_common.thinksPlayables(prev_state, target, { symmetric: true });
 		const prev_trash = prev_common.thinksTrash(prev_state, target);
 		const prev_loaded = prev_trash.length > 0 ||
-			prev_state.hands[target].some(o => prev_common.thoughts[o].called_to_discard) ||
+			prev_state.hands[target].some(o => prev_common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) ||
 			prev_playables.some(o => !fixed.has(o));
 
 		logger.info('prev loaded?', prev_loaded, logClue({ ...clue, target }), prev_trash,
-			prev_state.hands[target].find(o => prev_common.thoughts[o].called_to_discard),
+			prev_state.hands[target].find(o => prev_common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC),
 			prev_playables.find(o => !fixed.has(o)));
 
 		if (!fix && prev_loaded) {

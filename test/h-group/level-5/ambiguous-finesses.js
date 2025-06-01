@@ -3,10 +3,12 @@ import { describe, it } from 'node:test';
 
 import { COLOUR, PLAYER, setup, takeTurn } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
-import HGroup from '../../../src/conventions/h-group.js';
-import logger from '../../../src/tools/logger.js';
-import { get_result } from '../../../src/conventions/h-group/clue-finder/determine-clue.js';
 import { CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
+import HGroup from '../../../src/conventions/h-group.js';
+import { get_result } from '../../../src/conventions/h-group/clue-finder/determine-clue.js';
+
+import logger from '../../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -25,7 +27,7 @@ describe('ambiguous finesse', () => {
 		takeTurn(game, 'Cathy clues green to Bob');
 
 		// Donald's g1 should be finessed
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Donald discards p4', 'r1');
 
@@ -47,7 +49,7 @@ describe('ambiguous finesse', () => {
 		takeTurn(game, 'Cathy discards p3', 'r1');
 
 		// Alice's slot 1 should be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('passes back a layered ambiguous finesse', () => {
@@ -65,8 +67,8 @@ describe('ambiguous finesse', () => {
 		takeTurn(game, 'Donald discards p3', 'b3');
 
 		// Alice should pass back, making her slot 1 not finessed and Donald's slots 2 and 3 (used to be slots 1 and 2) finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
-		assert.ok([1,2].every(index => game.common.thoughts[game.state.hands[PLAYER.DONALD][index]].finessed));
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
+		assert.ok([1,2].every(index => game.common.thoughts[game.state.hands[PLAYER.DONALD][index]].status === CARD_STATUS.FINESSED));
 	});
 
 	it('understands an ambiguous finesse pass-back', () => {
@@ -85,7 +87,7 @@ describe('ambiguous finesse', () => {
 		takeTurn(game, 'Alice clues 5 to Bob');			// we pass finesse to Bob
 		takeTurn(game, 'Bob clues yellow to Donald');		// Bob passes back (not urgent save, Donald can clue r1)
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b1']);
 	});
 
@@ -108,7 +110,7 @@ describe('ambiguous finesse', () => {
 	// 	takeTurn(game, 'Bob discards p4', 'p1');			// Bob can't play because he might have the finesse of the wrong colour (the actual situation).
 
 	// 	// Alice now knows that she has to play into it.
-	// 	assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+	// 	assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	// 	ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['g1']);
 	// });
 
@@ -167,7 +169,7 @@ describe('ambiguous finesse', () => {
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r2','y2','g2','b2','p2']);
 		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][1]], ['r2','g2','b2','p2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Alice plays r1 (slot 1)');
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r2']);
@@ -192,6 +194,73 @@ describe('ambiguous finesse', () => {
 
 		// ALice's slot 1 should be finessed as r2.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+	});
+});
+
+describe('ambiguous self-finesses', () => {
+	it(`recognizes an ambiguous self-finesse 2`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['p1', 'p2', 'r2', 'g4'],
+			['p1', 'b3', 'g2', 'b4'],
+			['y2', 'y4', 'r1', 'g3']
+		], {
+			level: { min: 5 }
+		});
+
+		takeTurn(game, 'Alice clues 2 to Bob');					// Self-finesse on p1 (Cathy cannot play)
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
+
+		takeTurn(game, 'Bob clues 1 to Alice (slots 2,3)');		// Bob thinks it's on Cathy
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
+
+		takeTurn(game, 'Cathy clues red to Donald');			// Cathy passes back
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
+	});
+
+	it(`plays into an ambiguous self-finesse`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['p1', 'b3', 'g2', 'b4'],
+			['y2', 'y4', 'r1', 'g3'],
+			['b2', 'g1', 'y1', 'r4']
+		], {
+			level: { min: 5 },
+			starting: PLAYER.DONALD
+		});
+
+		takeTurn(game, 'Donald clues 2 to Alice (slots 2,3)');	// Self-finesse on p1 (appears to be on Bob)
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
+
+		takeTurn(game, 'Alice clues 1 to Donald');
+		takeTurn(game, 'Bob clues red to Cathy');				// Bob passes back
+
+		// Now Alice should believe that she is self-finessed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y1', 'g1', 'b1', 'p1']);
+	});
+
+	it(`does not expect a passback if no other identities are possible`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['p1', 'p2', 'r2', 'g4'],
+			['p1', 'b3', 'g2', 'b4'],
+			['y2', 'y4', 'r1', 'g3']
+		], {
+			level: { min: 5 },
+			play_stacks: [2, 2, 2, 2, 0]
+		});
+
+		takeTurn(game, 'Alice clues 2 to Bob');
+		takeTurn(game, 'Bob clues 1 to Alice (slots 2,3)');		// Bob thinks it's on Cathy
+
+		// Cathy should now know to play p1.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
 	});
 });

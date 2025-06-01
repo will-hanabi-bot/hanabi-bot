@@ -57,7 +57,9 @@ export function logHand(hand, player = globals.game.common) {
 		new_card.visible = (card.suitIndex === -1 ? 'unknown' : logCard(card));
 		new_card.order = order;
 
-		new_card.flags = ['clued', 'newly_clued', 'known', 'focused', 'reset', 'finessed', 'bluffed', 'certain_finessed', 'chop_moved', 'rewinded', 'hidden', 'trash', 'called_to_discard', 'called_to_play', 'uncertain'].filter(flag => card[flag]);
+		if (card.status)
+			new_card.status = card.status;
+		new_card.flags = ['newly_clued', 'known', 'focused', 'reset', 'certain_finessed', 'rewinded', 'hidden', 'trash', 'uncertain'].filter(flag => card[flag]);
 
 		new_card.possible = card.possible.map(logCard).join();
 		new_card.inferred = card.inferred.map(logCard).join();
@@ -221,7 +223,9 @@ export function logAction(action) {
 export function logConnection(connection) {
 	const { type, reacting, identities, order } = connection;
 	const identity = identities.length === 1 ? logCard(identities[0]) : `[${identities.map(logCard)}]`;
-	const logType = type === 'finesse' ? (connection.bluff ? 'bluff' : 'finesse') : type;
+	const logType = type !== 'finesse' ? type :
+		(connection.possibly_bluff ? 'possibly bluff' :
+		(connection.bluff ? 'bluff' : 'finesse'));
 
 	return `${order} ${identity} ${logType} (${globals.game.state.playerNames[reacting]})${connection.certain ? ' (certain)' : connection.hidden ? ' (hidden)' : ''}`;
 }

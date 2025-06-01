@@ -5,10 +5,11 @@ import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../test-util
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
+import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
-import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -47,7 +48,7 @@ describe('stalling', () => {
 
 		// Can't be a locked hand stall, because getting b1 is available.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['g1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('understands a finesse when there are better clues available 2', () => {
@@ -69,7 +70,7 @@ describe('stalling', () => {
 
 		// Can't be a hard burn, because filling in r5 is available.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('understands a tempo clue when there are better clues available', () => {
@@ -95,7 +96,7 @@ describe('stalling', () => {
 
 		// Cathy's red card should be known r3, and y2 should be chop moved from TCCM.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]], ['r3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
 	});
 
 	it('understands a tempo clue stall', () => {
@@ -121,7 +122,7 @@ describe('stalling', () => {
 
 		// Cathy's red card should be known r3, but no TCCM.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]], ['r3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].chop_moved, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, undefined);
 	});
 
 	it('understands a play clue when not in stalling situation', () => {
@@ -461,7 +462,7 @@ describe('double discard avoidance', async () => {
 		takeTurn(game, 'Alice clues 5 to Bob');
 
 		// No one should be finessed by this as Alice was simply stalling.
-		const finessed = game.state.hands.filter(hand => hand.some(o => game.common.thoughts[o].finessed));
+		const finessed = game.state.hands.filter(hand => hand.some(o => game.common.thoughts[o].status === CARD_STATUS.FINESSED));
 		assert.equal(finessed.length, 0);
 		assert.equal(game.common.waiting_connections.length, 0);
 	});
@@ -512,7 +513,7 @@ describe('double discard avoidance', async () => {
 		takeTurn(game, 'Alice clues green to Bob');
 
 		// No one should be finessed by this as Alice was simply stalling.
-		const finessed = game.state.hands.filter(hand => hand.some(o => game.common.thoughts[o].finessed));
+		const finessed = game.state.hands.filter(hand => hand.some(o => game.common.thoughts[o].status === CARD_STATUS.FINESSED));
 		assert.equal(finessed.length, 0);
 		assert.equal(game.common.waiting_connections.length, 0);
 	});

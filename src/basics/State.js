@@ -25,8 +25,9 @@ export class State {
 	clue_tokens = 8;
 	strikes = 0;
 	early_game = true;
-	screamed_at = false;
-	generated = false;
+
+	/** @type {'shout' | 'scream' | 'gen' | undefined} */
+	discard_state;
 
 	/** @type {Identity | undefined} */
 	dda = undefined;

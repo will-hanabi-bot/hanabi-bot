@@ -57,7 +57,7 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slot 3)');
 
 		// Alice's slot 1 should not be called to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('understands a fix clue revealing trash touching new cards', () => {
@@ -74,7 +74,7 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues 1 to Alice (slots 1,3)');
 
 		// Alice's slot 1 should not be called to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.ok(game.common.thinksPlayables(game.state, PLAYER.ALICE).length === 0);
 	});
 
 	it('understands a fix clue revealing duplicates', () => {
@@ -90,6 +90,6 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues 4 to Alice (slots 2,3)');
 
 		// Alice's slot 1 should not be called to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 });

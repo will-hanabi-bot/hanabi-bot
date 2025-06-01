@@ -1,9 +1,10 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
+import * as ExAsserts from '../extra-asserts.js';
 
 import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import { ACTION, CLUE } from '../../src/constants.js';
-import * as ExAsserts from '../extra-asserts.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
@@ -50,7 +51,7 @@ describe('reverse finesse', () => {
 		takeTurn(game, 'Donald clues red to Bob');				// r5
 
 		// We don't need to finesse anything.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 		assert.equal(game.common.hypo_stacks[COLOUR.RED], 5);
 	});
 
@@ -232,8 +233,8 @@ describe('self-finesse', () => {
 		const { common, state } = game;
 
 		// Cathy's slot 1 should be finessed, Alice's slot 1 should not.
-		assert.equal(common.thoughts[state.hands[PLAYER.CATHY][0]].finessed, true);
-		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(common.thoughts[state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('interprets self-finesses correctly when other possibilities are impossible', () => {
@@ -257,7 +258,7 @@ describe('self-finesse', () => {
 		takeTurn(game, 'Bob clues 2 to Alice (slot 3)');			// 2 is neg purple, b2 is clued in Cathy's hand
 
 		// Alice's slot 1 should be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r2','y2','g2']);
 	});
 
@@ -320,13 +321,13 @@ describe('self-finesse', () => {
 
 		// All of these are valid self-finesse possibilities.
 		ExAsserts.cardHasInferences(game.common.thoughts[slot1_order], ['y2', 'g2', 'b2']);
-		assert.equal(game.common.thoughts[slot1_order].finessed, true);
+		assert.equal(game.common.thoughts[slot1_order].status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Donald clues green to Alice (slot 4)');
 
 		// After knowing we have g2 in slot 4, the finesse should still be on.
 		ExAsserts.cardHasInferences(game.common.thoughts[slot1_order], ['y2', 'b2']);
-		assert.equal(game.common.thoughts[slot1_order].finessed, true);
+		assert.equal(game.common.thoughts[slot1_order].status, CARD_STATUS.FINESSED);
 	});
 
 	it('prefers prompting over self-finessing', () => {
@@ -407,7 +408,7 @@ describe('self-finesse', () => {
 
 		// Assume Donald is not making a mistake, and we have g5. Then Bob will know to play into the finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('correctly realizes self-finesses after symmetric possibilities are directly stomped', () => {
@@ -430,7 +431,7 @@ describe('self-finesse', () => {
 		takeTurn(game, 'Bob clues red to Donald');				// finessing r2, proving the earlier finesse wasn't red
 
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['y4', 'g4', 'p4']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('understands a very delayed finesse', () => {
@@ -484,7 +485,7 @@ describe('self-finesse', () => {
 		takeTurn(game, 'Bob plays r1', 'b3');
 
 		// Bob needs to play r1 first to respect r3. We should not be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 });
@@ -547,7 +548,7 @@ describe('direct clues', () => {
 
 		// Alice should assume the simpler explanation that she doesn't have to play g2.
 		const slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
-		assert.equal(slot1.finessed, false);
+		assert.equal(slot1.status, undefined);
 		assert.ok(slot1.inferred.length > 1);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['y3']);
 	});
@@ -581,7 +582,7 @@ describe('asymmetric clues', () => {
 		// We should no longer think that we have b3 in slot 1.
 		const slot1 = common.thoughts[state.hands[PLAYER.ALICE][0]];
 		assert.equal(slot1.inferred.length > 1, true);
-		assert.equal(slot1.finessed, false);
+		assert.equal(slot1.status, undefined);
 	});
 
 	it('understands multiple interpretations when connecting through multiple possible cards in other hand', () => {
@@ -643,7 +644,7 @@ describe('asymmetric clues', () => {
 		ExAsserts.cardHasInferences(common.thoughts[state.hands[PLAYER.ALICE][1]], ['y4']);
 
 		// Alice's slot 1 should not be finessed.
-		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('prefers not starting with self (symmetrically), even if there are known playables before', () => {
@@ -777,7 +778,7 @@ describe('asymmetric clues', () => {
 
 		// Alice's slot 1 should be finessed as g3.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['g3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('accepts asymmetric information when directly clued a critical', () => {
@@ -1007,6 +1008,6 @@ describe('early game', () => {
 		takeTurn(game, 'Donald clues 5 to Bob');			// Donald 5 stalls, showing that he is not prompting y2
 
 		// We should not rewind and think Cathy finessed us with 5.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 });

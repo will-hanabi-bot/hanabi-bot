@@ -32,7 +32,7 @@ function find_connecting(game, identity, playerIndex, connected, looksDirect, ig
 		return { type: 'known', reacting: playerIndex, order: known, identities: [identity] };
 
 	const playable = hand.find(o => ((card = common.thoughts[o]) =>
-		!connected.includes(o) && (card.finessed || card.called_to_play || card.possible.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(identity)))());
+		!connected.includes(o) && (card.blind_playing || card.possible.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(identity)))());
 
 	if (playable !== undefined && state.deck[playable].matches(identity) && !ignoreOrders.includes(playable))
 		return { type: 'playable', reacting: playerIndex, order: playable, identities: [identity] };
@@ -149,7 +149,7 @@ export function find_own_finesses(game, target_order, identity, giver, target, u
 				/** @returns {Connection | undefined} */
 				const find_own_connecting = () => {
 					const playable = state.ourHand.find(o => ((card = me.thoughts[o]) =>
-						(card.finessed || card.called_to_play || card.inferred.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(next_identity)))());
+						(card.blind_playing || card.inferred.every(i => state.isPlayable(i))) && card.inferred.some(i => i.matches(next_identity)))());
 
 					if (playable !== undefined && !ignoreOrders.includes(playable))
 						return { type: 'playable', reacting: state.ourPlayerIndex, order: playable, identities: [next_identity] };

@@ -218,7 +218,7 @@ export class Game {
 			for (const order of state.hands.flat()) {
 				const card = common.thoughts[order];
 
-				if (!card.saved && !card.called_to_discard)
+				if (card.status === undefined)
 					continue;
 
 				draft[order] ??= { last: '', turn: 0, full: '' };

@@ -3,10 +3,11 @@ import { describe, it } from 'node:test';
 import * as ExAsserts from '../../extra-asserts.js';
 
 import { PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../../test-utils.js';
+import { CLUE } from '../../../src/constants.js';
+import { CARD_STATUS } from '../../../src/basics/Card.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
 import logger from '../../../src/tools/logger.js';
-import { CLUE } from '../../../src/constants.js';
 import { produce } from '../../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
@@ -110,7 +111,7 @@ describe('save clue interpretation', () => {
 		takeTurn(game, 'Cathy clues black to Bob');
 
 		// Alice should not be finessed for k1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('finesses when k2 is saved with black without exceptions', () => {
@@ -128,7 +129,7 @@ describe('save clue interpretation', () => {
 		takeTurn(game, 'Cathy clues black to Bob');
 
 		// Alice should be finessed for k1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['k1']);
 	});
 });

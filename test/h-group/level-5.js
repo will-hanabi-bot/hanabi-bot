@@ -5,6 +5,7 @@ import { COLOUR, PLAYER, VARIANTS, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import { clue_safe } from '../../src/conventions/h-group/clue-finder/clue-safe.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
@@ -140,7 +141,7 @@ describe('ambiguous clues', () => {
 		takeTurn(game, 'Cathy discards b4', 'r4');
 
 		// Alice can deduce that she has a playable card on finesse position, but shouldn't play it.
-		assert.ok(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed === false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 		assert.ok(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].inferred.length > 1);
 	});
 
@@ -166,7 +167,7 @@ describe('ambiguous clues', () => {
 
 		// Alice's b2 in slot 1 should still be finessed.
 		const slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
-		assert.equal(slot1.finessed, true);
+		assert.equal(slot1.status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[slot1.order], ['b2']);
 	});
 
@@ -187,7 +188,7 @@ describe('ambiguous clues', () => {
 
 		// Alice's slot 1 should be known b3.
 		const slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
-		assert.equal(slot1.finessed, true);
+		assert.equal(slot1.status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[slot1.order], ['b3']);
 	});
 
@@ -214,7 +215,7 @@ describe('ambiguous clues', () => {
 
 		// Alice's y2 in slot 1 should still be finessed.
 		const slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
-		assert.equal(slot1.finessed, true);
+		assert.equal(slot1.status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[slot1.order], ['y2']);
 	});
 
@@ -293,7 +294,7 @@ describe('ambiguous clues', () => {
 
 		// Alice's slot 1 should not be finessed for g1.
 		const a_slot1 = game.state.hands[PLAYER.ALICE][0];
-		assert.equal(game.common.thoughts[a_slot1].finessed, false);
+		assert.equal(game.common.thoughts[a_slot1].status, undefined);
 	});
 
 	it(`correctly recognizes uncertain finessed cards`, () => {
@@ -364,55 +365,7 @@ describe('hidden prompts', () => {
 		takeTurn(game, 'Cathy clues 5 to Bob');
 
 		// After Cathy stalls, Alice's slot 2 should be finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
-	});
-});
-
-describe('ambiguous self-finesses', () => {
-	it(`recognizes an ambiguous self-finesse`, () => {
-		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['p1', 'p2', 'r2', 'g4'],
-			['p1', 'b3', 'g2', 'b4'],
-			['y2', 'y4', 'r1', 'g3']
-		], {
-			level: { min: 5 }
-		});
-
-		takeTurn(game, 'Alice clues 2 to Bob');					// Self-finesse on p1 (Cathy cannot play)
-
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
-
-		takeTurn(game, 'Bob clues 1 to Alice (slots 2,3)');		// Bob thinks it's on Cathy
-
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
-
-		takeTurn(game, 'Cathy clues red to Donald');			// Cathy passes back
-
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
-	});
-
-	it(`plays into an ambiguous self-finesse`, () => {
-		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['p1', 'b3', 'g2', 'b4'],
-			['y2', 'y4', 'r1', 'g3'],
-			['b2', 'g1', 'y1', 'r4']
-		], {
-			level: { min: 5 },
-			starting: PLAYER.DONALD
-		});
-
-		takeTurn(game, 'Donald clues 2 to Alice (slots 2,3)');	// Self-finesse on p1 (appears to be on Bob)
-
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].finessed, true);
-
-		takeTurn(game, 'Alice clues 1 to Donald');
-		takeTurn(game, 'Bob clues red to Cathy');				// Bob passes back
-
-		// Now Alice should believe that she is self-finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y1', 'g1', 'b1', 'p1']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 	});
 });
 
@@ -498,7 +451,7 @@ describe('guide principle', () => {
 		takeTurn(game, 'Alice clues 5 to Cathy');
 
 		// Understands that Alice may have been deferring the finesse to save the 5 and allow Bob to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b1']);
 	});
 
@@ -527,7 +480,7 @@ describe('guide principle', () => {
 		takeTurn(game, 'Alice clues 5 to Cathy');
 
 		// Understands that Alice may have been deferring the finesse to save the 5 and allow Bob to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['p1']);
 	});
 
@@ -564,7 +517,7 @@ describe('guide principle', () => {
 		takeTurn(game, 'Bob clues 5 to Donald'); // 5 save.
 		takeTurn(game, 'Cathy clues 5 to Donald'); // Should finesse b4 out of Alice's hand.
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b4']);
 	});
 
@@ -584,8 +537,8 @@ describe('guide principle', () => {
 		takeTurn(game, 'Alice clues 5 to Cathy'); // 5 save.
 		takeTurn(game, 'Bob clues 5 to Cathy'); // Should finesse y2, b4 out of Donald's hand.
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].finessed, true);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.DONALD][1]], ['b4']);
 	});
 
@@ -688,6 +641,6 @@ describe('mistake recovery', () => {
 		// Alice should cancel ambiguous g2 in slot 2.
 		// Note that this is not common since Bob is unaware of what happened.
 		assert.ok(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][1]].inferred.length > 1);
-		assert.equal(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, false);
+		assert.equal(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});
 });

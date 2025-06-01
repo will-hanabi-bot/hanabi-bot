@@ -33,7 +33,7 @@ describe('direct rank playables', () => {
 
 		takeTurn(game, 'Bob clues 1 to Alice (slots 2,3)');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].called_to_discard, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
 	});
 
 	it('eliminates direct ranks from focus', () => {
@@ -47,7 +47,7 @@ describe('direct rank playables', () => {
 
 		takeTurn(game, 'Bob clues 1 to Alice (slots 2,3)');
 
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].called_to_discard, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['g1']);
 
 		// Alice's slot 3 should be trash
@@ -72,7 +72,7 @@ describe('direct rank playables', () => {
 
 		// Alice's slot 4 should not be called to discard.
 		const slot4 = game.common.thoughts[game.state.hands[PLAYER.ALICE][3]];
-		assert.equal(slot4.called_to_discard, false);
+		assert.equal(slot4.status, undefined);
 	});
 });
 

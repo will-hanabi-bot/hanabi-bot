@@ -1,5 +1,6 @@
 import { ACTION } from '../../constants.js';
 import { ACTION_PRIORITY, LEVEL } from './h-constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { select_play_clue, determine_playable_card, order_1s, find_clue_value, find_positional_discard } from './action-helper.js';
 import { find_gd, find_unlock, find_urgent_actions } from './urgent-actions.js';
 import { find_clues } from './clue-finder/clue-finder.js';
@@ -59,7 +60,7 @@ function find_best_playable(game, playable_cards, playable_priorities) {
 				const old_chop_value = cardValue(state, me, old_chop_card);
 
 				// Simulate chop move
-				const new_chop = common.withThoughts(old_chop, (draft) => { draft.chop_moved = true; }, false).chop(state.hands[playerIndex]);
+				const new_chop = common.simulateCM([old_chop]).chop(state.hands[playerIndex]);
 				const new_chop_value = new_chop !== undefined ? cardValue(state, me, state.deck[new_chop]) : me.thinksLoaded(state, playerIndex) ? 0 : 4;
 
 				return old_chop_value - new_chop_value;
@@ -266,9 +267,9 @@ export async function take_action(game) {
 	// Bluffs should never be deferred as they can lead to significant desync with human players
 	if (is_finessed) {
 		const best_playable_card = common.thoughts[best_playable_order];
-		const { bluffed, possibly_bluffed } = best_playable_card;
+		const { status } = best_playable_card;
 
-		if (bluffed || possibly_bluffed) {
+		if (status === CARD_STATUS.BLUFFED || status === CARD_STATUS.MAYBE_BLUFFED || status === CARD_STATUS.F_MAYBE_BLUFF) {
 			logger.info('playing into potential bluff');
 			return { tableID, type: ACTION.PLAY, target: best_playable_order };
 		}
@@ -276,7 +277,7 @@ export async function take_action(game) {
 
 	const chop_hidden_f = () => common.dependentConnections(best_playable_order).some(wc =>
 		!wc.symmetric && wc.connections.some((conn, i) => i >= wc.conn_index && conn.reacting === nextPlayerIndex && conn.hidden &&
-			wc.connections.some((conn2, j) => j > i && conn2.order === state.hands[nextPlayerIndex].findLast(o => ((c = common.thoughts[o]) => !c.clued && !c.chop_moved)()))));
+			wc.connections.some((conn2, j) => j > i && conn2.order === state.hands[nextPlayerIndex].findLast(o => ((c = common.thoughts[o]) => c.status === undefined || c.blind_playing)()))));
 
 	if (playable_orders.length > 0 && priority === 0 && chop_hidden_f()) {
 		logger.info('must play into hidden component that may be discarded!');
@@ -286,7 +287,7 @@ export async function take_action(game) {
 	const { play_clues, save_clues, fix_clues, stall_clues } = find_clues(game);
 
 	// ALways give a save clue after a Generation Discard to avoid desync
-	if (state.generated && save_clues[nextPlayerIndex]?.safe) {
+	if (state.discard_state === 'gen' && save_clues[nextPlayerIndex]?.safe) {
 		logger.info('giving save clue after generation!');
 		return Utils.clueToAction(save_clues[nextPlayerIndex], tableID);
 	}
@@ -616,7 +617,7 @@ export async function take_action(game) {
 		state.clue_tokens <= 2;
 
 	if (should_shout) {
-		const new_chop_value = me.withThoughts(next_chop, (draft) => { draft.chop_moved = true; }).chopValue(state, nextPlayerIndex, { no_chop: 4 });
+		const new_chop_value = me.simulateCM([next_chop]).chopValue(state, nextPlayerIndex, { no_chop: 4 });
 
 		if (cardValue(state, me, state.deck[next_chop], next_chop) >= 1 && new_chop_value === 0) {
 			logger.highlight('yellow', `performing shout discard on ${logCard(state.deck[next_chop])}`);
@@ -634,7 +635,7 @@ export async function take_action(game) {
 			if (chop === undefined || cardValue(state, me, state.deck[chop]) === 0 || state.isPlayable(state.deck[chop]))
 				return -1;
 
-			const new_chop_value = me.withThoughts(chop, (draft) => { draft.chop_moved = true; }).chopValue(state, target, { no_chop: 4 });
+			const new_chop_value = me.simulateCM([chop]).chopValue(state, target, { no_chop: 4 });
 			return new_chop_value === 0 ? find_clue_value(clue.result) : -1;
 		}, 0);
 

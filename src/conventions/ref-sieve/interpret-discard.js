@@ -1,3 +1,4 @@
+import { CARD_STATUS } from '../../basics/Card.js';
 import { team_elimP } from '../../basics/helper.js';
 import { find_sarcastics, interpret_sarcastic } from '../shared/sarcastic.js';
 import * as Basics from '../../basics.js';
@@ -102,7 +103,7 @@ export function interpret_discard(game, action) {
 		}
 
 		// No safe action, chop has permission to discard
-		if (!common.thinksLoaded(state, partner) && !state.hands[partner].some(o => common.thoughts[o].called_to_discard)) {
+		if (!common.thinksLoaded(state, partner) && !state.hands[partner].some(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC)) {
 			common = common.withThoughts(state.hands[partner][0], (chop) => {
 				chop.permission_to_discard = true;
 			});
@@ -110,9 +111,9 @@ export function interpret_discard(game, action) {
 	}
 	else {
 		for (const o of state.hands[playerIndex]) {
-			if (common.thoughts[o].called_to_discard) {
+			if (common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) {
 				common = common.withThoughts(o, (draft) => {
-					draft.called_to_discard = false;
+					draft.status = undefined;
 				});
 			}
 		}

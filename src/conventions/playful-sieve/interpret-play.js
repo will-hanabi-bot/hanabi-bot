@@ -1,4 +1,5 @@
 import { CLUE } from '../../constants.js';
+import { CARD_STATUS } from '../../basics/Card.js';
 import { IdentitySet } from '../../basics/IdentitySet.js';
 import { team_elim } from '../../basics/helper.js';
 import * as Basics from '../../basics.js';
@@ -37,7 +38,7 @@ export function unlock_promise(game, action, unlocked_player, locked_player, loc
 	const playables_sorted = playables.sort((a, b) => common.thoughts[a].reasoning_turn.at(-1) - common.thoughts[b].reasoning_turn.at(-1));
 
 	// Playing oldest (or only) playable, not guaranteed unlock
-	if (common.thinksTrash(state, unlocked_player).length + state.hands[unlocked_player].filter(o => common.thoughts[o].called_to_discard).length === 0 &&
+	if (common.thinksTrash(state, unlocked_player).length + state.hands[unlocked_player].filter(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC).length === 0 &&
 		order === playables_sorted[0]
 	) {
 		logger.highlight('cyan', 'playing oldest/only safe playable, not unlocking');
@@ -117,7 +118,7 @@ export function interpret_play(game, action) {
 	// No safe action, chop is playable
 	if (!common.thinksLocked(state, other) &&
 		!common.thinksLoaded(state, other) &&
-		!other_hand.some(o => common.thoughts[o].called_to_discard) &&
+		!other_hand.some(o => common.thoughts[o].status === CARD_STATUS.CALLED_TO_DC) &&
 		!known_connecting && state.clue_tokens > 0
 	) {
 		const playable_possibilities = state.play_stacks.map((rank, suitIndex) => {
@@ -129,7 +130,7 @@ export function interpret_play(game, action) {
 
 		common.updateThoughts(other_hand[0], (chop) => {
 			chop.old_inferred = chop.inferred;
-			chop.finessed = true;
+			chop.updateStatus(CARD_STATUS.CALLED_TO_PLAY);
 			chop.inferred = chop.inferred.intersect(playable_possibilities);
 		});
 	}

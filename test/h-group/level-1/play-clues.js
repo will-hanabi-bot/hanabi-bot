@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, setup, expandShortCard, takeTurn, VARIANTS } from '../../test-utils.js';
+import { COLOUR, PLAYER, setup, takeTurn, VARIANTS, preClue } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import { CLUE } from '../../../src/constants.js';
 import HGroup from '../../../src/conventions/h-group.js';
@@ -9,7 +9,6 @@ import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-fi
 import { get_result } from '../../../src/conventions/h-group/clue-finder/determine-clue.js';
 
 import logger from '../../../src/tools/logger.js';
-import { produce } from '../../../src/StateProxy.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -76,25 +75,11 @@ describe('play clue', () => {
 			['g1', 'r1', 'g4', 'y2', 'b2']
 		], {
 			level: { min: 1 },
-			init: (game) => {
-				const { common, state } = game;
-
-				// Cathy's r1 is clued and inferred.
-				const order = state.hands[PLAYER.CATHY][1];
-				state.deck = state.deck.with(order, produce(state.deck[order], (draft) => { draft.clued = true; }));
-
-				for (const player of game.players)
-					player.updateThoughts(order, (draft) => { draft.clued = true; });
-
-				const { possible, inferred } = common.thoughts[order];
-				common.updateThoughts(order, (draft) => {
-					draft.clued = true;
-					draft.possible = possible.intersect(['r1', 'r2', 'r3', 'r4', 'r5'].map(expandShortCard));
-					draft.inferred = inferred.intersect(['r1'].map(expandShortCard));
-				});
-			}
+			starting: PLAYER.BOB
 		});
 
+		takeTurn(game, 'Bob clues red to Cathy');
+		takeTurn(game, 'Cathy clues 5 to Alice (slot 5)');
 		takeTurn(game, 'Alice clues red to Bob');
 
 		// Bob's slot 3 should be inferred as r2.
@@ -109,22 +94,8 @@ describe('play clue', () => {
 		], {
 			level: { min: 1 },
 			init: (game) => {
-				const { common, state } = game;
-
 				// Bob has a 1 in slot 2.
-				const order = state.hands[PLAYER.BOB][1];
-				state.deck = state.deck.with(order, produce(state.deck[order], (draft) => { draft.clued = true; }));
-
-				for (const player of game.players)
-					player.updateThoughts(order, (draft) => { draft.clued = true; });
-
-				const { possible, inferred } = common.thoughts[order];
-				const ids = ['r1', 'y1', 'g1', 'b1', 'p1'].map(expandShortCard);
-				common.updateThoughts(order, (draft) => {
-					draft.clued = true;
-					draft.possible = possible.intersect(ids);
-					draft.inferred = inferred.intersect(ids);
-				});
+				preClue(game, game.state.hands[PLAYER.BOB][1], [{ type: CLUE.RANK, value: 1, giver: PLAYER.ALICE }]);
 			}
 		});
 
@@ -176,7 +147,7 @@ describe('play clue', () => {
 
 		// Alice's slot 1 should not be finessed for g1.
 		const a_slot1 = game.state.hands[PLAYER.ALICE][0];
-		assert.equal(game.common.thoughts[a_slot1].finessed, false);
+		assert.equal(game.common.thoughts[a_slot1].status, undefined);
 	});
 
 	it('correctly undoes a prompt after proven false', () => {

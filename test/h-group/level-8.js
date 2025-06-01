@@ -2,12 +2,13 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import * as ExAsserts from '../extra-asserts.js';
 
-import { ACTION } from '../../src/constants.js';
-import { PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { ACTION, CLUE } from '../../src/constants.js';
+import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../test-utils.js';
 import HGroup from '../../src/conventions/h-group.js';
 
 import logger from '../../src/tools/logger.js';
 import { CLUE_INTERP } from '../../src/conventions/h-group/h-constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -30,8 +31,8 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Cathy discards g1', 'b3');
 
-		// Alice's slot 3 should be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
+		// Alice's slot 3 should be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CALLED_TO_PLAY);
 
 		// Alice should play slot 3.
 		const action = await game.take_action();
@@ -56,8 +57,8 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Cathy discards g1', 'b3');
 
-		// Alice's slot 3 not should be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, false);
+		// Alice's slot 3 not should be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 
 	it('does not play from a positional discard if someone before them played into it', () => {
@@ -78,13 +79,13 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Bob discards r2', 'g3');
 
-		// Cathy's slot 3 should be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].finessed, true);
+		// Cathy's slot 3 should be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CALLED_TO_PLAY);
 
 		takeTurn(game, 'Cathy plays p5', 'b3');
 
-		// Alice's slot 3 should not be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, false);
+		// Alice's slot 3 should not be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 
 	it('does not play from a chop discard', () => {
@@ -105,8 +106,8 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Cathy discards p1', 'b3');
 
-		// Alice's slot 5 not should be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, false);
+		// Alice's slot 5 not should be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 
 	it('does not play from a normal discard', () => {
@@ -127,8 +128,8 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Cathy discards p1', 'b3');
 
-		// Alice's slot 5 not should be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, false);
+		// Alice's slot 5 not should be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 
 	it('plays from a positional discard if someone before them did not play into it', () => {
@@ -150,8 +151,8 @@ describe('positional discards', () => {
 		takeTurn(game, 'Bob discards r2', 'g3');
 		takeTurn(game, 'Cathy discards p1', 'b3');
 
-		// Alice's slot 3 should be "finessed" from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
+		// Alice's slot 3 should be called to play from a positional discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CALLED_TO_PLAY);
 	});
 
 	it('recognizes a positional discard on the correct player', () => {
@@ -173,9 +174,9 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Donald discards r3', 'b3');
 
-		// Cathy's slot 3 should be "finessed" from a positional discard, while Bob's should not.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].finessed, true);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].finessed, false);
+		// Cathy's slot 3 should be called to play from a positional discard, while Bob's should not.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CALLED_TO_PLAY);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, undefined);
 	});
 
 	it('performs a positional discard', async () => {
@@ -223,7 +224,7 @@ describe('positional discards', () => {
 		takeTurn(game, 'Cathy discards r1', 'y2');
 
 		// Alice's slot 2 should be gotten from the positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.CALLED_TO_PLAY);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y5']);
 
 		// Alice should play slot 2.
@@ -251,11 +252,11 @@ describe('positional discards', () => {
 		takeTurn(game, 'Cathy discards r1', 'p1');
 
 		// Alice's slot 2 should be gotten from the positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.CALLED_TO_PLAY);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y5']);
 
 		// Cathy's r5 should still be gotten (now in slot 2 after drawing).
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].finessed, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].status, CARD_STATUS.CALLED_TO_PLAY);
 
 		// Alice should play slot 2.
 		const action = await game.take_action();
@@ -282,8 +283,8 @@ describe('positional misplays', () => {
 
 		takeTurn(game, 'Cathy bombs p1', 'b3');
 
-		// Alice's slot 5 should be "finessed" from a positional misplay.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].finessed, true);
+		// Alice's slot 5 should be called to play from a positional misplay.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CALLED_TO_PLAY);
 
 		// Alice should play slot 3.
 		const action = await game.take_action();
@@ -308,8 +309,8 @@ describe('positional misplays', () => {
 
 		takeTurn(game, 'Cathy bombs g1', 'b3');
 
-		// Alice's slot 3 should be "finessed" from a positional misplay.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].finessed, true);
+		// Alice's slot 3 should be called to play from a positional misplay.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CALLED_TO_PLAY);
 
 		// Alice should play slot 3.
 		const action = await game.take_action();
@@ -337,7 +338,7 @@ describe('mistake discards', () => {
 		takeTurn(game, 'Bob discards g4', 'r1');
 
 		// Alice should not attempt to play with no known playables.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].finessed, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 });
 
@@ -352,17 +353,19 @@ describe('distribution clues', () => {
 			play_stacks: [4, 5, 5, 3, 5],
 			clue_tokens: 1,
 			init: (game) => {
-				const { common, state } = game;
-				const cards = ['r5', 'b4', 'b5'];
+				// Alice knows about r5, b5 and b5 in her last 3 slots.
+				preClue(game, game.state.hands[PLAYER.ALICE][2], [
+					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 5, giver: PLAYER.CATHY }]);
 
-				for (let i = 0; i < 3; i++) {
-					const order = state.hands[PLAYER.ALICE][i + 2];
-					common.updateThoughts(order, (draft) => {
-						draft.inferred = common.thoughts[order].inferred.intersect(expandShortCard(cards[i]));
-						draft.possible = common.thoughts[order].possible.intersect(expandShortCard(cards[i]));
-						draft.clued = true;
-					});
-				}
+				preClue(game, game.state.hands[PLAYER.ALICE][3], [
+					{ type: CLUE.COLOUR, value: COLOUR.BLUE, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 4, giver: PLAYER.CATHY }]);
+
+				preClue(game, game.state.hands[PLAYER.ALICE][4], [
+					{ type: CLUE.COLOUR, value: COLOUR.BLUE, giver: PLAYER.BOB },
+					{ type: CLUE.RANK, value: 5, giver: PLAYER.CATHY }]);
+
 				game.state.early_game = false;
 			},
 			starting: PLAYER.BOB

@@ -1,3 +1,4 @@
+import { CARD_STATUS } from './Card.js';
 import { cardCount } from '../variants.js';
 import { IdentitySet } from './IdentitySet.js';
 import * as Utils from '../tools/util.js';
@@ -350,7 +351,7 @@ export function good_touch_elim(state, only_self = false) {
 		const card = newPlayer.thoughts[order];
 		const id = card.identity({ infer: true, symmetric: this.playerIndex === -1 || this.playerIndex === playerIndex });
 
-		if (!card.touched || card.uncertain || card.possibly_finessed)
+		if (!card.touched || card.uncertain)
 			return;
 
 		if (id === undefined) {
@@ -412,7 +413,7 @@ export function good_touch_elim(state, only_self = false) {
 					elim_candidates.push({ order, playerIndex: i, cm: false });
 
 				// Chop moved cards can asymmetric/visible elim
-				else if (card.chop_moved)
+				else if (card.status === CARD_STATUS.CM)
 					elim_candidates.push({ order, playerIndex: i, cm: this.playerIndex === -1 });
 			}
 		}
@@ -494,14 +495,14 @@ export function good_touch_elim(state, only_self = false) {
 					continue;
 
 				// TODO: Temporary stop-gap so that Bob still plays into it. Bob should actually clue instead.
-				if (old_card.finessed && [0, 1].some(i => old_card.finesse_index === state.turn_count - i)) {
+				if (old_card.blind_playing && [0, 1].some(i => old_card.finesse_index === state.turn_count - i)) {
 					logger.warn(`tried to gt eliminate ${id_hash} from recently finessed card (player ${this.playerIndex}, order ${order})!`);
 					newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].certain_finessed = true; });
 					elim_candidates.splice(elim_candidates.findIndex(c => c.order === order), 1);
 					continue;
 				}
 
-				if (old_card.finessed && playerIndex === state.ourPlayerIndex && !Array.from(matches).some(o => newPlayer.thoughts[o].focused)) {
+				if (old_card.blind_playing && playerIndex === state.ourPlayerIndex && !Array.from(matches).some(o => newPlayer.thoughts[o].focused)) {
 					logger.warn(`tried to gt eliminate ${id_hash} from finessed card on us (order ${order})! could be bad touched`);
 					elim_candidates.splice(elim_candidates.findIndex(c => c.order === order), 1);
 					continue;

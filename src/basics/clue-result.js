@@ -1,3 +1,4 @@
+import { CARD_STATUS } from './Card.js';
 import { isTrash } from './hanabi-util.js';
 
 /**
@@ -23,8 +24,8 @@ export function elim_result(state, player, hypo_player, hand, list) {
 		const old_card = player.thoughts[order];
 		const hypo_card = hypo_player.thoughts[order];
 
-		if (hypo_card.clued && !hypo_card.called_to_discard && hypo_card.possible.length < old_card.possible.length) {
-			if (hypo_card.newly_clued && !hypo_card.finessed)
+		if (hypo_card.clued && hypo_card.status !== CARD_STATUS.CALLED_TO_DC && hypo_card.possible.length < old_card.possible.length) {
+			if (hypo_card.newly_clued && !old_card.blind_playing)
 				new_touched.push(hypo_card);
 			else if (list.includes(order) && state.hasConsistentInferences(hypo_card))
 				fill++;
@@ -89,7 +90,7 @@ export function bad_touch_result(game, hypo_game, hypo_player, giver, target) {
 			continue;
 		}
 
-		if (state.hands.flat().some(o => hypo_player.thoughts[o].chop_moved && !hypo_player.thoughts[o].clued && o !== order && state.deck[o].matches(card))) {
+		if (state.hands.flat().some(o => hypo_player.thoughts[o].status === CARD_STATUS.CM && !hypo_player.thoughts[o].clued && o !== order && state.deck[o].matches(card))) {
 			cm_dupe.push(order);
 			continue;
 		}
@@ -137,7 +138,7 @@ export function playables_result(state, player, hypo_player, me = player) {
 		if (already_playing)
 			continue;
 
-		if (hypo_card.finessed && !old_card.finessed)
+		if (hypo_card.blind_playing && !old_card.blind_playing)
 			finesses.push({ playerIndex, card: hypo_card });
 
 		playables.push({ playerIndex, card: hypo_card });
@@ -152,5 +153,5 @@ export function playables_result(state, player, hypo_player, me = player) {
  * @param  {number[]} hand
  */
 export function cm_result(player, hypo_player, hand) {
-	return hand.filter(o => hypo_player.thoughts[o].chop_moved && !player.thoughts[o].chop_moved);
+	return hand.filter(o => hypo_player.thoughts[o].status === CARD_STATUS.CM && player.thoughts[o].status !== CARD_STATUS.CM);
 }
