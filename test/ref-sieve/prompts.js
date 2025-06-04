@@ -53,6 +53,26 @@ describe('prompts', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][1]], ['r1']);
 	});
 
+	it(`doesn't give wrong prompt`, () => {
+		const game = setup(RefSieve, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b1', 'r1', 'r5', 'y4', 'g4'],
+			['g1', 'r2', 'b4', 'p4', 'g4']
+		], {
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues red to Bob');		// getting b1. r1 and r5 clued
+		takeTurn(game, 'Alice clues red to Cathy');		// getting g1. r2 clued
+		takeTurn(game, 'Bob plays b1', 'r1');
+
+		takeTurn(game, 'Cathy plays g1', 'p3');
+		takeTurn(game, 'Alice clues 2 to Cathy');	// getting r2
+
+		// This clue is nonsensical.
+		assert.equal(game.lastMove, CLUE_INTERP.NONE);
+	});
+
 	it('recognizes a double prompt via fill-in', () => {
 		const game = setup(RefSieve, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
