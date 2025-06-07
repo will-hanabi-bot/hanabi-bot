@@ -43,6 +43,8 @@ Send a PM to the bot on hanab.live (`/pm <HANABI_USERNAME> <message>`) to intera
 - `/settings [conventions=HGroup,RefSieve,PlayfulSieve] [level]` to set the bot's conventions. To view the current settings, provide no parameters. The bot remembers its settings between games, but plays with H-Group conventions at level 1 on first boot.
     - If only a level is provided (without a convention set), H-Group is assumed.
 - `/restart` and `/remake` to have the bot perform the corresponding room actions after the game has finished (only works if it is the table leader).
+- `/version` to get the current version of the bot. The version numbers can be matched to particular commit messages in this repo.
+    - The bot will also write its version and conventions in a note on order 0 (Alice's rightmost card) for every game.
 
 Some commands can be sent inside a room to affect all bots that have joined.
 - `/setall [conventions=HGroup,RefSieve,PlayfulSieve] [level]` to set conventions and level for all bots.
