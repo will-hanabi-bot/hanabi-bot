@@ -42,6 +42,12 @@ function find_connecting(game, identity, playerIndex, connected, looksDirect, ig
 
 	const prompt = common.find_prompt(state, playerIndex, identity, connected);
 
+	if (prompt !== undefined && !state.deck[prompt].matches(identity)) {
+		if (state.deck[prompt].suitIndex !== -1)
+			logger.warn('wrong prompt!', logCard(state.deck[prompt]), 'looks like', logCard(identity));
+		return;
+	}
+
 	if (prompt !== undefined && state.deck[prompt].matches(identity) && !ignoreOrders.includes(prompt))
 		return { type: 'prompt', reacting: playerIndex, order: prompt, identities: [identity] };
 
