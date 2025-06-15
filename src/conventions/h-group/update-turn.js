@@ -162,7 +162,7 @@ export function update_turn(game, action) {
 	// Once a finesse has been demonstrated, the card's identity must be one of the inferences
 	for (const [order, demonstrations] of demonstrated.entries()) {
 		const inferences = demonstrations.flatMap(d => d.inference);
-		logger.info(`intersecting card ${logCard(state.deck[order])} with inferences ${inferences.map(logCard).join(',')}`);
+		logger.info(`intersecting card ${logCard(state.deck[order])} with inferences ${inferences.map(logCard).join(',')} (originally ${common.thoughts[order].inferred.map(logCard).join()})`);
 
 		/** @type {(c_order: number, ids: Identity[]) => ((draft: import('../../types.js').Writable<Card>) => void)} */
 		const update_card = (c_order, ids) => (draft) => {

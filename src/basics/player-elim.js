@@ -382,12 +382,11 @@ export function good_touch_elim(state, only_self = false) {
 
 					// This player can see the identity, so their card must be trash - the player with the identity can see the trash
 					for (const hard_match of hard_matches) {
-						if (state.hands.findIndex(hand => hand.includes(hard_match)) !== holder)
+						if (!state.hands[holder].includes(hard_match))
 							hard_matches.delete(hard_match);
 					}
 				}
 				hard_match_map.delete(id_hash);
-				return;
 			}
 		}
 	};
@@ -452,7 +451,7 @@ export function good_touch_elim(state, only_self = false) {
 				continue;
 
 			const hard_matches = hard_match_map.get(logCard(identity));
-			const matches = hard_matches ?? soft_matches ?? new Set();
+			const matches = hard_matches ?? soft_matches;
 			const matches_arr = Array.from(matches);
 
 			const bad_elim = matches_arr.length > 0 && matches_arr.every(order =>
@@ -637,8 +636,8 @@ export function find_links(state, hand = state.hands[this.playerIndex]) {
 			continue;
 		}
 
-		// Find all unknown cards with the same inferences
-		const orders = hand.filter(o => card.identity() === undefined && identities.equals(this.thoughts[o].inferred));
+		// Find all cards with the same inferences
+		const orders = hand.filter(o => identities.equals(this.thoughts[o].inferred));
 		if (orders.length === 1)
 			continue;
 

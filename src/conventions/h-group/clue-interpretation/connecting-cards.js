@@ -8,6 +8,7 @@ import * as Utils from '../../../tools/util.js';
 import logger from '../../../tools/logger.js';
 import { logCard } from '../../../tools/log.js';
 import { produce } from '../../../StateProxy.js';
+import { visibleFind } from '../../../basics/hanabi-util.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -29,7 +30,7 @@ import { produce } from '../../../StateProxy.js';
  * @returns {Connection | undefined}
  */
 export function find_known_connecting(game, giver, identity, ignoreOrders = [], options = {}) {
-	const { common, state } = game;
+	const { common, state, me } = game;
 
 	/** @param {number} order */
 	const possibly_fake = (order) => giver === state.ourPlayerIndex && common.waiting_connections.some(wc => {
@@ -141,14 +142,34 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 		}
 	}
 
-	const giver_asymmetric = state.hands[giver].find(o =>
-		!ignoreOrders.includes(o) &&
-		game.players[giver].thoughts[o].identity({ infer: true, symmetric: true })?.matches(identity));
+	const giver_asymmetric = state.hands[giver].find(o => {
+		if (ignoreOrders.includes(o) || !state.deck[o].matches(identity))
+			return false;
 
-	if (giver_asymmetric !== undefined) {
-		logger.highlight('cyan', `connecting using giver's asymmetric knowledge of ${logCard(identity)}!`);
+		const missing_ids = common.thoughts[o].inferred.flatMap(i => {
+			const amount = cardCount(state.variant, i) -
+				state.baseCount(i) - visibleFind(state, game.players[giver], i).length - (state.deck[o].matches(i) ? 1 : 0);
+
+			return Array.from({ length: amount }, _ => i);
+		});
+
+		if (missing_ids.length === 0)
+			return true;
+
+		if (missing_ids.length > 1)
+			return false;
+
+		// The giver can know about their card if we could hold exactly 1 card that allows them to deduce that.
+		const possible = state.ourHand.some(o => !ignoreOrders.includes(o) && me.thoughts[o].possible.has(missing_ids[0]));
+
+		if (possible) {
+			logger.highlight('cyan', `connecting using giver's asymmetric knowledge of ${logCard(identity)}! we could have missing ${logCard(missing_ids[0])}`);
+			return true;
+		}
+	});
+
+	if (giver_asymmetric !== undefined)
 		return { type: 'known', reacting: giver, order: giver_asymmetric, identities: [identity] };
-	}
 }
 
 /**

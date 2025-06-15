@@ -572,7 +572,7 @@ export function interpret_clue(game, action) {
 	// Check for chop moves at level 4+
 	if (game.level >= LEVEL.BASIC_CM && !state.inEndgame()) {
 		// Trash chop move
-		const tcm_orders = interpret_tcm(game, action, focus);
+		const tcm_orders = interpret_tcm(game, action, focus, oldCommon);
 
 		if (tcm_orders.length > 0) {
 			// All newly clued cards are trash
@@ -597,7 +597,7 @@ export function interpret_clue(game, action) {
 			return game;
 		}
 
-		const cm5_orders = interpret_5cm(game, target, focus, clue);
+		const cm5_orders = interpret_5cm(game, target, focus, clue, oldCommon);
 
 		// 5's chop move
 		if (cm5_orders.length > 0) {
@@ -825,6 +825,8 @@ export function interpret_clue(game, action) {
 	}
 
 	Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
+
+	logger.highlight('blue', `inference after gte ${common.thoughts[focus].inferred.map(logCard).join(',')} (${game.lastMove}), order ${focus}`);
 
 	if (positional) {
 		game.moveHistory.pop();

@@ -58,7 +58,7 @@ export function bad_touch_result(game, hypo_game, hypo_player, giver, target) {
 
 			const identity = card.identity();
 			// TODO: Should we cluing cards where receiver knows they are duplicated?
-			if (!identity || hypo_game.state.isBasicTrash(identity))
+			if (!identity || state.isBasicTrash(identity))
 				return acc;
 
 			// Allow known duplication since we can discard to resolve it.

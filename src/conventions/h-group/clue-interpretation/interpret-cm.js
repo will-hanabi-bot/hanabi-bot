@@ -22,38 +22,26 @@ import { logCard } from '../../../tools/log.js';
  * @param {Game} game
  * @param {ClueAction} action
  * @param {number} focus_order
+ * @param {Player} oldCommon
  * @returns The orders of any chop moved cards.
  */
-export function interpret_tcm(game, action, focus_order) {
+export function interpret_tcm(game, action, focus_order, oldCommon) {
 	const { common, state } = game;
-	const { clue, list, target } = action;
+	const { clue, target } = action;
 	const focused_card = state.deck[focus_order];
 	const focus_thoughts = common.thoughts[focus_order];
 
 	if (!focused_card.newly_clued)
 		return [];
 
-	let mod_common = common;
-
-	// Unclue all newly clued cards so that we can search for trash correctly
-	for (const order of list) {
-		if (state.deck[order].newly_clued) {
-			mod_common = mod_common.withThoughts(order, (draft) => {
-				draft.newly_clued = false;
-				draft.clued = false;
-				draft.revertStatus();
-			}, false);
-		}
-	}
-
 	if (clue.type === CLUE.RANK) {
 		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
 
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, mod_common, i, focus_order, { infer: true })))
+		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
 			return [];
 	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, mod_common, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, mod_common, i, focus_order, { infer: true }))) {
+	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
+		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
 		return [];
 	}
 
@@ -81,9 +69,10 @@ export function interpret_tcm(game, action, focus_order) {
  * @param {number} target
  * @param {number} focus_order
  * @param {BaseClue} clue
+ * @param {Player} oldCommon
  * @returns The orders of any chop moved cards.
  */
-export function interpret_5cm(game, target, focus_order, clue) {
+export function interpret_5cm(game, target, focus_order, clue, oldCommon) {
 	const { common, state } = game;
 	const focused_card = state.deck[focus_order];
 
@@ -93,7 +82,7 @@ export function interpret_5cm(game, target, focus_order, clue) {
 
 	logger.info('interpreting potential 5cm');
 	const hand = state.hands[target];
-	const chopIndex = common.chopIndex(hand);
+	const chopIndex = oldCommon.chopIndex(hand);
 
 	const oldest_5 = hand.findLast((o, i) => ((card = state.deck[o]) =>
 		i <= chopIndex && card.newly_clued && card.clues.some(clue => clue.type === CLUE.RANK && clue.value === 5))());
@@ -101,7 +90,7 @@ export function interpret_5cm(game, target, focus_order, clue) {
 	if (oldest_5 === undefined)
 		return [];
 
-	const distance_from_chop = common.chopDistance(hand, oldest_5);
+	const distance_from_chop = oldCommon.chopDistance(hand, oldest_5);
 
 	if (distance_from_chop === 1) {
 		const order = state.hands[target][chopIndex];

@@ -187,6 +187,27 @@ describe('trash chop move', () => {
 	});
 });
 
+describe(`5's chop move`, () => {
+	it(`doesn't interpret a false 5cm`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'r4', 'g4', 'r3', 'r5']
+		], {
+			level: { min: 4 },
+			starting: PLAYER.BOB,
+			clue_tokens: 5,
+			init: (game) => {
+				game.state.early_game = false;
+			}
+		});
+
+		takeTurn(game, 'Bob clues 5 to Alice (slots 3,5)');
+
+		// Slot 4 should not be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
+	});
+});
+
 describe('giving order chop move', () => {
 	it('will find an ocm to the next player', () => {
 		const game = setup(HGroup, [

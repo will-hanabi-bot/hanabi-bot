@@ -6,7 +6,6 @@ import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 
 import logger from '../../../src/tools/logger.js';
-import { logCard } from '../../../src/tools/log.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { CLUE } from '../../../src/constants.js';
 
@@ -24,8 +23,6 @@ describe('good touch principle', () => {
 		});
 
 		takeTurn(game, 'Bob clues purple to Alice (slots 4,5)');
-
-		logger.info(game.common.thoughts[0].inferred.map(logCard).join());
 
 		// Our slot 5 should be p5, and our slot 4 should be (global) trash.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['p5']);

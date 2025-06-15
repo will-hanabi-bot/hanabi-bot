@@ -66,7 +66,7 @@ function isStall(game, action, focusResult, severity, prev_game, loaded) {
 		return;
 
 	// 5 Stall given
-	if (severity >= 1 && clue.type === CLUE.RANK && clue.value === 5 && focused_card.newly_clued && focus_thoughts.status !== CARD_STATUS.CM && !chop) {
+	if (severity >= 1 && clue.type === CLUE.RANK && clue.value === 5 && focused_card.newly_clued && focus_thoughts.last_status !== CARD_STATUS.CM && !chop) {
 		logger.info('5 stall!');
 		return CLUE_INTERP.STALL_5;
 	}

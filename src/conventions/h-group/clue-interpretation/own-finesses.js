@@ -143,7 +143,7 @@ function connect(game, action, identity, looksDirect, connected, ignoreOrders, i
 	// Use the ignoring player's hand
 	if (ignorePlayer !== -1) {
 		if (options.bluffed) {
-			const orders = common.find_clued(state, state.ourPlayerIndex, identity, connected, ignoreOrders);
+			const orders = common.find_clued(state, ignorePlayer, identity, connected, ignoreOrders);
 
 			if (orders.length > 0) {
 				const match = orders.find(o => common.thoughts[o].matches(identity, { assume: true }));

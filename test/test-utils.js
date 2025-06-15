@@ -407,18 +407,14 @@ export function parseAction(state, rawAction) {
 				// e.g. "Bob discards b3 (slot 1)"
 				const slot = parseSlots(state, parts, 4, true, '(ambiguous identity)')[0];
 				const order = state.hands[playerIndex][slot - 1];
-				const card = state.deck[order];
 
-				if (!card.matches({ suitIndex, rank }))
-					throw new Error(`Identity ${parts[2]} is not in slot ${slot} (found ${logCard(card)}), test written incorrectly?`);
+				if (!state.deck[order].matches({ suitIndex, rank }))
+					throw new Error(`Identity ${parts[2]} is not in slot ${slot}, test written incorrectly?`);
 
 				return { type: 'discard', playerIndex, suitIndex, rank, order, failed: parts[1] === 'bombs' };
 			}
 			else {
 				// e.g. "Alice discards y5 (slot 1)"
-				if (parts.length < 5)
-					throw new Error(`Not enough arguments provided for a discard action from us, needs '(slot x)' at the end.`);
-
 				const slot = parseSlots(state, parts, 4, true, '(discard from us)')[0];
 				const order = state.ourHand[slot - 1];
 

@@ -260,7 +260,7 @@ export function interpret_discard(game, action) {
 			}
 		}
 
-		if (game.level >= LEVEL.STALLING) {
+		if (game.level >= LEVEL.STALLING && state.numPlayers > 2) {
 			// If there is only one of this card left and it could be in the next player's chop,
 			// they are to be treated as in double discard avoidance.
 			const chop = common.chop(state.hands[state.nextPlayerIndex(playerIndex)]);
