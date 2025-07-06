@@ -214,7 +214,7 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 		max_ranks.some(max => max !== 5) ? 'discarded critical, out of pace' :
 		'out of pace';
 
-	return { score: games[0].state.score, result, actions, notes: games.map(game => Array.from(game.notes).map(note => note?.full || "")) };
+	return { score, result, actions, notes: games.map(game => Array.from(game.notes).map(note => note?.full || "")) };
 }
 
 main();

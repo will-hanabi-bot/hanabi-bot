@@ -102,13 +102,13 @@ export function logPerformAction(action) {
 	switch(type) {
 		case ACTION.PLAY: {
 			const slot = state.ourHand.findIndex(o => o === target) + 1;
-			const card = common.thoughts[state.ourHand[slot - 1]];
+			const card = common.thoughts[target];
 
 			return `Play slot ${slot}, inferences [${card.inferred.map(logCard)}]`;
 		}
 		case ACTION.DISCARD: {
 			const slot = state.ourHand.findIndex(o => o === target) + 1;
-			const card = common.thoughts[state.ourHand[slot - 1]];
+			const card = common.thoughts[target];
 
 			return `Discard slot ${slot}, inferences [${card.inferred.map(logCard)}]`;
 		}

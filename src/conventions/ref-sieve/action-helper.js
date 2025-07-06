@@ -73,6 +73,19 @@ function best_value(new_game, i, value) {
 	}
 
 	if (common.thinksLocked(state, playerIndex) || (i === 1 && state.clue_tokens === 8)) {
+		if (state.clue_tokens === 0) {
+			const discard = new_game.players[playerIndex].lockedDiscard(state, state.hands[playerIndex]);
+
+			const { suitIndex, rank } = state.deck[discard];
+			const action = /** @type {const} */({ type: 'discard', suitIndex, rank, order: discard, playerIndex, failed: false });
+
+			const diff = Math.min(state.inEndgame() ? 0 : 10, 0.25 + (1 - cardValue(state, me, state.deck[discard], discard)));
+			const new_value = value + mult(diff);
+
+			logger.info(state.playerNames[playerIndex], 'locked discarding', logCard(action), mult(diff).toFixed(2), diff);
+			return best_value(advance_game(new_game, action), i + 1, new_value);
+		}
+
 		const next_game = produce(new_game, (draft) => { draft.state.clue_tokens--; });
 
 		const diff = (state.clue_tokens === 0) ? -10 : (sieving_trash() ? -10 : -0.25);
@@ -87,7 +100,7 @@ function best_value(new_game, i, value) {
 		state.hands[playerIndex][0];
 
 	const { suitIndex, rank } = state.deck[discard];
-	const action = /** @type {const} */({ type: 'discard', suitIndex, rank, order: discard, playerIndex, failed: false});
+	const action = /** @type {const} */({ type: 'discard', suitIndex, rank, order: discard, playerIndex, failed: false });
 
 	const diff = Math.min(state.inEndgame() ? 0 : 10, 0.25 + (1 - cardValue(state, me, state.deck[discard], discard)))
 		+ ((discard !== state.hands[playerIndex][0] && sieving_trash()) ? -10 : 0);

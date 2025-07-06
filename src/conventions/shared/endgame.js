@@ -95,7 +95,7 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 		return { action, winrate };
 	}
 
-	const undrawn_trash = state.cardsLeft + unknown_own.length - remaining_ids.reduce((a, c) => a + c.missing, 0);
+	const undrawn_trash = total_unknown - remaining_ids.reduce((a, c) => a + c.missing, 0);
 	const full_remaining_ids = undrawn_trash > 0 ?
 		remaining_ids.concat({ id: { suitIndex: -1, rank: -1 }, missing: undrawn_trash, all: false }) :
 		remaining_ids;
@@ -284,7 +284,17 @@ function possible_actions(game, playerTurn, find_clues, find_discards, remaining
 			actions.push({ action, winnable_draws });
 	}
 
-	const { winnable: clue_winnable } = winnable_if(state, playerTurn, { type: ACTION.RANK, target: -1, value: -1, playerIndex: playerTurn }, remaining_ids);
+	let consecutive_clues = 0;
+	for (let i = state.actionList.length - 1; i >= 0; i--) {
+		const actions = state.actionList[i];
+
+		if (actions.some(a => a.type == "clue"))
+			consecutive_clues++;
+		else if (actions.some(a => a.type == "play" || a.type == "discard"))
+			break;
+	}
+	const too_many_clues = consecutive_clues > state.numPlayers;
+	const clue_winnable = !too_many_clues && winnable_if(state, playerTurn, { type: ACTION.RANK, target: -1, value: -1, playerIndex: playerTurn }, remaining_ids).winnable;
 	let attempted_clue = false;
 
 	if (state.clue_tokens > 0 && clue_winnable) {

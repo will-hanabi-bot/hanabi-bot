@@ -165,7 +165,7 @@ export async function take_action(game) {
 
 	const all_actions = all_clues.concat(all_plays).concat(all_discards);
 
-	if (!cant_discard && all_plays.length === 0 && all_discards.length === 0 && !me.thinksLocked(state, state.ourPlayerIndex) && state.clue_tokens < 8) {
+	if (!cant_discard && all_plays.length === 0 && all_discards.length === 0 && !me.thinksLocked(state, state.ourPlayerIndex)) {
 		const chop = state.ourHand[0];
 
 		all_actions.push({

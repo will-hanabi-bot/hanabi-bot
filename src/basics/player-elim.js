@@ -23,7 +23,11 @@ import { produce } from '../StateProxy.js';
  * @returns {typeof this}
  */
 export function card_elim(state) {
-	const certain_map = /** @type {Map<string, { order: number, unknown_to: number[] }[]>} */ (new Map());
+	/**
+	 * @type {Map<string, Map<number, number[]>>}
+	 * Map of id -> order -> unknown_to.
+	 */
+	const certain_map = new Map();
 
 	/** @type {Map<number, Card>} */
 	const newThoughts = new Map();
@@ -59,7 +63,7 @@ export function card_elim(state) {
 			const unknown_to = card.identity({ symmetric: true }) === undefined ? [playerIndex] : [];
 
 			if (id !== undefined)
-				Utils.mapInsertArr(certain_map, logCard(id), { order, unknown_to });
+				Utils.mapInsertMap(certain_map, logCard(id), order, unknown_to);
 
 			if (card.possible.length > 1 && card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length < 5 || card.clued))
 				cross_elim_candidates.push({ order, playerIndex });
@@ -88,7 +92,7 @@ export function card_elim(state) {
 		const remainingCandidates = idMap.get(id_hash).filter(({ order, playerIndex }) => {
 			const { possible, inferred, reset } = getThoughts(order);
 
-			const no_elim = exclude.includes(playerIndex) || certain_map.get(id_hash)?.some(c => c.order === order || c.unknown_to.includes(playerIndex));
+			const no_elim = exclude.includes(playerIndex) || certain_map.get(id_hash)?.has(order) || certain_map.get(id_hash)?.values().some(unknown_tos => unknown_tos.includes(playerIndex));
 			if (no_elim)
 				return true;
 
@@ -101,6 +105,9 @@ export function card_elim(state) {
 
 			const updated_card = getThoughts(order);
 
+			if (updated_card.possible.length === 0)
+				throw new Error(`order ${order} has no more possible ids after removing ${logCard(id)}!`);
+
 			if (updated_card.inferred.length === 0 && !reset) {
 				newThoughts.set(order, updated_card.reset_inferences());
 			}
@@ -108,7 +115,7 @@ export function card_elim(state) {
 			else if (updated_card.possible.length === 1) {
 				const recursive_id = updated_card.identity();
 
-				Utils.mapInsertArr(certain_map, logCard(recursive_id), { order, unknown_to: [] });
+				Utils.mapInsertMap(certain_map, logCard(recursive_id), order, []);
 				recursive_ids.push(recursive_id);
 				cross_elim_removals.push(order);
 			}
@@ -132,7 +139,7 @@ export function card_elim(state) {
 
 		for (const id of identities) {
 			const id_hash = logCard(id);
-			const known_count = state.baseCount(id) + (certain_map.get(id_hash)?.length ?? 0);
+			const known_count = state.baseCount(id) + (certain_map.get(id_hash)?.size ?? 0);
 			const total_count = cardCount(state.variant, id);
 
 			if (known_count !== total_count)
@@ -177,7 +184,7 @@ export function card_elim(state) {
 
 				/** @type {Identity} */
 				const id = JSON.parse(id_hash);
-				const certains = certain_map.get(logCard(id))?.filter(c => !group.some(g => g.order === c.order)).length ?? 0;
+				const certains = Array.from(certain_map.get(logCard(id)) ?? []).filter(([order, _]) => !group.some(g => g.order === order)).length ?? 0;
 
 				if (!idMap.has(logCard(id)) || group.length < total_multiplicity(state.base_ids.union(id)) - certains)
 					continue;
@@ -223,7 +230,7 @@ export function card_elim(state) {
 			// Check all remaining subsets that contain the next item
 			const item = cross_elim_candidates[nextIndex];
 			const new_acc_ids = acc_ids.union(getThoughts(item.order).possible);
-			const new_certains = getThoughts(item.order).possible.subtract(acc_ids).flatMap(id => certain_map.get(logCard(id))?.map(c => c.order) ?? []);
+			const new_certains = getThoughts(item.order).possible.subtract(acc_ids).flatMap(id => certain_map.get(logCard(id))?.keys().toArray() ?? []);
 			const next_contained = contained.concat(item);
 			const next_certains = certains.union(new Set(new_certains)).difference(new Set(next_contained.map(e => e.order)));
 
@@ -277,7 +284,7 @@ export function card_elim(state) {
 				else if (updated_card.possible.length === 1) {
 					const recursive_id = updated_card.identity();
 
-					Utils.mapInsertArr(certain_map, logCard(recursive_id), { order, unknown_to: [] });
+					Utils.mapInsertMap(certain_map, logCard(recursive_id), order, []);
 					cross_elim_removals.push(order);
 				}
 

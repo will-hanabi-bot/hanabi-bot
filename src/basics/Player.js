@@ -236,7 +236,7 @@ export class Player {
 				(state.strikes === 2 ||
 					state.endgameTurns !== -1 ||
 					card.possible.some(p => state.play_stacks[p.suitIndex] + 1 < p.rank && p.rank <= state.max_ranks[p.suitIndex]) ||
-					Array.from(linked_orders).some(o => this.thoughts[o].focused && o !== o));
+					Array.from(linked_orders).some(o2 => this.thoughts[o].focused && o2 !== o));
 
 			if (unsafe_linked)
 				return false;

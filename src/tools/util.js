@@ -549,3 +549,25 @@ export function mapInsertArr(map, key, item) {
 
 	return val;
 }
+
+/**
+ * @template K,L,V
+ * @param {Map<K, Map<L, V>>} map
+ * @param {K} key
+ * @param {L} key2
+ * @param {V} item
+ */
+export function mapInsertMap(map, key, key2, item) {
+	let val = map.get(key);
+
+	if (val !== undefined) {
+		val.set(key2, item);
+	}
+	else {
+		val = new Map();
+		val.set(key2, item);
+		map.set(key, val);
+	}
+
+	return val;
+}
