@@ -63,6 +63,11 @@ export function onClue(game, action) {
 		});
 	}
 
+	newCommon = newCommon.card_elim(newState);
+
+	if (game.good_touch)
+		newCommon = newCommon.good_touch_elim(newState);
+
 	if (newState.endgameTurns !== -1)
 		newState.endgameTurns--;
 
@@ -70,8 +75,8 @@ export function onClue(game, action) {
 
 	let newGame = game.shallowCopy();
 	newGame.state = newState;
-	newGame.common = newCommon.card_elim(state).refresh_links(state);
-	newGame = team_elimP(newGame, false);
+	newGame.common = newCommon.refresh_links(newState);
+	newGame = team_elimP(newGame);
 	return newGame;
 }
 
@@ -110,20 +115,23 @@ export function onDiscard(game, action) {
 
 	if (suitIndex !== -1 && rank !== -1) {
 		const { possible, inferred } = common.thoughts[order];
-		const newCommon = common.withThoughts(order, (draft) => {
+		let newCommon = common.withThoughts(order, (draft) => {
 			draft.suitIndex = suitIndex;
 			draft.rank = rank;
 			draft.old_possible = possible;
 			draft.old_inferred = inferred;
 			draft.possible = possible.intersect(identity);
 			draft.inferred = inferred.intersect(identity);
-		});
+		}).card_elim(newState);
 
-		newGame.common = newCommon.card_elim(newState).refresh_links(newState);
+		if (game.good_touch)
+			newCommon = newCommon.good_touch_elim(newState);
+
+		newGame.common = newCommon.refresh_links(newState);
 	}
 
 	newGame.state = newState;
-	newGame = team_elimP(newGame, false);
+	newGame = team_elimP(newGame);
 	return newGame;
 }
 
@@ -157,9 +165,14 @@ export function onDraw(game, action) {
 			state.turn_count));
 	}).card_elim(newState).refresh_links(newState));
 
-	const newCommon = produce(common, (draft) => {
+	let newCommon = produce(common, (draft) => {
 		draft.thoughts[order] = Object.freeze(new Card(-1, -1, common.all_possible, common.all_possible, order, state.turn_count));
-	}).card_elim(newState).refresh_links(newState);
+	}).card_elim(newState);
+
+	if (game.good_touch)
+		newCommon = newCommon.good_touch_elim(state);
+
+	newCommon = newCommon.refresh_links(newState);
 
 	const newGame = game.shallowCopy();
 	newGame.state = newState;
@@ -199,20 +212,23 @@ export function onPlay(game, action) {
 	if (suitIndex !== -1 && rank !== -1) {
 		const { possible, inferred } = common.thoughts[order];
 
-		const newCommon = common.withThoughts(order, (draft) => {
+		let newCommon = common.withThoughts(order, (draft) => {
 			draft.suitIndex = suitIndex;
 			draft.rank = rank;
 			draft.old_possible = possible;
 			draft.old_inferred = inferred;
 			draft.possible = possible.intersect(identity);
 			draft.inferred = inferred.intersect(identity);
-		});
+		}).card_elim(newState);
 
-		newGame.common = newCommon.card_elim(newState).refresh_links(newState);
+		if (game.good_touch)
+			newCommon = newCommon.good_touch_elim(newState);
+
+		newGame.common = newCommon.refresh_links(newState);
 	}
 
 	newGame.state = newState;
-	newGame = team_elimP(newGame, false);
+	newGame = team_elimP(newGame);
 	return newGame;
 }
 
