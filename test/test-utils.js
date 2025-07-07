@@ -136,8 +136,14 @@ function init_game(game, options) {
 		}
 	}
 
-	for (const player of game.allPlayers)
-		Object.assign(player, player.card_elim(state));
+	let newCommon = game.common.card_elim(state);
+
+	if (game.good_touch)
+		newCommon = newCommon.good_touch_elim(state);
+
+	Object.assign(game.common, newCommon.refresh_links(state));
+
+	team_elim(game);
 
 	state.currentPlayerIndex = options.starting ?? 0;
 	state.clue_tokens = options.clue_tokens ?? 8;
@@ -227,8 +233,12 @@ export function setup(GameClass, hands, test_options = {}) {
 
 	game.hookAfterDraws(game);
 
-	for (const player of game.players)
-		Object.assign(player, player.card_elim(state));
+	let newCommon = game.common.card_elim(game.state);
+
+	if (game.good_touch)
+		newCommon = newCommon.good_touch_elim(game.state);
+
+	Object.assign(game.common, newCommon.refresh_links(game.state));
 
 	team_elim(game);
 	Utils.globalModify({ game, cache: new Map() });

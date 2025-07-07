@@ -6,7 +6,6 @@ import { logCard, logClue } from '../../tools/log.js';
 
 /**
  * @typedef {import('../ref-sieve.js').default} Game
- * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../types.js').Clue} Clue
  * @typedef {import('../../types.js').ClueAction} ClueAction
  */

@@ -24,6 +24,8 @@ import { produce, produceC } from '../StateProxy.js';
 
 export class Game {
 	convention_name = '';
+	good_touch = true;
+
 	in_progress = false;
 	catchup = false;
 

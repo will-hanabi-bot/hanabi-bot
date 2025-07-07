@@ -474,7 +474,7 @@ export function interpret_clue(game, action) {
 	}
 
 	common.waiting_connections = common.waiting_connections.filter((_, i) => !to_remove.has(i));
-	team_elim(game);
+	// team_elim(game);
 
 	logger.debug('pre-inferences', common.thoughts[focus].inferred.map(logCard).join());
 

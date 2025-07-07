@@ -23,9 +23,8 @@ import { applyPatches, produce } from '../StateProxy.js';
 /**
  * Updates all players with info from common knowledge.
  * @param {Game} game
- * @param {boolean} [good_touch]
  */
-export function team_elim(game, good_touch = true) {
+export function team_elim(game) {
 	const { common, state } = game;
 
 	for (const player of game.players) {
@@ -41,7 +40,12 @@ export function team_elim(game, good_touch = true) {
 		}
 
 		player.waiting_connections = common.waiting_connections.slice();
-		Object.assign(player, player[good_touch ? 'good_touch_elim' : 'card_elim'](state, state.numPlayers === 2).refresh_links(state).update_hypo_stacks(state));
+
+		let newPlayer = player.card_elim(state);
+		if (game.good_touch)
+			newPlayer = newPlayer.good_touch_elim(state, state.numPlayers === 2);
+
+		Object.assign(player, newPlayer.refresh_links(state).update_hypo_stacks(state));
 	}
 
 	common.patches = new Map();
@@ -51,22 +55,28 @@ export function team_elim(game, good_touch = true) {
  * Updates all players with info from common knowledge.
  * @template {Game} T
  * @param {T} game
- * @param {boolean} [good_touch]
  */
-export function team_elimP(game, good_touch = true) {
+export function team_elimP(game) {
 	const { common, state } = game;
 
-	const newPlayers = game.players.map(player => produce(player, (draft) => {
-		for (const [order, patches] of common.patches) {
-			const { possible, inferred } = common.thoughts[order];
-			const { possible: player_possible } = player.thoughts[order];
+	const newPlayers = game.players.map(player => {
+		let newPlayer = produce(player, (draft) => {
+			for (const [order, patches] of common.patches) {
+				const { possible, inferred } = common.thoughts[order];
+				const { possible: player_possible } = player.thoughts[order];
 
-			applyPatches(draft.thoughts[order], patches.filter(p => p.path[0] !== 'possible' && p.path[0] !== 'inferred'));
-			draft.thoughts[order].possible = possible.intersect(player_possible);
-			draft.thoughts[order].inferred = inferred.intersect(player_possible);
-		}
-		draft.waiting_connections = common.waiting_connections.slice();
-	})[good_touch ? 'good_touch_elim' : 'card_elim'](state, state.numPlayers === 2).refresh_links(state).update_hypo_stacks(state));
+				applyPatches(draft.thoughts[order], patches.filter(p => p.path[0] !== 'possible' && p.path[0] !== 'inferred'));
+				draft.thoughts[order].possible = possible.intersect(player_possible);
+				draft.thoughts[order].inferred = inferred.intersect(player_possible);
+			}
+			draft.waiting_connections = common.waiting_connections.slice();
+		}).card_elim(state);
+
+		if (game.good_touch)
+			newPlayer = newPlayer.good_touch_elim(state, state.numPlayers === 2);
+
+		return newPlayer.refresh_links(state).update_hypo_stacks(state);
+	});
 
 	const newGame = game.shallowCopy();
 	newGame.players = newPlayers;
