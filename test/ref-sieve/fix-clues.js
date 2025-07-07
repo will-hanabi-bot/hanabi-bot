@@ -111,7 +111,7 @@ describe('fix clues', () => {
 		takeTurn(game, 'Bob clues blue to Alice (slots 2,3,4)');
 
 		// Alice's slot 1 should not be called to play.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].called_to_play, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
 	it('gives fix clue on previously untouched card', async () => {
