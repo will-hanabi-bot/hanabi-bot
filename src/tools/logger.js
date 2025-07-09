@@ -71,6 +71,10 @@ class Logger {
 			this.log('white', ...args);
 	}
 
+	/**
+	 * @param {keyof typeof COLOURS | `${keyof typeof COLOURS}b`} colour
+	 * @param {unknown[]} args
+	 */
 	highlight(colour, ...args) {
 		if (this.level <= this.LEVELS.INFO && (COLOURS[colour] || (colour.endsWith('b') && COLOURS[colour.slice(0, colour.length - 1)])))
 			this.log(colour, ...args);

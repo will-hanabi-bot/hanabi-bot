@@ -253,9 +253,6 @@ export function card_elim(state) {
 		if (state.cardsLeft > 0 || this.playerIndex !== -1)
 			return false;
 
-		/** @type {Identity[]} */
-		const self_ids = [];
-
 		/** @type {number[]} */
 		const cross_elim_removals = [];
 
@@ -298,23 +295,30 @@ export function card_elim(state) {
 		for (const id of identities) {
 			let total = state.baseCount(id);
 
+			/** @type {Set<number>} */
+			const holders = new Set();
+
 			for (let i = 0; i < state.numPlayers; i++) {
 				const count = state.hands[i].filter(o => state.deck[o].matches(id) || getThoughts(o).matches(id)).length;
 				total += count;
 
-				if (i === state.ourPlayerIndex)
-					continue;
-
-				// Their cards don't have this identity and they know they don't have it
-				if (count === 0)
-					perform_elim(state.hands[i], id);
+				if (count !== 0)
+					holders.add(i);
 			}
 
-			// We have some of these cards
-			if (total !== cardCount(state.variant, id))
-				self_ids.push(id);
-			else
-				perform_elim(state.hands[state.ourPlayerIndex], id);
+			// We don't know where all of these cards are (might be a superpositioned trash id in endgame solving)
+			// Everyone who could potentially have it is a holder
+			if (total !== cardCount(state.variant, id)) {
+				for (let i = 0; i < state.numPlayers; i++) {
+					if (state.hands[i].some(o => (state.deck[o].identity() ?? getThoughts(o).identity()) === undefined))
+						holders.add(i);
+				}
+			}
+
+			for (let i = 0; i < state.numPlayers; i++) {
+				if (!holders.has(i))
+					perform_elim(state.hands[i], id);
+			}
 		}
 	};
 

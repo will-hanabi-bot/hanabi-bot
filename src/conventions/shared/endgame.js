@@ -3,7 +3,7 @@ import RefSieve from '../ref-sieve.js';
 import { ACTION, ENDGAME_SOLVING_FUNCS } from '../../constants.js';
 import { ActualCard } from '../../basics/Card.js';
 import { cardCount, setShortForms } from '../../variants.js';
-import { trivially_winnable, simpler_cache, unwinnable_state, winnable_if } from './endgame-helper.js';
+import { trivially_winnable, simpler_cache, unwinnable_state, winnable_if, remove_remaining } from './endgame-helper.js';
 import { Fraction } from '../../tools/fraction.js';
 import * as Utils from '../../tools/util.js';
 
@@ -54,6 +54,7 @@ export function getTimeout() {
  * @param {number} playerTurn
  * @param {(game: Game, giver: number) => Clue[]} find_clues
  * @param {(game: Game, playerIndex: number) => { misplay: boolean, order: number }[]} find_discards
+ * @returns {{action: ModPerformAction, winrate: Fraction}}
  */
 export function solve_game(game, playerTurn, find_clues = () => [], find_discards = () => []) {
 	const { me } = game;
@@ -103,40 +104,36 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 	logger.info('full remaining ids', full_remaining_ids);
 
 	/**
-	 * @param {RemainingSet} remaining
-	 * @param {number} left
-	 * @param {number} total_cards
+	 * @param {{ids: Identity[], prob: Fraction, new_remaining: RemainingSet}} arrangement
 	 * @returns {{ids: Identity[], prob: Fraction, new_remaining: RemainingSet}[]}
 	 */
-	const gen_arrangements = (remaining, left, total_cards) => {
-		if (left === 1) {
-			return remaining.map(({ id, missing, all }, i) => {
-				const new_remaining = missing === 1 ? remaining.toSpliced(i, 1) : remaining.with(i, { id, missing: missing - 1, all });
-				return { ids: [id], prob: new Fraction(missing, total_cards), new_remaining };
-			});
-		}
+	const expand_arr = ({ ids, prob, new_remaining }) => {
+		const total_cards = new_remaining.reduce((acc, curr) => acc + curr.missing, 0);
 
-		return remaining.flatMap(({ id, missing, all }, i) => {
-			const new_remaining = missing === 1 ? remaining.toSpliced(i, 1) : remaining.with(i, { id, missing: missing - 1, all });
-			const arrs = gen_arrangements(new_remaining, left - 1, total_cards - 1);
+		return new_remaining.reduce((acc, { id, missing }) => {
+			const order = unknown_own[ids.length];
+			const thought = me.thoughts[order];
 
-			return arrs.map(({ ids, prob, new_remaining }) => ({ ids: ids.concat(id), prob: prob.multiply(missing).divide(total_cards), new_remaining }));
-		});
+			const impossible = id.suitIndex === -1 ?
+				!thought.possibilities.some(i => state.isBasicTrash(i)) :
+				!thought.possibilities.has(id);
+
+			if (impossible)
+				return acc;
+
+			const next_remaining = remove_remaining(new_remaining, id);
+			acc.push({ ids: ids.concat(id), prob: prob.multiply(missing).divide(total_cards), new_remaining: next_remaining });
+			return acc;
+		}, []);
 	};
 
-	const arrangements = gen_arrangements(full_remaining_ids, unknown_own.length, total_unknown).filter(({ ids }) => {
-		const impossible_deck = ids.some((id, i) => id.suitIndex === -1 ?
-			!me.thoughts[unknown_own[i]].possibilities.some(p => state.isBasicTrash(p)) :
-			!me.thoughts[unknown_own[i]].possibilities.has(id));
-
-		return !impossible_deck;
-	});
-
-	const sum_prob = arrangements.reduce((a, c) => a.plus(c.prob), new Fraction(0, 1));
+	let arrangements = [{ ids: [], prob: new Fraction(1, 1), new_remaining: full_remaining_ids }];
+	for (let i = 0; i < unknown_own.length; i++)
+		arrangements = arrangements.flatMap(expand_arr);
 
 	logger.info('arrangements', arrangements.map(({ ids, prob, new_remaining }) => ({
 		ids: ids.map(logCard).join(),
-		prob: prob.divide(sum_prob).toString,
+		prob: prob.toString,
 		remaining: JSON.stringify(new_remaining)
 	})));
 
@@ -153,51 +150,54 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 		hypo_game.state = state.shallowCopy();
 		hypo_game.state.deck = new_deck;
 
-		return { hypo_game, prob: prob.divide(sum_prob), remaining: new_remaining };
+		return { hypo_game, prob, remaining: new_remaining };
 	});
 
-	const all_actions = possible_actions(arranged_games[0].hypo_game, playerTurn, find_clues, find_discards, full_remaining_ids);
-
-	if (all_actions.length === 0)
-		throw new UnsolvedGame(`couldn't find any valid actions`);
-
-	logger.highlight('green', `possible actions [${all_actions.map(({ action }) => logObjectiveAction(state, action))}] ${state.hands[playerTurn].map(o => logCard(state.deck[o]))} ${state.hands[playerTurn]} ${state.endgameTurns}`);
-
-	/** @type {{drawn: HypoGame[], undrawn: HypoGame[] }} */
-	const hypo_games = { drawn: [], undrawn: [] };
+	/** @type {Map<string, { winrate: Fraction, index: number }>} */
+	const best_performs = new Map();
 
 	for (const { hypo_game, prob, remaining } of arranged_games) {
 		if (Date.now() > timeout)
 			throw new UnsolvedGame(`timed out`);
 
-		const { drawn, undrawn } = gen_hypo_games(hypo_game, all_actions, remaining);
+		const { state } = hypo_game;
+		logger.highlight('purple', '\narrangement', state.ourHand.map(o => logCard(state.deck[o])), prob.toString);
 
-		/** @param {HypoGame} hg */
-		const transform = (hg) => ({...hg, prob: hg.prob.multiply(prob) });
+		const all_actions = possible_actions(hypo_game, playerTurn, find_clues, find_discards, full_remaining_ids);
 
-		for (const hg of drawn)
-			hypo_games.drawn.push(transform(hg));
+		if (all_actions.length === 0)
+			logger.info(`couldn't find any valid actions`);
 
-		for (const hg of undrawn)
-			hypo_games.undrawn.push(transform(hg));
+		logger.highlight('green', `possible actions [${all_actions.map(({ action }) => logObjectiveAction(state, action))}] ${state.hands[playerTurn].map(o => logCard(state.deck[o]))} ${state.hands[playerTurn]} ${state.endgameTurns}`);
+
+		const hypo_games = gen_hypo_games(hypo_game, all_actions, remaining);
+		const { best_winrate, best_actions } = optimize(hypo_games, all_actions, playerTurn, find_clues, find_discards);
+
+		if (best_winrate.numerator !== 0) {
+			logger.highlight('purple', `endgame winnable! found actions ${best_actions.map(action => logObjectiveAction(state, action))} with winrate ${best_winrate.toString}`);
+
+			for (const action of best_actions) {
+				const entry = best_performs.get(JSON.stringify(action));
+
+				if (entry === undefined)
+					best_performs.set(JSON.stringify(action), { winrate: best_winrate.multiply(prob), index: best_performs.size });
+				else
+					entry.winrate = entry.winrate.plus(best_winrate.multiply(prob));
+			}
+		}
 	}
-
-	// if (all_actions.length === 1) {
-	// 	logger.error('only found 1 action');
-	// 	return { action: all_actions[0], winrate: undefined };
-	// }
-
-	const { best_winrate: winrate, best_actions: actions } = optimize(hypo_games, all_actions, playerTurn, find_clues, find_discards);
 
 	if (Date.now() > timeout)
 		throw new UnsolvedGame(`timed out`);
 
-	if (winrate.numerator === 0)
+	if (best_performs.size == 0)
 		throw new UnsolvedGame(`couldn't find a winning strategy`);
 
-	logger.on();
-	logger.highlight('purple', `endgame winnable! found actions ${actions.map(action => logObjectiveAction(state, action))} with winrate ${winrate.toString}`);
-	return { action: actions[0], winrate };
+	const [action, { winrate }] = Utils.maxOn(Array.from(best_performs.entries()), ([_, { winrate, index}]) =>
+		winrate.multiply(1000).subtract(index).toDecimal
+	);
+
+	return { action: JSON.parse(action), winrate };
 }
 
 /**
@@ -254,7 +254,9 @@ function advance_game(game, playerTurn, action) {
 	return produce(game, (draft) => {
 		draft.state.clue_tokens--;
 		draft.state.turn_count++;
-		draft.state.endgameTurns = state.endgameTurns === -1 ? -1 : (state.endgameTurns - 1);
+
+		if (state.endgameTurns !== -1)
+			draft.state.endgameTurns--;
 	});
 }
 
@@ -288,9 +290,9 @@ function possible_actions(game, playerTurn, find_clues, find_discards, remaining
 	for (let i = state.actionList.length - 1; i >= 0; i--) {
 		const actions = state.actionList[i];
 
-		if (actions.some(a => a.type == "clue"))
+		if (actions?.some(a => a.type == 'clue'))
 			consecutive_clues++;
-		else if (actions.some(a => a.type == "play" || a.type == "discard"))
+		else if (actions?.some(a => a.type == 'play' || a.type == 'discard'))
 			break;
 	}
 	const too_many_clues = consecutive_clues > state.numPlayers;
@@ -446,7 +448,7 @@ function optimize({ undrawn, drawn }, actions, playerTurn, find_clues, find_disc
 		for (const { hypo_game, prob, remaining, drew } of hypo_games) {
 			// Drew an unwinnable card
 			if (drew !== undefined && !winnable_draws.some(id => id.suitIndex === drew.suitIndex && id.rank === drew.rank)) {
-				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')} drew ${logCard(drew)} unwinnable ${JSON.stringify(winnable_draws)}`);
+				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}drew ${logCard(drew)} unwinnable ${JSON.stringify(winnable_draws)}`);
 				continue;
 			}
 
@@ -460,9 +462,9 @@ function optimize({ undrawn, drawn }, actions, playerTurn, find_clues, find_disc
 				continue;
 
 			if (action.type === ACTION.PLAY || action.type === ACTION.DISCARD)
-				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')} drawing ${logCard(new_game.state.deck[new_game.state.cardOrder])} after ${logObjectiveAction(new_game.state, action)} ${new_game.state.hands[playerTurn].map(o => logCard(new_game.state.deck[o]))} ${new_game.state.cardsLeft} ${new_game.state.endgameTurns} {`);
+				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}drawing ${logCard(new_game.state.deck[new_game.state.cardOrder])} after ${logObjectiveAction(new_game.state, action)} ${new_game.state.hands[playerTurn].map(o => logCard(new_game.state.deck[o]))} ${new_game.state.cardsLeft} ${new_game.state.endgameTurns} {`);
 			else
-				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')} ${logObjectiveAction(new_game.state, action)} cardsLeft ${new_game.state.cardsLeft} endgameTurns ${new_game.state.endgameTurns} {`);
+				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}${logObjectiveAction(new_game.state, action)} cardsLeft ${new_game.state.cardsLeft} endgameTurns ${new_game.state.endgameTurns} {`);
 
 			const { action: best_action, winrate } = winnable(new_game, nextPlayerIndex, find_clues, find_discards, remaining, depth + 1)[0] ?? {};
 
