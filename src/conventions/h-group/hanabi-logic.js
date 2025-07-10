@@ -262,8 +262,8 @@ export function older_queued_finesse(state, playerIndex, player, new_finesse_ord
 		if (state.deck[o].clued || state.hands[playerIndex].every((c1, index1) => index1 <= index || state.deck[c1].clued))
 			return false;
 
-		const { blind_playing, finesse_index } = player.thoughts[o];
-		return blind_playing &&
+		const { blind_playing, status, finesse_index, maybe_layered } = player.thoughts[o];
+		return (blind_playing || (status === CARD_STATUS.GD && maybe_layered)) &&
 			finesse_index < player.thoughts[new_finesse_order].finesse_index;		// The finesse must have been older
 	});
 }

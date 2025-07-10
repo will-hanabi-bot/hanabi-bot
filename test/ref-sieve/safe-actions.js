@@ -5,7 +5,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import { COLOUR, expandShortCard, PLAYER, setup, takeTurn } from '../test-utils.js';
 import RefSieve from '../../src/conventions/ref-sieve.js';
 import { ACTION } from '../../src/constants.js';
-import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
 import { produce } from '../../src/StateProxy.js';
@@ -95,9 +94,6 @@ describe('urgency principle', () => {
 					draft.possible = possible.intersect([expandShortCard('r1')]);
 					draft.inferred = inferred.intersect([expandShortCard('r1')]);
 				});
-
-				team_elim(game);
-				Object.assign(game.common, game.common.update_hypo_stacks(game.state));
 			}
 		});
 

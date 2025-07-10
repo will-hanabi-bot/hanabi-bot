@@ -179,6 +179,7 @@ export class Card extends ActualCard {
 	hidden = false;
 	permission_to_discard = false;
 	certain_finessed = false;
+	maybe_layered = false;
 	trash = false;
 	uncertain = false;
 	known = false;

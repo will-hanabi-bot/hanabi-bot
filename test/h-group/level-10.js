@@ -30,7 +30,6 @@ describe(`gentleman's discards`, () => {
 		// Donald performed a Gentleman's Discard on Cathy.
 		const cathy_slot1 = game.common.thoughts[game.state.hands[PLAYER.CATHY][0]];
 		ExAsserts.cardHasInferences(cathy_slot1, ['b1']);
-		assert.equal(cathy_slot1.known, true);
 	});
 
 	it(`understands a gentleman's discard on us`, () => {
@@ -49,7 +48,6 @@ describe(`gentleman's discards`, () => {
 		// Bob performed a Gentleman's Discard on us.
 		const alice_slot1 = game.common.thoughts[game.state.hands[PLAYER.ALICE][0]];
 		ExAsserts.cardHasInferences(alice_slot1, ['y1']);
-		assert.equal(alice_slot1.known, true);
 
 		const playables = game.common.thinksPlayables(game.state, PLAYER.ALICE);
 		assert.ok(playables.includes(game.state.hands[PLAYER.ALICE][0]));
@@ -59,7 +57,7 @@ describe(`gentleman's discards`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['y4', 'g4', 'b4', 'b2'],
-			['r1', 'b1', 'r4', 'y3'],
+			['r1', 'y2', 'b1', 'y3'],
 			['y5', 'r5', 'b1', 'g5']
 		], {
 			level: { min: 10 }
@@ -67,17 +65,18 @@ describe(`gentleman's discards`, () => {
 
 		takeTurn(game, 'Alice clues blue to Donald');	// getting b1
 		takeTurn(game, 'Bob clues red to Cathy');		// getting r1
-		takeTurn(game, 'Cathy plays r1', 'r2');
+		takeTurn(game, 'Cathy plays r1', 'y1');
 		takeTurn(game, 'Donald discards b1', 'b3');
 
 		// Donald performed a Layered Gentleman's Discard on Cathy.
 		const cathy_slot1 = game.common.thoughts[game.state.hands[PLAYER.CATHY][0]];
-		ExAsserts.cardHasInferences(cathy_slot1, ['r2']);
-		assert.equal(cathy_slot1.known, true);
+		ExAsserts.cardHasInferences(cathy_slot1, ['r2', 'y1', 'g1', 'p1']);
 
 		const cathy_slot2 = game.common.thoughts[game.state.hands[PLAYER.CATHY][1]];
-		ExAsserts.cardHasInferences(cathy_slot2, ['b1']);
-		assert.equal(cathy_slot2.known, true);
+		ExAsserts.cardHasInferences(cathy_slot2, ['y2', 'g1', 'p1']);
+
+		const cathy_slot3 = game.common.thoughts[game.state.hands[PLAYER.CATHY][2]];
+		ExAsserts.cardHasInferences(cathy_slot3, ['b1']);
 	});
 
 	it(`understands a layered gentleman's discard on us`, () => {
@@ -100,7 +99,6 @@ describe(`gentleman's discards`, () => {
 		// Bob performed a Layered Gentleman's Discard on us. y1 is now expected to be in slot 2.
 		const alice_slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
 		ExAsserts.cardHasInferences(alice_slot2, ['y1']);
-		assert.equal(alice_slot2.known, true);
 	});
 
 	it(`performs a gentleman's discard`, async () => {
@@ -159,6 +157,139 @@ describe(`gentleman's discards`, () => {
 
 		// We should just play b4 instead of performing a gentleman's discard.
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
+	});
+
+	it(`understands a layered gentleman's discard with finesse on us`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y1', 'g4', 'b4', 'b2'],
+			['r1', 'y4', 'r4', 'y5'],
+			['y3', 'r5', 'b1', 'g5']
+		], {
+			level: { min: 10 }
+		});
+
+		takeTurn(game, 'Alice clues yellow to Bob');	// getting y1
+		takeTurn(game, 'Bob discards y1', 'y3');
+		takeTurn(game, 'Cathy clues 5 to Donald');
+		takeTurn(game, 'Donald clues blue to Bob');		// finessing b1
+
+		const action = await game.take_action();
+
+		// We should play slot 1, since y1 b1 and b1 y1 are equally likely.
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
+
+		takeTurn(game, 'Alice plays b1 (slot 1)');
+
+		// Bob performed a Layered Gentleman's Discard on us. y1 is now expected to be in slot 2.
+		const alice_slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
+		ExAsserts.cardHasInferences(alice_slot2, ['y1']);
+	});
+
+	it(`understands a gentleman's discard with finesse on us`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y1', 'g4', 'b4', 'b2'],
+			['r1', 'y4', 'r4', 'y5'],
+			['y3', 'r5', 'b1', 'g5']
+		], {
+			level: { min: 10 }
+		});
+
+		takeTurn(game, 'Alice clues yellow to Bob');	// getting y1
+		takeTurn(game, 'Bob discards y1', 'y3');
+		takeTurn(game, 'Cathy clues 5 to Donald');
+		takeTurn(game, 'Donald clues blue to Bob');		// finessing b1
+
+		const action = await game.take_action();
+
+		// We should play slot 1, since y1 b1 and b1 y1 are equally likely.
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
+
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+
+		// Bob performed a Gentleman's Discard on us. b1 is now expected to be in slot 2.
+		const alice_slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
+		ExAsserts.cardHasInferences(alice_slot2, ['b1']);
+
+		// The finesse is still on.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['b2']);
+	});
+
+	it(`understands a finesse with gentleman's discard on us`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r1', 'g4', 'b4', 'b4'],
+			['y1', 'y4', 'r4', 'y5'],
+			['y3', 'r5', 'b2', 'g5']
+		], {
+			level: { min: 10 }
+		});
+
+		takeTurn(game, 'Alice clues yellow to Cathy');	// getting y1
+		takeTurn(game, 'Bob clues blue to Donald');		// reverse finesse on b2
+		takeTurn(game, 'Cathy discards y1', 'y3');
+		takeTurn(game, 'Donald clues 5 to Cathy');
+
+		const action = await game.take_action();
+
+		// We should play slot 1, since y1 b1 and b1 y1 are equally likely.
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
+
+		takeTurn(game, 'Alice plays b1 (slot 1)');
+
+		// Cathy performed a Gentleman's Discard on us. y1 is now expected to be in slot 2.
+		const alice_slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
+		ExAsserts.cardHasInferences(alice_slot2, ['y1']);
+	});
+
+	it(`understands a layered finesse with gentleman's discard on us`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r1', 'g4', 'b4', 'b4'],
+			['y1', 'y4', 'r4', 'y5'],
+			['y3', 'r5', 'b2', 'g5']
+		], {
+			level: { min: 10 }
+		});
+
+		takeTurn(game, 'Alice clues yellow to Cathy');	// getting y1
+		takeTurn(game, 'Bob clues blue to Donald');		// reverse finesse on b2
+		takeTurn(game, 'Cathy discards y1', 'y3');
+		takeTurn(game, 'Donald clues 5 to Cathy');
+
+		const action = await game.take_action();
+
+		// We should play slot 1, since y1 b1 and b1 y1 are equally likely.
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
+
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+
+		// Bob performed a Layered Finesse on us. b1 is now expected to be in slot 2.
+		const alice_slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
+		ExAsserts.cardHasInferences(alice_slot2, ['b1']);
+
+		// The finesse is still on.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.DONALD][2]], ['b2']);
+	});
+
+	it(`understands a sarcastic into a layer (not a gd)`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y1', 'r1', 'b4', 'b4'],
+			['g1', 'r2', 'r3', 'y5'],
+			['g1', 'r4', 'r5', 'p3']
+		], {
+			level: { min: 10 }
+		});
+
+		takeTurn(game, 'Alice clues 3 to Cathy');
+		takeTurn(game, 'Bob plays y1', 'r4');
+		takeTurn(game, 'Cathy clues green to Donald');
+		takeTurn(game, 'Donald discards g1', 'p4');		// passing g1 back to Cathy
+
+		// We should not interpret a GD on us.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 });
 

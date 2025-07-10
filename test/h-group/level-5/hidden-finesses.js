@@ -7,7 +7,6 @@ import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../../src/constants.js';
 import { CARD_STATUS } from '../../../src/basics/Card.js';
-import { team_elim } from '../../../src/basics/helper.js';
 import { find_clues } from '../../../src/conventions/h-group/clue-finder/clue-finder.js';
 import logger from '../../../src/tools/logger.js';
 
@@ -146,8 +145,6 @@ describe('hidden finesse', () => {
 				});
 			}
 		});
-
-		team_elim(game);
 
 		takeTurn(game, 'Cathy clues green to Alice (slot 2)');
 

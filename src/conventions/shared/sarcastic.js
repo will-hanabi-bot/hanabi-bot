@@ -31,7 +31,7 @@ export function find_sarcastics(state, playerIndex, player, identity) {
 	return state.hands[playerIndex].filter(o => {
 		const card = player.thoughts[o];
 
-		return card.touched && card.possible.has(identity) &&
+		return (card.clued || card.hidden) && card.possible.has(identity) &&
 			!(card.inferred.length === 1 && card.inferred.array[0].rank < identity.rank) &&		// Do not sarcastic on connecting cards
 			(card.info_lock === undefined || card.info_lock.has(identity));
 	});

@@ -238,21 +238,21 @@ export function interpret_discard(game, action) {
 				const { newGame, sarcastics } = interpret_sarcastic(game, action);
 				Object.assign(common, newGame.common);
 
-				let transferred = sarcastics.length > 0;
+				let transferred_to = sarcastics;
 
-				if (!transferred && game.level >= LEVEL.SPECIAL_DISCARDS) {
+				if (transferred_to.length === 0 && game.level >= LEVEL.SPECIAL_DISCARDS) {
 					if (state.isPlayable(identity)) {
-						transferred = interpret_gd(game, action, common.find_finesse.bind(common)).length > 0;
+						transferred_to = interpret_gd(game, action, common.find_finesse.bind(common));
 						interp = DISCARD_INTERP.GENTLEMANS;
 					}
 					else {
-						transferred = interpret_baton(game, action, (state, index) => [common.find_finesse(state, index)].filter(c => c !== undefined)).length > 0;
+						transferred_to = interpret_baton(game, action, (state, index) => [common.find_finesse(state, index)].filter(c => c !== undefined));
 						interp = DISCARD_INTERP.BATON;
 					}
 				}
 
-				if (transferred) {
-					logger.info('interpreted', interp);
+				if (transferred_to.length > 0) {
+					logger.info('interpreted', interp, transferred_to);
 					resolve_discard(game, action, interp);
 					action.intentional = true;
 					return game;

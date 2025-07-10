@@ -67,9 +67,9 @@ export function valid_bluff(game, action, identity, reacting, connected, symmetr
 			identity.rank === state.base_ids.maxStackRank ||
 			!game.common.thoughts[connected[0]].possible.has(nextCard)) &&	// must disconnect
 		!(clue.type === CLUE.COLOUR && reacting === target) &&				// must not be self-colour bluff
-		!state.hands[reacting].some(o => {								// must not be confused with an existing finesse
+		!state.hands[reacting].some(o => {								// must not be confused with an existing finesse (or possibly-layered gd)
 			const card = game.players[reacting].thoughts[o];
-			return card.blind_playing && card.possible.has(identity);
+			return (card.blind_playing || (card.status === CARD_STATUS.GD && card.maybe_layered)) && card.possible.has(identity);
 		});
 }
 
@@ -289,6 +289,7 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 						bluff ? CARD_STATUS.BLUFFED :
 						CARD_STATUS.FINESSED);
 
+					draft.firstTouch = { giver, turn: state.turn_count };
 					draft.finesse_index = state.turn_count;
 					draft.hidden = hidden;
 					draft.certain_finessed ||= certain;

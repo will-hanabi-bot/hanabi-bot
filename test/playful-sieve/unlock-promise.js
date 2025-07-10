@@ -7,7 +7,6 @@ import PlayfulSieve from '../../src/conventions/playful-sieve.js';
 
 import { ACTION, CLUE } from '../../src/constants.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
-import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -213,7 +212,6 @@ describe('unlock promise', () => {
 						{ type: CLUE.COLOUR, value: card.suitIndex, giver: PLAYER.ALICE }
 					]);
 				}
-				team_elim(game);
 			}
 		});
 

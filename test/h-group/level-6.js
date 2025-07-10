@@ -8,7 +8,6 @@ import { ACTION, CLUE } from '../../src/constants.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
-import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -186,7 +185,6 @@ describe('tempo clue chop moves', () => {
 					draft.clues = [{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE, turn: -1 }];
 					draft.clued = true;
 				});
-				team_elim(game);
 			}
 		});
 
@@ -221,7 +219,6 @@ describe('tempo clue chop moves', () => {
 					draft.clues = [{ type: CLUE.COLOUR, value: COLOUR.BLUE, giver: PLAYER.BOB, turn: -1 }];
 					draft.clued = true;
 				});
-				team_elim(game);
 			}
 		});
 

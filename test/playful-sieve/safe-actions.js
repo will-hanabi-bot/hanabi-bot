@@ -5,7 +5,6 @@ import * as ExAsserts from '../extra-asserts.js';
 import { COLOUR, expandShortCard, PLAYER, setup, takeTurn } from '../test-utils.js';
 import PlayfulSieve from '../../src/conventions/playful-sieve.js';
 import { ACTION } from '../../src/constants.js';
-import { team_elim } from '../../src/basics/helper.js';
 
 import logger from '../../src/tools/logger.js';
 import { logPerformAction } from '../../src/tools/log.js';
@@ -124,9 +123,6 @@ describe('connecting cards', () => {
 			}
 		});
 
-		team_elim(game);
-		Object.assign(game.common, game.common.update_hypo_stacks(game.state));
-
 		// Alice should play g1 to make g2 playable.
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] }, logPerformAction(action));
@@ -152,9 +148,6 @@ describe('urgency principle', () => {
 					draft.possible = possible.intersect([expandShortCard('r1')]);
 					draft.inferred = inferred.intersect([expandShortCard('r1')]);
 				});
-
-				team_elim(game);
-				Object.assign(game.common, game.common.update_hypo_stacks(game.state));
 			}
 		});
 
