@@ -1,5 +1,4 @@
 import { CARD_STATUS } from './Card.js';
-import { cardCount } from '../variants.js';
 
 /**
  * @typedef {import('./Game.js').Game} Game
@@ -34,7 +33,7 @@ export function visibleFind(state, player, identity, options = {}) {
 			return [];
 
 		const symmetric = options.symmetric ?? index === player.playerIndex;
-		return hand.filter(o => player.thoughts[o].matches(identity, Object.assign({}, options, { symmetric } )));
+		return hand.filter(o => player.thoughts[o].matches(identity, { ...options, symmetric } ));
 	});
 }
 
@@ -46,7 +45,7 @@ export function visibleFind(state, player, identity, options = {}) {
  */
 export function unknownIdentities(state, player, identity) {
 	const visibleCount = state.hands.flat().filter(o => player.thoughts[o].matches(identity)).length;
-	return cardCount(state.variant, identity) - state.baseCount(identity) - visibleCount;
+	return state.cardCount(identity) - state.baseCount(identity) - visibleCount;
 }
 
 

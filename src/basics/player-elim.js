@@ -1,5 +1,4 @@
 import { CARD_STATUS } from './Card.js';
-import { cardCount } from '../variants.js';
 import { IdentitySet } from './IdentitySet.js';
 import * as Utils from '../tools/util.js';
 
@@ -42,9 +41,6 @@ export function card_elim(state) {
 		newThoughts.set(order, target);
 	};
 
-	/** @type {Map<string, { order: number, playerIndex: number}[]>} */
-	const idMap = new Map();
-
 	/** @type {{ order: number, playerIndex: number }[]} */
 	let cross_elim_candidates = [];
 
@@ -67,9 +63,6 @@ export function card_elim(state) {
 
 			if (card.possible.length > 1 && card.possible.some(p => !state.isBasicTrash(p)) && (card.possible.length < 5 || card.clued))
 				cross_elim_candidates.push({ order, playerIndex });
-
-			for (const p of card.possible)
-				Utils.mapInsertArr(idMap, logCard(p), { order, playerIndex });
 		}
 	}
 
@@ -89,40 +82,43 @@ export function card_elim(state) {
 		/** @type {number[]} */
 		const cross_elim_removals = [];
 
-		const remainingCandidates = idMap.get(id_hash).filter(({ order, playerIndex }) => {
-			const { possible, inferred, reset } = getThoughts(order);
+		for (let playerIndex = 0; playerIndex < state.numPlayers; playerIndex++) {
+			for (const order of state.hands[playerIndex]) {
+				const { possible, inferred, reset } = getThoughts(order);
 
-			const no_elim = exclude.includes(playerIndex) || certain_map.get(id_hash)?.has(order) || certain_map.get(id_hash)?.values().some(unknown_tos => unknown_tos.includes(playerIndex));
-			if (no_elim)
-				return true;
+				const no_elim = exclude.includes(playerIndex) ||
+					!possible.has(id) ||
+					certain_map.get(id_hash)?.has(order) ||
+					certain_map.get(id_hash)?.values().some(unknown_tos => unknown_tos.includes(playerIndex));
+				if (no_elim)
+					continue;
 
-			changed = true;
+				changed = true;
 
-			updateThoughts(order, (draft) => {
-				draft.possible = possible.subtract(id);
-				draft.inferred = inferred.subtract(id);
-			});
+				updateThoughts(order, (draft) => {
+					draft.possible = possible.subtract(id);
+					draft.inferred = inferred.subtract(id);
+				});
 
-			const updated_card = getThoughts(order);
+				const updated_card = getThoughts(order);
 
-			if (updated_card.possible.length === 0)
-				throw new Error(`order ${order} has no more possible ids after removing ${logCard(id)}!`);
+				if (updated_card.possible.length === 0)
+					throw new Error(`order ${order} has no more possible ids after removing ${logCard(id)}!`);
 
-			if (updated_card.inferred.length === 0 && !reset) {
-				newThoughts.set(order, updated_card.reset_inferences());
+				if (updated_card.inferred.length === 0 && !reset) {
+					newThoughts.set(order, updated_card.reset_inferences());
+				}
+				// Card can be further eliminated
+				else if (updated_card.possible.length === 1) {
+					const recursive_id = updated_card.identity();
+
+					Utils.mapInsertMap(certain_map, logCard(recursive_id), order, []);
+					recursive_ids.push(recursive_id);
+					cross_elim_removals.push(order);
+				}
 			}
-			// Card can be further eliminated
-			else if (updated_card.possible.length === 1) {
-				const recursive_id = updated_card.identity();
+		}
 
-				Utils.mapInsertMap(certain_map, logCard(recursive_id), order, []);
-				recursive_ids.push(recursive_id);
-				cross_elim_removals.push(order);
-			}
-			return false;
-		});
-
-		idMap.set(id_hash, remainingCandidates);
 		cross_elim_candidates = cross_elim_candidates.filter(c => !cross_elim_removals.includes(c.order));
 
 		return { changed, recursive_ids };
@@ -140,7 +136,7 @@ export function card_elim(state) {
 		for (const id of identities) {
 			const id_hash = logCard(id);
 			const known_count = state.baseCount(id) + (certain_map.get(id_hash)?.size ?? 0);
-			const total_count = cardCount(state.variant, id);
+			const total_count = state.cardCount(id);
 
 			if (known_count !== total_count)
 				continue;
@@ -166,7 +162,7 @@ export function card_elim(state) {
 			return;
 
 		/** @param {IdentitySet} identities */
-		const total_multiplicity = (identities) => identities.reduce((acc, id) => acc += cardCount(state.variant, id) - state.baseCount(id), 0);
+		const total_multiplicity = (identities) => identities.reduce((acc, id) => acc += state.cardCount(id) - state.baseCount(id), 0);
 
 		/**
 		 * @param {{ order: number, playerIndex: number }[]} entries
@@ -186,19 +182,15 @@ export function card_elim(state) {
 				const id = JSON.parse(id_hash);
 				const certains = Array.from(certain_map.get(logCard(id)) ?? []).filter(([order, _]) => !group.some(g => g.order === order)).length ?? 0;
 
-				if (!idMap.has(logCard(id)) || group.length < total_multiplicity(state.base_ids.union(id)) - certains)
+				if (group.length < total_multiplicity(state.base_ids.union(id)) - certains)
 					continue;
 
 				({ changed } = update_map(id, group.map(g => g.playerIndex)));
 			}
 
 			// Now elim all the cards outside of this entry
-			for (const id of identities) {
-				if (!idMap.has(logCard(id)))
-					continue;
-
+			for (const id of identities)
 				({ changed } = update_map(id, entries.map(e => e.playerIndex)));
-			}
 
 			changed = basic_elim(identities.array) || changed;
 
@@ -284,9 +276,6 @@ export function card_elim(state) {
 					Utils.mapInsertMap(certain_map, logCard(recursive_id), order, []);
 					cross_elim_removals.push(order);
 				}
-
-				const entry = idMap.get(logCard(id));
-				entry.splice(entry.findIndex(e => e.order === order), 1);
 			}
 
 			cross_elim_candidates = cross_elim_candidates.filter(c => !cross_elim_removals.includes(c.order));
@@ -308,7 +297,7 @@ export function card_elim(state) {
 
 			// We don't know where all of these cards are (might be a superpositioned trash id in endgame solving)
 			// Everyone who could potentially have it is a holder
-			if (total !== cardCount(state.variant, id)) {
+			if (total !== state.cardCount(id)) {
 				for (let i = 0; i < state.numPlayers; i++) {
 					if (state.hands[i].some(o => (state.deck[o].identity() ?? getThoughts(o).identity()) === undefined))
 						holders.add(i);
@@ -384,7 +373,7 @@ export function good_touch_elim(state, only_self = false) {
 		const matches = match_map.get(id_hash);
 		const hard_matches = hard_match_map.get(id_hash);
 
-		if (matches && hard_matches && (state.baseCount(id) + matches.size > cardCount(state.variant, id))) {
+		if (matches && hard_matches && (state.baseCount(id) + matches.size > state.cardCount(id))) {
 			const visibles = Array.from(matches).concat(Array.from(hard_matches)).filter(o => state.deck[o].matches(id));
 
 			if (visibles.length > 0) {
@@ -467,7 +456,7 @@ export function good_touch_elim(state, only_self = false) {
 
 			const bad_elim = matches_arr.length > 0 && matches_arr.every(order =>
 				(state.deck[order].identity() !== undefined && !state.deck[order].matches(identity)) ||		// Card is visible and doesn't match
-				(state.baseCount(identity) + state.hands.flat().filter(o => state.deck[o].matches(identity) && o !== order).length === cardCount(state.variant, identity)));	// Card cannot match
+				(state.baseCount(identity) + state.hands.flat().filter(o => state.deck[o].matches(identity) && o !== order).length === state.cardCount(identity)));	// Card cannot match
 
 			if (bad_elim)
 				continue;
@@ -479,7 +468,7 @@ export function good_touch_elim(state, only_self = false) {
 					continue;
 
 				const visible_elim = state.hands.some(hand => hand.some(o => matches.has(o) && state.deck[o].matches(identity, { assume: true }))) &&
-					state.baseCount(identity) + matches.size >= cardCount(state.variant, identity);
+					state.baseCount(identity) + matches.size >= state.cardCount(identity);
 
 				const { firstTouch } = old_card ?? {};
 

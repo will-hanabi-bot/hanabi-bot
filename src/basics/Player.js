@@ -1,7 +1,6 @@
 import { unknownIdentities } from './hanabi-util.js';
 import { IdentitySet } from './IdentitySet.js';
 import { Card, CARD_STATUS } from './Card.js';
-import { cardCount } from '../variants.js';
 import * as Utils from '../tools/util.js';
 import * as Elim from './player-elim.js';
 
@@ -91,7 +90,8 @@ export class Player {
 			json.play_links.map(Utils.objClone),
 			new Set(json.unknown_plays),
 			Utils.objClone(json.waiting_connections),
-			new Map(json.elims));
+			new Map(json.elims),
+			new Map(json.patches));
 	}
 
 	/** @returns {this} */
@@ -102,7 +102,7 @@ export class Player {
 			this.hypo_stacks.slice(),
 			new Set(this.hypo_plays),
 			this.hypo_map.map(stack => stack.slice()),
-			this.thoughts.map(infs => infs.clone()),
+			this.thoughts.slice(),
 			this.links.map(link => Utils.objClone(link)),
 			this.play_links.map(link => Utils.objClone(link)),
 			new Set(this.unknown_plays),
@@ -456,7 +456,7 @@ export class Player {
 
 					// Do not allow false updating of hypo stacks
 					if (this.playerIndex === -1 && (
-						(id && state.deck.filter(c => c?.matches(id) && c.order !== order).length === cardCount(state.variant, id)) ||
+						(id && state.deck.filter(c => c?.matches(id) && c.order !== order).length === state.cardCount(id)) ||
 						(actual_id && !card.inferred.has(actual_id))		// None of the inferences match
 					))
 						continue;

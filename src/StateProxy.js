@@ -5,9 +5,28 @@ import * as Utils from './tools/util.js';
  * @typedef {{op: 'add' | 'replace', path: string[], value: unknown }} Patch
  */
 
+/**
+ * How it works:
+ * 
+ * We first create a proxy for the drafted object.
+ * On obj access, we create nested proxies because they may show up on the LHS of an assignment.
+ *   This is tracked by StateProxy.proxies.
+ * On obj modification, we update all parents to become modified.
+ *   For each parent, we also create StateProxy.copy, which is a copy of base but with proxies instead of objects.
+ *   The proxies are carried over from StateProxy.proxies, which is no longer used after this point.
+ *   We track all modified props using Stateproxy.modified_props, including parent-child relationships.
+ * 
+ * At the end of the producer function, we call finalize() recursively on StateProxy.copy.
+ * Any modified props of a proxy are re-assigned to actual values.
+ */
+
 const PROXY_STATE = Symbol();
 
 const objectTraps = {
+	/**
+	 * @param {StateProxy<unknown>} state
+	 * @param {string | typeof PROXY_STATE} prop
+	 */
 	get: (state, prop) => {
 		// Getting the non-proxied state from a proxied state
 		if (prop === PROXY_STATE)
@@ -22,7 +41,7 @@ const objectTraps = {
 				return value;
 
 			// Make a nested proxy so we can continue monitoring changes
-			state.copy[prop] = createProxy(state, value);
+			state.copy[prop] = createProxy(value, { proxy: state, own_key: prop });
 			return state.copy[prop];
 		}
 
@@ -35,9 +54,14 @@ const objectTraps = {
 		if (!isProxyable(value))
 			return value;
 
-		state.proxies[prop] = createProxy(state, value);
+		state.proxies[prop] = createProxy(value, { proxy: state, own_key: prop });
 		return state.proxies[prop];
 	},
+	/**
+	 * @param {StateProxy<unknown>} state
+	 * @param {string} prop
+	 * @param {unknown} value
+	 */
 	set: (state, prop, value) => {
 		if (!state.modified) {
 			// No change
@@ -48,7 +72,7 @@ const objectTraps = {
 			state.markChanged();
 		}
 
-		state.assigned[prop] = true;
+		state.modified_props.add(prop);
 		state.copy[prop] = value;
 		return true;
 	},
@@ -78,23 +102,27 @@ class StateProxy {
 	modified = false;
 	finalized = false;
 
+	/**@type {T} */
+	base;
+
 	/** @type {T} */
 	copy;
 
-	/** @type {Record<string, boolean>} */
-	assigned = {};
+	/** @type {{proxy: StateProxy, own_key: string}} */
+	parent;
+
+	/** @type {Set<string | number>} */
+	modified_props = new Set();
 
 	/** @type {Record<string, StateProxy>} */
 	proxies = {};
 
 	/**
-	 * @param {StateProxy} parent
 	 * @param {T} base
+	 * @param {{proxy: StateProxy, own_key: string}} parent
 	 */
-	constructor(parent, base) {
+	constructor(base, parent = undefined) {
 		this.parent = parent;
-
-		/** @type {T} */
 		this.base = base;
 	}
 
@@ -112,21 +140,23 @@ class StateProxy {
 		Object.assign(this.copy, this.proxies);
 
 		// Propagate modified status to parents
-		if (this.parent)
-			this.parent.markChanged();
+		if (this.parent !== undefined) {
+			const { proxy, own_key } = this.parent;
+			proxy.markChanged();
+			proxy.modified_props.add(own_key);
+		}
 	}
 }
-
 let revokes = [];
 
 /**
  * @template T
- * @param {StateProxy} parent
  * @param {T} base
+ * @param {{proxy: StateProxy, own_key: string}} parent
  * @returns {StateProxy<T>}
  */
-function createProxy(parent, base) {
-	const state = new StateProxy(parent, base);
+function createProxy(base, parent = undefined) {
+	const state = new StateProxy(base, parent);
 	const { proxy, revoke } = Array.isArray(base) ? Proxy.revocable([state], arrayTraps) : Proxy.revocable(state, objectTraps);
 
 	revokes.push(revoke);
@@ -161,7 +191,7 @@ export function produce(base, producer, patchListener) {
 	const old_revokes = revokes;
 	revokes = [];
 
-	const rootClone = createProxy(undefined, base);
+	const rootClone = createProxy(base);
 	producer(/** @type {{ -readonly [P in keyof T]: T[P] }} */ (/** @type {unknown} */ (rootClone)));
 	const patches = /** @type {Patch[]} */ ([]);
 	const res = patchListener ? finalize(rootClone, [], patches) : finalize(rootClone);
@@ -202,7 +232,6 @@ function finalize(base, path, patches) {
 		return result;
 	}
 
-	finalizeNonProxiedObject(base);
 	return /** @type {T} */ (base);
 }
 
@@ -213,38 +242,19 @@ function finalize(base, path, patches) {
  * @param {Patch[] | undefined} patches
  */
 function finalizeObject(state, path, patches) {
-	const { base, copy } = state;
+	const { base, copy, modified_props } = state;
 
 	for (const [key, value] of Object.entries(copy)) {
 		if (value !== base[key]) {
-			if (patches && state.assigned[key] === undefined)
+			if (patches && modified_props.has(key) === undefined)
 				copy[key] = finalize(value, path.concat(key), patches);
 			else
-				copy[key] = finalize(value);
+				copy[key] = finalize(copy[key]);
 		}
 	}
 
 	return copy;
 	// return Object.freeze(copy);
-}
-
-/**
- * Finalizes any nested proxies.
- * @template T
- * @param {T} state
- */
-function finalizeNonProxiedObject(state) {
-	if (!isProxyable(state) || Object.isFrozen(state))
-		return;
-
-	for (const [key, value] of Object.entries(state)) {
-		if (types.isProxy(value))
-			state[key] = finalize(value);
-		else
-			finalizeNonProxiedObject(value);
-
-	}
-	// Object.freeze(state);
 }
 
 /**
@@ -274,7 +284,7 @@ function generateArrayPatches(state, basepath, patches, baseValue, resultValue) 
 	const shared = Math.min(baseValue.length, resultValue.length);
 
 	for (let i = 0; i < shared; i++) {
-		if (state.assigned[i] && baseValue[i] !== resultValue[i])
+		if (state.modified_props.has(i) && baseValue[i] !== resultValue[i])
 			patches.push({ op: 'replace', path: basepath.concat(`${i}`), value: resultValue[i] });
 	}
 
@@ -298,7 +308,7 @@ function generateArrayPatches(state, basepath, patches, baseValue, resultValue) 
  * @param {T} resultValue
  */
 function generateObjectPatches(state, basepath, patches, baseValue, resultValue) {
-	for (const key of Object.keys(state.assigned)) {
+	for (const key of state.modified_props) {
 		const origValue = baseValue[key];
 		const value = resultValue[key];
 		const op = key in baseValue ? 'replace' : 'add';
@@ -306,7 +316,7 @@ function generateObjectPatches(state, basepath, patches, baseValue, resultValue)
 		if (origValue === baseValue && op === 'replace')
 			continue;
 
-		patches.push({ op, path: basepath.concat(key), value });
+		patches.push({ op, path: basepath.concat(key.toString()), value });
 	}
 }
 

@@ -2,7 +2,7 @@ import HGroup from '../h-group.js';
 import RefSieve from '../ref-sieve.js';
 import { ACTION, ENDGAME_SOLVING_FUNCS } from '../../constants.js';
 import { ActualCard } from '../../basics/Card.js';
-import { cardCount, setShortForms } from '../../variants.js';
+import { setShortForms } from '../../variants.js';
 import { trivially_winnable, simpler_cache, unwinnable_state, winnable_if, remove_remaining } from './endgame-helper.js';
 import { Fraction } from '../../tools/fraction.js';
 import * as Utils from '../../tools/util.js';
@@ -21,7 +21,6 @@ const conventions = {
 /**
  * @typedef {import('../../basics/Game.js').Game} Game
  * @typedef {import('../../basics/State.js').State} State
- * @typedef {import('../../basics/Card.js').BasicCard} BasicCard
  * @typedef {import('../../types.js').Identity} Identity
  * @typedef {import('../../types.js').Clue} Clue
  * @typedef {import('../../types.js').Action} Action
@@ -229,7 +228,7 @@ function find_remaining_identities(game) {
 
 		for (let rank = stack + 1; rank <= state.max_ranks[suitIndex]; rank++) {
 			const id = { suitIndex, rank };
-			const total = cardCount(state.variant, id);
+			const total = state.cardCount(id);
 			const missing = Math.max(0, total - state.baseCount(id) - (seen_identities[logCard(id)] ?? 0));
 
 			if (missing > 0)

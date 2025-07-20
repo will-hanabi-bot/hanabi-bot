@@ -1,7 +1,7 @@
 import { CLUE, MAX_H_LEVEL } from '../src/constants.js';
 import { CARD_STATUS } from '../src/basics/Card.js';
 import { State } from '../src/basics/State.js';
-import { cardCount, find_possibilities, shortForms } from '../src/variants.js';
+import { find_possibilities, shortForms } from '../src/variants.js';
 import * as Utils from '../src/tools/util.js';
 
 import { logAction, logCard, logClue } from '../src/tools/log.js';
@@ -123,7 +123,7 @@ function init_game(game, options) {
 		state.discard_stacks[suitIndex][rank - 1]++;
 
 		// Discarded all copies of a card - the new max rank is 1 less than the rank of discarded card
-		if (state.discard_stacks[suitIndex][rank - 1] === cardCount(state.variant, identity) && state.max_ranks[suitIndex] > rank - 1)
+		if (state.discard_stacks[suitIndex][rank - 1] === state.cardCount(identity) && state.max_ranks[suitIndex] > rank - 1)
 			state.max_ranks[suitIndex] = rank - 1;
 	}
 
@@ -132,7 +132,7 @@ function init_game(game, options) {
 			const identity = { suitIndex, rank };
 			const count = state.baseCount(identity) + visibleFind(state, me, identity, { infer: false }).length;
 
-			if (count > cardCount(state.variant, identity))
+			if (count > state.cardCount(identity))
 				throw new Error(`Found ${count} copies of ${logCard(identity)}, test written incorrectly?`);
 		}
 	}
@@ -284,7 +284,7 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 
 		const count = game.state.baseCount(identity) + visibleFind(game.state, game.me, identity, { infer: false }).length;
 
-		if (count > cardCount(game.state.variant, identity))
+		if (count > game.state.cardCount(identity))
 			throw new Error(`Found ${count} copies of ${logCard(identity)}, test written incorrectly?`);
 	}
 
@@ -352,7 +352,7 @@ export function parseAction(state, rawAction) {
 				const list = state.clueTouched(state.hands[target], clue);
 
 				if (list.length === 0)
-					throw new Error(`Clue ${logClue(Object.assign({}, clue, { target }))} touches no cards.`);
+					throw new Error(`Clue ${logClue({...clue, target })} touches no cards.`);
 
 				return { type: 'clue', clue, giver: playerIndex, target, list };
 			}

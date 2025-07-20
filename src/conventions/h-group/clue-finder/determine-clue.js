@@ -181,16 +181,15 @@ export function evaluate_clue(game, action) {
  * Returns some statistics about the clue.
  * @param  {Game} game
  * @param  {Game} hypo_game
- * @param  {ClueAction & {clue: Clue}} action
+ * @param  {ClueAction} action
  * @param  {{list?: number[]}} provisions 	Provided 'list' variable if clued in our hand.
  * @returns {ClueResult}
  */
 export function get_result(game, hypo_game, action, provisions = {}) {
 	const { common, me, state } = game;
 	const { common: hypo_common, state: hypo_state } = hypo_game;
-	const { clue, giver, hypothetical } = action;
+	const { clue, giver, hypothetical, target } = action;
 
-	const { target } = clue;
 	const hand = state.hands[target];
 
 	const list = provisions.list ?? state.clueTouched(hand, clue);
@@ -201,7 +200,7 @@ export function get_result(game, hypo_game, action, provisions = {}) {
 	const { finesses, playables } = playables_result(hypo_state, common, hypo_common, giver === state.ourPlayerIndex ? me : undefined);
 	const chop_moved = cm_result(common, hypo_common, hand);
 
-	const { safe, discard } = hypothetical ? { safe: true, discard: undefined } : clue_safe(game, game.players[giver], clue);
+	const { safe, discard } = hypothetical ? { safe: true, discard: undefined } : clue_safe(game, game.players[giver], { target, ...clue });
 
 	return {
 		focus,

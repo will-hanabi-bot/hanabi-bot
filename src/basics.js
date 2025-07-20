@@ -1,8 +1,7 @@
 import { ActualCard, Card, CARD_STATUS } from './basics/Card.js';
-import { cardCount, find_possibilities } from './variants.js';
+import { find_possibilities } from './variants.js';
 import { team_elimP } from './basics/helper.js';
 
-import * as Utils from './tools/util.js';
 import { produce } from './StateProxy.js';
 
 /**
@@ -91,16 +90,18 @@ export function onDiscard(game, action) {
 	const identity = { suitIndex, rank };
 
 	let newGame = game.shallowCopy();
+	const index = state.hands[playerIndex].indexOf(order);
 
 	const newState = produce(state, (draft) => {
-		draft.hands[playerIndex].splice(state.hands[playerIndex].indexOf(order), 1);
+		draft.hands[playerIndex].splice(index, 1);
 
 		if (suitIndex !== -1 && rank !== -1) {
 			draft.discard_stacks[suitIndex][rank - 1]++;
-			draft.deck[order] = produce(state.deck[order], Utils.assignId({ suitIndex, rank }));
+			draft.deck[order].suitIndex = suitIndex;
+			draft.deck[order].rank = rank;
 
 			// Discarded all copies of a card - the new max rank is (discarded rank - 1) if not already lower
-			if (draft.discard_stacks[suitIndex][rank - 1] === cardCount(state.variant, { suitIndex, rank }))
+			if (draft.discard_stacks[suitIndex][rank - 1] === state.cardCount({ suitIndex, rank }))
 				draft.max_ranks[suitIndex] = Math.min(state.max_ranks[suitIndex], rank - 1);
 		}
 
@@ -192,13 +193,15 @@ export function onPlay(game, action) {
 	const identity = { suitIndex, rank };
 
 	let newGame = game.shallowCopy();
+	const index = state.hands[playerIndex].indexOf(order);
 
 	const newState = produce(state, (draft) => {
-		draft.hands[playerIndex].splice(state.hands[playerIndex].indexOf(order), 1);
+		draft.hands[playerIndex].splice(index, 1);
 
 		if (suitIndex !== -1 && rank !== -1) {
 			draft.play_stacks[suitIndex] = rank;
-			draft.deck[order] = produce(state.deck[order], Utils.assignId({ suitIndex, rank }));
+			draft.deck[order].suitIndex = suitIndex;
+			draft.deck[order].rank = rank;
 		}
 
 		if (state.endgameTurns !== -1)

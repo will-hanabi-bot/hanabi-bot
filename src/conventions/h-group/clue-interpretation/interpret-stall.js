@@ -74,7 +74,7 @@ function isStall(game, action, focusResult, severity, prev_game, loaded) {
 	const new_game = game.shallowCopy();
 	new_game.common = new_game.common.update_hypo_stacks(state);
 
-	const clue_result = get_result(prev_game, new_game, Object.assign({}, action, { clue: Object.assign({}, clue, { target }), hypothetical: true }), { list });
+	const clue_result = get_result(prev_game, new_game, { ...action, hypothetical: true }, { list });
 	const { new_touched, playables, elim } = clue_result;
 
 	if (severity >= 2) {

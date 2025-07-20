@@ -1,6 +1,5 @@
 import { ACTION } from '../../constants.js';
 import { ActualCard } from '../../basics/Card.js';
-import { cardCount } from '../../variants.js';
 import { playersBetween } from '../h-group/hanabi-logic.js';
 import { getTimeout, UnsolvedGame } from './endgame.js';
 import * as Utils from '../../tools/util.js';
@@ -10,7 +9,6 @@ import { logCard } from '../../tools/log.js';
 /**
  * @typedef {import('../../basics/Game.js').Game} Game
  * @typedef {import('../../basics/State.js').State} State
- * @typedef {import('../../basics/Card.js').BasicCard} BasicCard
  * @typedef {import('../../types.js').Identity} Identity
  * @typedef {import('../../types.js').Clue} Clue
  * @typedef {import('../../types.js').Action} Action
@@ -45,7 +43,7 @@ function find_must_plays(state, hand) {
 			return acc;
 
 		// All remaining copies of this identity are in the hand
-		if (cardCount(state.variant, id) - state.baseCount(id) === group.length)
+		if (state.cardCount(id) - state.baseCount(id) === group.length)
 			acc.push(id);
 
 		return acc;

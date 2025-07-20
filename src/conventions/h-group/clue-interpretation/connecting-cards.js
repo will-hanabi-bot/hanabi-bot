@@ -1,4 +1,4 @@
-import { cardCount, variantRegexes } from '../../../variants.js';
+import { variantRegexes } from '../../../variants.js';
 import { LEVEL } from '../h-constants.js';
 import { order_1s } from '../action-helper.js';
 import { inBetween, rainbowMismatch } from '../hanabi-logic.js';
@@ -147,7 +147,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 			return false;
 
 		const missing_ids = common.thoughts[o].inferred.flatMap(i => {
-			const amount = cardCount(state.variant, i) -
+			const amount = state.cardCount(i) -
 				state.baseCount(i) - visibleFind(state, game.players[giver], i).length - (state.deck[o].matches(i) ? 1 : 0);
 
 			return Array.from({ length: amount }, _ => i);
@@ -343,7 +343,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 
 	logger.debug('looking for connecting', logCard(identity), looksDirect);
 
-	if (state.discard_stacks[suitIndex][rank - 1] === cardCount(state.variant, identity)) {
+	if (state.discard_stacks[suitIndex][rank - 1] === state.cardCount(identity)) {
 		logger.info(`all ${logCard(identity)} in trash`);
 		return [];
 	}

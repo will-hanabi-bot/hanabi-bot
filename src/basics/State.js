@@ -41,6 +41,8 @@ export class State {
 	discard_stacks = /** @type {number[][]} */ ([]);
 	max_ranks = /** @type {number[]} */ ([]);
 
+	_cardCount = /** @type {number[][]} */ ([]);
+
 	currentPlayerIndex = 0;
 
 	/** The order of the most recently drawn card. */
@@ -68,9 +70,18 @@ export class State {
 		/** @type {TableOptions} */
 		this.options = options;
 
-		/** @type {number} */
-		this.cardsLeft = this.variant.suits.reduce((acc, _, suitIndex) =>
-			acc + [1, 2, 3, 4, 5].reduce((cards, rank) => cards + cardCount(variant, { suitIndex, rank }), 0), 0);
+		this.cardsLeft = 0;
+
+		for (let suitIndex = 0; suitIndex < this.variant.suits.length; suitIndex++) {
+			const suitCount = [];
+
+			for (let rank = 1; rank <= 5; rank++) {
+				const count = cardCount(variant, { suitIndex, rank });
+				this.cardsLeft += count;
+				suitCount.push(count);
+			}
+			this._cardCount.push(suitCount);
+		}
 
 		for (let suitIndex = 0; suitIndex < this.variant.suits.length; suitIndex++) {
 			this.play_stacks.push(0);
@@ -203,6 +214,17 @@ export class State {
 			return 0;
 
 		return (this.play_stacks[suitIndex] >= rank ? 1 : 0) + this.discard_stacks[suitIndex][rank - 1];
+	}
+
+	/**
+	 * Returns the multiplicity of the index.
+	 * @param {Identity} identity
+	 */
+	cardCount({ suitIndex, rank }) {
+		if (suitIndex === -1 || rank === -1)
+			return 4;
+
+		return this._cardCount[suitIndex][rank - 1];
 	}
 
 	/**

@@ -1,6 +1,6 @@
 import { CLUE } from '../../constants.js';
 import { CARD_STATUS } from '../../basics/Card.js';
-import { cardCount, colourableSuits, variantRegexes } from '../../variants.js';
+import { colourableSuits, variantRegexes } from '../../variants.js';
 import { knownAs, visibleFind } from '../../basics/hanabi-util.js';
 import { order_1s } from './action-helper.js';
 import * as Utils from '../../tools/util.js';
@@ -178,7 +178,7 @@ export function rankLooksPlayable(game, rank, giver, target, order) {
 			visibleFind(state, common, identity).filter(o => o !== order).length;
 		const matching_inference = game.players[target].thoughts[order].inferred.has(identity);
 
-		return playable_identity && other_visibles < cardCount(state.variant, identity) && matching_inference;
+		return playable_identity && other_visibles < state.cardCount(identity) && matching_inference;
 	});
 }
 
