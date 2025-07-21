@@ -155,14 +155,9 @@ export function handle_action(action) {
 				if (infer) {
 					draft.inferred = newGame.common.thoughts[order].inferred.intersect(identities);
 				}
-				else {
-					if (identities.length === 1) {
-						draft.suitIndex = identities[0].suitIndex;
-						draft.rank = identities[0].rank;
-					}
-					else {
-						draft.rewind_ids = identities;
-					}
+				else if (identities.length === 1) {
+					draft.suitIndex = identities[0].suitIndex;
+					draft.rank = identities[0].rank;
 				}
 			});
 

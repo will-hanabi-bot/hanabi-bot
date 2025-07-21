@@ -8,6 +8,7 @@ import { update_turn } from './playful-sieve/update-turn.js';
 /**
  * @typedef {import('../variants.js').Variant} Variant
  * @typedef {import('../basics/State.js').State} State
+ * @typedef {import('../basics/Player.js').Player} Player
  * @typedef {import('../types-live.js').TableOptions} TableOptions
  * @typedef {import('../types.js').ClueAction} ClueAction
  * @typedef {import('../types.js').DiscardAction} DiscardAction
@@ -49,9 +50,10 @@ export default class PlayfulSieve extends Game {
 	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
+	 * @param {{ state: State, players: Player[], common: Player }} base
 	 */
-	constructor(tableID, state, in_progress) {
-		super(tableID, state, in_progress);
+	constructor(tableID, state, in_progress, base = undefined) {
+		super(tableID, state, in_progress, base);
 	}
 
 	createBlank() {
@@ -66,6 +68,12 @@ export default class PlayfulSieve extends Game {
 		const newGame = super.minimalCopy();
 		newGame.locked_shifts = this.locked_shifts.slice();
 		newGame.copyDepth = this.copyDepth + 1;
+		return newGame;
+	}
+
+	shallowCopy() {
+		const newGame = super.minimalCopy();
+		newGame.locked_shifts = this.locked_shifts;
 		return newGame;
 	}
 }

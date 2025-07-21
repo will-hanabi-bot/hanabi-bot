@@ -125,7 +125,7 @@ async function main() {
  */
 async function simulate_game(playerNames, deck, convention, level, variant) {
 	let games = playerNames.map((_, index) => {
-		const game = new conventions[convention](-1, new State(playerNames, index, variant, {}), false, level);
+		const game = new conventions[convention](-1, new State(playerNames, index, variant, {}), false, undefined, level);
 		game.catchup = true;
 		return game;
 	});

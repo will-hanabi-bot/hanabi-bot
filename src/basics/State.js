@@ -3,8 +3,6 @@ import { IdentitySet } from './IdentitySet.js';
 import { ActualCard } from '../basics/Card.js';
 import { cardCount, cardTouched, colourableSuits } from '../variants.js';
 
-import * as Utils from '../tools/util.js';
-
 /**
  * @typedef {import('../basics/Card.js').Card} Card
  * @typedef {import('../types.js').Action} Action
@@ -42,6 +40,15 @@ export class State {
 	max_ranks = /** @type {number[]} */ ([]);
 
 	_cardCount = /** @type {number[][]} */ ([]);
+
+	/** @type {number} */
+	cardsLeft;
+
+	/** @type {IdentitySet} */
+	base_ids;
+
+	/** @type {IdentitySet} */
+	all_ids;
 
 	currentPlayerIndex = 0;
 
@@ -98,29 +105,16 @@ export class State {
 
 	/** @param {State} json */
 	static fromJSON(json) {
-		const res = new State(json.playerNames, json.ourPlayerIndex, json.variant, json.options);
+		const res = Object.create(this.prototype);
 
-		for (const key of Object.getOwnPropertyNames(res)) {
-			if (typeof res[key] === 'function')
-				continue;
-
-			switch (key) {
-				case 'deck':
-					res[key] = json[key].map(ActualCard.fromJSON);
-					break;
-
-				case 'base_ids':
-				case 'all_ids':
-					res[key] = IdentitySet.fromJSON(json[key]);
-					break;
-
-				default:
-					res[key] = Utils.objClone(json[key]);
-					break;
+		for (const key of Object.keys(json)) {
+			if (json[key] !== undefined) {
+				if (key === 'deck')
+					res.deck = json.deck.map(ActualCard.fromJSON);
+				else
+					res[key] = json[key];
 			}
 		}
-
-		res.dda = Utils.objClone(json.dda);
 		return res;
 	}
 
@@ -185,12 +179,13 @@ export class State {
 	}
 
 	shallowCopy() {
-		const newState = new State(this.playerNames, this.ourPlayerIndex, this.variant, this.options);
+		const copy = Object.create(Object.getPrototypeOf(this));
 
-		for (const key of Object.getOwnPropertyNames(this))
-			newState[key] = this[key];
-
-		return newState;
+		for (const key of Object.keys(this)) {
+			if (this[key] !== undefined)
+				copy[key] = this[key];
+		}
+		return copy;
 	}
 
 	/**
@@ -199,8 +194,27 @@ export class State {
 	minimalCopy() {
 		const newState = new State(this.playerNames, this.ourPlayerIndex, this.variant, this.options);
 
-		for (const property of Object.getOwnPropertyNames(this))
-			newState[property] = Utils.objClone(this[property]);
+		newState.turn_count = this.turn_count;
+		newState.clue_tokens = this.clue_tokens;
+		newState.strikes = this.strikes;
+		newState.early_game = this.early_game;
+
+		newState.discard_state = this.discard_state;
+		newState.dda = this.dda !== undefined ? { ...this.dda } : this.dda;
+
+		newState.hands = this.hands.map(hand => hand.slice());
+		newState.deck = this.deck.map(c => c.shallowCopy());
+
+		newState.actionList = this.actionList.map(actions => actions.slice());
+
+		newState.play_stacks = this.play_stacks.slice();
+		newState.discard_stacks = this.discard_stacks.map(stack => stack.slice());
+		newState.max_ranks = this.max_ranks.slice();
+
+		newState.currentPlayerIndex = this.currentPlayerIndex;
+		newState.cardOrder = this.cardOrder;
+		newState.cardsLeft = this.cardsLeft;
+		newState.endgameTurns = this.endgameTurns;
 
 		return newState;
 	}

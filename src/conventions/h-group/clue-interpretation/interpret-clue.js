@@ -154,7 +154,7 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 
 		// Multiple possible sets, we need to wait for connections
 		if (connections.length > 0 && connections.some(conn => ['prompt', 'finesse'].includes(conn.type))) {
-			common.waiting_connections.push({
+			common.waiting_connections.push(Object.freeze({
 				connections,
 				conn_index: 0,
 				focus,
@@ -164,7 +164,7 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 				action_index: state.turn_count,
 				turn: state.turn_count,
 				symmetric: !matches
-			});
+			}));
 		}
 	}
 

@@ -45,11 +45,12 @@ export function update_turn(game, action) {
 				logger.info(`waiting card ${identities.length === 1 ? logCard(identities[0]) : '(unknown)'} played`);
 
 				// Advance waiting connection to next card that still exists
-				common.waiting_connections[i].conn_index = connections.findIndex((conn, index) =>
-					index > conn_index && state.hands[conn.reacting].includes(conn.order));
+				const next_index = connections.findIndex((conn, index) => index > conn_index && state.hands[conn.reacting].includes(conn.order));
 
-				if (common.waiting_connections[i].conn_index === -1)
+				if (next_index === -1)
 					to_remove.push(i);
+				else
+					common.waiting_connections[i] = Object.freeze({ ...common.waiting_connections[i], conn_index: next_index });
 			}
 		}
 	}

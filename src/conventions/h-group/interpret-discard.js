@@ -80,7 +80,7 @@ function check_transfer(game, action) {
 					if (dc_ci === -1)
 						new_wcs.push(wc);
 					else
-						new_wcs.push({ ...wc, connections: wc.connections.with(dc_ci, new_conn) });
+						new_wcs.push(Object.freeze({ ...wc, connections: wc.connections.with(dc_ci, new_conn) }));
 				}
 			};
 
@@ -325,7 +325,7 @@ export function interpret_discard(game, action) {
 
 			const actual_card = state.deck[connections.at(-1).order];
 
-			common.waiting_connections.push({
+			common.waiting_connections.push(Object.freeze({
 				connections,
 				giver: playerIndex,
 				target: targets.at(-1).reacting,
@@ -334,7 +334,7 @@ export function interpret_discard(game, action) {
 				focus: connections.at(-1).order,
 				inference: actual_card.raw(),
 				action_index: state.turn_count
-			});
+			}));
 
 			resolve_discard(game, action, failed ? DISCARD_INTERP.POS_MISPLAY : DISCARD_INTERP.POS_DISCARD);
 			action.intentional = true;

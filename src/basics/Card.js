@@ -1,5 +1,4 @@
 import { IdentitySet } from './IdentitySet.js';
-import * as Utils from '../tools/util.js';
 import { logCard } from '../tools/log.js';
 import { produce } from '../StateProxy.js';
 import logger from '../tools/logger.js';
@@ -136,12 +135,6 @@ export class Card extends ActualCard {
 	inferred;
 
 	/**
-	 * All possibilities of the card (from future information).
-	 * @type {Identity[] | undefined}
-	 */
-	rewind_ids;
-
-	/**
 	 * All finesse possibilities of the card (hidden if this card is not finessed).
 	 * @type {IdentitySet | undefined}
 	 */
@@ -210,34 +203,14 @@ export class Card extends ActualCard {
 
 	/** @param {Card} json */
 	static fromJSON(json) {
-		const res = new Card(json.suitIndex, json.rank, IdentitySet.fromJSON(json.possible), IdentitySet.fromJSON(json.inferred));
+		const res = Object.create(this.prototype);
 
-		for (const property of Object.getOwnPropertyNames(res)) {
-			if (json[property] === undefined)
-				continue;
-
-			switch (property) {
-				case 'finesse_ids':
-				case 'old_inferred':
-				case 'old_possible':
-				case 'inferred':
-				case 'possible':
-				case 'info_lock':
-					res[property] = IdentitySet.fromJSON(json[property]);
-					break;
-
-				case 'rewind_ids':
-					res[property] = json[property].slice();
-					break;
-
-				case 'reasoning':
-				case 'reasoning_turn':
-					res[property] = json[property].slice();
-					break;
-
-				default:
-					res[property] = Utils.shallowCopy(json[property]);
-					break;
+		for (const key of Object.keys(json)) {
+			if (json[key] !== undefined) {
+				if (['inferred', 'possible', 'finesse_ids', 'old_inferred', 'old_possible', 'info_lock'].includes(key))
+					res[key] = IdentitySet.fromJSON(json[key]);
+				else
+					res[key] = json[key];
 			}
 		}
 		return res;
@@ -251,11 +224,12 @@ export class Card extends ActualCard {
 	}
 
 	shallowCopy() {
-		const copy = new Card(this.suitIndex, this.rank, this.possible, this.inferred, this.order, this.drawn_index, this.clued, this.newly_clued, this.clues);
+		const copy = Object.create(Object.getPrototypeOf(this));
 
-		for (const property of Object.getOwnPropertyNames(this))
-			copy[property] = this[property];
-
+		for (const key of Object.keys(this)) {
+			if (this[key] !== undefined)
+				copy[key] = this[key];
+		}
 		return copy;
 	}
 

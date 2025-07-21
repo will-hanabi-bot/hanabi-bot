@@ -9,7 +9,6 @@ import logger from '../tools/logger.js';
 import { logCard, logPerformAction } from '../tools/log.js';
 import { produce, produceC } from '../StateProxy.js';
 
-
 /**
  * @typedef {import('../types.js').Action} Action
  * @typedef {import('../types.js').BaseClue} BaseClue
@@ -57,20 +56,16 @@ export class Game {
 	 */
 	next_finesse = [];
 
-	handle_action = handle_action;
-
-	/**
-	 * A function that executes after all cards have been drawn.
-	 * @param {this} [_game]
-	 */
-	hookAfterDraws = (_game) => {};
+	/** @type {{ state: State, players: Player[], common: Player }} */
+	base;
 
 	/**
 	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
+	 * @param {{ state: State, players: Player[], common: Player }} base
 	 */
-	constructor(tableID, state, in_progress) {
+	constructor(tableID, state, in_progress, base = undefined) {
 		/** @type {number} */
 		this.tableID = tableID;
 		this.state = state;
@@ -79,26 +74,25 @@ export class Game {
 		const all_possible = new IdentitySet(state.variant.suits.length);
 
 		for (let i = 0; i < state.numPlayers; i++)
-			this.players[i] = new Player(i, all_possible, all_possible, Array.from({ length: state.variant.suits.length }, _ => 0));
+			this.players[i] = base?.players[i].clone() ?? new Player(i, all_possible, all_possible, Array.from({ length: state.variant.suits.length }, _ => 0));
 
-		this.common = new Player(-1, all_possible, all_possible, Array.from({ length: state.variant.suits.length }, _ => 0));
+		this.common = base?.common.clone() ?? new Player(-1, all_possible, all_possible, Array.from({ length: state.variant.suits.length }, _ => 0));
+
+		this.base = base ?? { state: this.state.minimalCopy(), players: this.players.map(p => p.clone()), common: this.common.clone() };
 	}
 
 	/** @param {Game} json */
 	static fromJSON(json) {
-		const res = new Game(json.tableID, State.fromJSON(json.state), json.in_progress);
+		const res = Object.create(this.prototype);
 
-		for (const property of Object.getOwnPropertyNames(res)) {
-			switch (property) {
-				case 'players':
+		for (const key of Object.keys(this)) {
+			if (this[key] !== undefined) {
+				if (key === 'players')
 					res.players = json.players.map(Player.fromJSON);
-					break;
-				case 'common':
+				else if (key === 'common')
 					res.common = Player.fromJSON(json.common);
-					break;
-				default:
-					res[property] = Utils.objClone(json[property]);
-					break;
+				else
+					res[key] = this[key];
 			}
 		}
 		return res;
@@ -126,9 +120,10 @@ export class Game {
 	 * @returns {this}
 	 */
 	createBlank() {
-		const newGame = new /** @type {any} */ (this.constructor)(this.tableID, this.state.createBlank(), this.in_progress);
+		const newGame = new /** @type {any} */ (this.constructor)(this.tableID, this.base.state.minimalCopy(), this.in_progress, this.base);
 		newGame.notes = this.notes;
 		newGame.rewinds = this.rewinds;
+		newGame.base = this.base;
 		return newGame;
 	}
 
@@ -136,12 +131,13 @@ export class Game {
 	 * @returns {this}
 	 */
 	shallowCopy() {
-		const newGame = new /** @type {any} */ (this.constructor)(this.tableID, this.state, this.in_progress);
+		const copy = Object.create(Object.getPrototypeOf(this));
 
-		for (const key of Object.getOwnPropertyNames(this))
-			newGame[key] = this[key];
-
-		return newGame;
+		for (const key of Object.keys(this)) {
+			if (this[key] !== undefined)
+				copy[key] = this[key];
+		}
+		return copy;
 	}
 
 	/**
@@ -160,7 +156,15 @@ export class Game {
 			newGame[property] = Utils.objClone(this[property]);
 
 		newGame.copyDepth = this.copyDepth + 1;
+		newGame.base = this.base;
 		return newGame;
+	}
+
+	/**
+	 * @param {Action} 	action
+	 */
+	handle_action(action) {
+		return handle_action.bind(this)(action);
 	}
 
 	/**
@@ -299,46 +303,11 @@ export class Game {
 		const old_global_game = Utils.globals.game;
 		Utils.globalModify({ game: newGame });
 
-		let injected = false;
-
 		/** @param {Action} action */
 		const catchup_action = (action) => {
-			if (!injected && action.type !== 'draw' && action.type !== 'identify') {
-				newGame.hookAfterDraws(newGame);
-				injected = true;
-			}
-
-			const our_action = action.type === 'clue' && action.giver === this.state.ourPlayerIndex;
-
-			if (!our_action) {
-				newGame = newGame.handle_action(action);
+			if (action.type === 'draw' && newGame.state.hands[action.playerIndex].includes(action.order))
 				return;
-			}
 
-			let hypoGame = newGame.minimalCopy();
-
-			newGame.state.hands[this.state.ourPlayerIndex] = this.handHistory[Math.max(1, newGame.state.turn_count)];
-
-			newGame = newGame.handle_action(action);
-
-			// Simulate the actual hand as well for replacement
-			logger.off();
-
-			Utils.globalModify({ game: hypoGame });
-			hypoGame = hypoGame.handle_action(action);
-			Utils.globalModify({ game: newGame });
-
-			logger.on();
-
-			newGame.state.hands[this.state.ourPlayerIndex] = hypoGame.state.hands[this.state.ourPlayerIndex];
-		};
-
-		/** @param {Action} action */
-		const after_action = (action) => {
-			if (!injected && action.type !== 'draw' && action.type !== 'identify') {
-				newGame.hookAfterDraws(newGame);
-				injected = true;
-			}
 			newGame = newGame.handle_action(action);
 		};
 
@@ -356,27 +325,27 @@ export class Game {
 				remaining_id_actions.push(action);
 			}
 			else {
-				after_action(action);
+				newGame = newGame.handle_action(action);
 
 				if (action.type === 'draw' && action.order === remaining_id_actions[0]?.order)
-					after_action(remaining_id_actions.shift());
+					newGame = newGame.handle_action(remaining_id_actions.shift());
 			}
 		}
 
 		// Redo all the following actions
 		const future = actionList.slice(action_index, -1).flat();
 		for (const action of future) {
-			after_action(action);
+			newGame = newGame.handle_action(action);
 
 			if (action.type === 'draw' && action.order === remaining_id_actions[0]?.order)
-				after_action(remaining_id_actions.shift());
+				newGame = newGame.handle_action(remaining_id_actions.shift());
 		}
 
 		logger.highlight('green', '------- REWIND COMPLETE -------');
 
 		newGame.catchup = this.catchup;
 		for (const action of actionList.at(-1))
-			after_action(action);
+			newGame = newGame.handle_action(action);
 
 		for (const [order, noteObj] of this.notes.entries())
 			newGame.notes[order] = noteObj;

@@ -225,7 +225,7 @@ export function interpret_clue(game, action) {
 									identities: [inf]
 								}];
 
-								common.waiting_connections.push({
+								common.waiting_connections.push(Object.freeze({
 									connections,
 									giver,
 									target,
@@ -234,7 +234,7 @@ export function interpret_clue(game, action) {
 									focus: state.hands[target][target_index],
 									inference: { suitIndex: inf.suitIndex, rank: inf.rank + 1 },
 									action_index: state.turn_count
-								});
+								}));
 							}
 						}
 					}

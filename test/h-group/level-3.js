@@ -305,8 +305,6 @@ describe('sarcastic discard', () => {
 		takeTurn(game, 'Bob clues 2 to Alice (slots 3,4,5)');
 		takeTurn(game, 'Cathy discards r2', 'g1');
 
-		console.log(game.common.links);
-
 		// ALice should have an r2 link between slots 3 and 4 (can't be slot 5, otherwise Bob wouldn't save).
 		assert.ok(game.common.links.some(link =>
 			link.orders.includes(1) && link.orders.includes(2) && link.identities.some(i => i.suitIndex === COLOUR.RED && i.rank === 2)));

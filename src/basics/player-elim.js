@@ -344,11 +344,24 @@ export function good_touch_elim(state, only_self = false) {
 	const hard_match_map = /** @type {Map<string, Set<number>>} */ (new Map());
 	const cross_map = /** @type {Map<number, Set<number>>} */ (new Map());
 
-	let newPlayer = this;
+	/** @type {Map<number, Card>} */
+	const newThoughts = new Map();
+
+	/** @type {(order: number) => Card} */
+	const getThoughts = (order) => newThoughts.get(order) ?? this.thoughts[order];
+
+	/** @type {(order: number, producer: (draft: Card) => void) => void} */
+	const updateThoughts = (order, producer) => {
+		const target = newThoughts.get(order) ?? this.thoughts[order].shallowCopy();
+		producer(target);
+		newThoughts.set(order, target);
+	};
+
+	const newElims = new Map(this.elims);
 
 	/** @type {(order: number, playerIndex: number) => void} */
 	const addToMaps = (order, playerIndex) => {
-		const card = newPlayer.thoughts[order];
+		const card = getThoughts(order);
 		const id = card.identity({ infer: true, symmetric: this.playerIndex === -1 || this.playerIndex === playerIndex });
 
 		if (!card.touched || card.uncertain)
@@ -391,6 +404,13 @@ export function good_touch_elim(state, only_self = false) {
 		}
 	};
 
+	let identities = state.base_ids;
+	for (const order of state.hands.flat())
+		identities = identities.union(this.thoughts[order].inferred);
+
+	const trash_ids = identities.filter(i => state.isBasicTrash(i));
+	identities = identities.subtract(trash_ids);
+
 	/** @type {{ order: number, playerIndex: number, cm: boolean }[]} */
 	const elim_candidates = [];
 
@@ -401,7 +421,7 @@ export function good_touch_elim(state, only_self = false) {
 		for (const order of state.hands[i]) {
 			addToMaps(order, i);
 
-			const card = newPlayer.thoughts[order];
+			const card = this.thoughts[order];
 
 			if (card.trash || card.identity({ symmetric: true }) !== undefined)
 				continue;
@@ -410,32 +430,24 @@ export function good_touch_elim(state, only_self = false) {
 				// Touched cards always elim
 				if (card.touched)
 					elim_candidates.push({ order, playerIndex: i, cm: false });
-
 				// Chop moved cards can asymmetric/visible elim
 				else if (card.status === CARD_STATUS.CM)
 					elim_candidates.push({ order, playerIndex: i, cm: this.playerIndex === -1 });
+				else
+					continue;
+
+				// Eliminate trash
+				if (card.inferred.intersect(trash_ids).length > 0) {
+					const new_inferred = card.inferred.subtract(trash_ids);
+
+					if (card.status !== CARD_STATUS.CM && new_inferred.length === 0 && !this.thoughts[order].reset)
+						newThoughts.set(order, this.thoughts[order].reset_inferences());
+					else
+						updateThoughts(order, (draft) => draft.inferred = new_inferred);
+				}
 			}
 		}
 	}
-
-	let identities = state.base_ids;
-	for (const order of state.hands.flat())
-		identities = identities.union(this.thoughts[order].inferred);
-
-	const trash_ids = identities.filter(i => state.isBasicTrash(i));
-
-	newPlayer = produce(newPlayer, (draft) => {
-		// Remove all trash identities
-		for (const { order, cm } of elim_candidates) {
-			const new_inferred = newPlayer.thoughts[order].inferred.subtract(trash_ids);
-			draft.thoughts[order].inferred = new_inferred;
-
-			if (!cm && new_inferred.length === 0 && !newPlayer.thoughts[order].reset)
-				draft.thoughts[order] = newPlayer.thoughts[order].reset_inferences();
-		}
-	});
-
-	identities = identities.subtract(trash_ids);
 
 	const basic_elim = () => {
 		let changed = false;
@@ -462,7 +474,7 @@ export function good_touch_elim(state, only_self = false) {
 				continue;
 
 			for (const { order, playerIndex, cm } of elim_candidates) {
-				const old_card = newPlayer.thoughts[order];
+				const old_card = getThoughts(order);
 
 				if (matches.has(order) || old_card.inferred.length === 0 || !old_card.inferred.has(identity))
 					continue;
@@ -475,12 +487,12 @@ export function good_touch_elim(state, only_self = false) {
 				// Check if every match was from the clue giver (or vice versa)
 				const asymmetric_gt = !state.isCritical(identity) && !(cm && visible_elim) && matches.size > 0 &&
 					(matches_arr.every(o => {
-						const { giver, turn } = newPlayer.thoughts[o].firstTouch ?? {};
+						const { giver, turn } = getThoughts(o).firstTouch ?? {};
 						return giver === playerIndex && turn > (firstTouch?.turn ?? 0);
 					}) ||
 					(firstTouch !== undefined && matches_arr.every(o =>
 						state.hands[firstTouch.giver].includes(o) &&
-						newPlayer.thoughts[o].possibilities.length > 1
+						getThoughts(o).possibilities.length > 1
 					)));
 
 				if (asymmetric_gt)
@@ -488,7 +500,7 @@ export function good_touch_elim(state, only_self = false) {
 
 				const self_elim = this.playerIndex !== -1 && matches_arr.length > 0 && matches_arr.every(o =>
 					state.hands[playerIndex].includes(o) &&
-					!newPlayer.thoughts[o].identity({ infer: true, symmetric: true })?.matches(identity));
+					!getThoughts(o).identity({ infer: true, symmetric: true })?.matches(identity));
 
 				if (self_elim)
 					continue;
@@ -496,12 +508,12 @@ export function good_touch_elim(state, only_self = false) {
 				// TODO: Temporary stop-gap so that Bob still plays into it. Bob should actually clue instead.
 				if (old_card.blind_playing && [0, 1].some(i => old_card.finesse_index === state.turn_count - i)) {
 					logger.warn(`tried to gt eliminate ${id_hash} from recently finessed card (player ${this.playerIndex}, order ${order})!`);
-					newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].certain_finessed = true; });
+					updateThoughts(order, (draft) => { draft.certain_finessed = true; });
 					elim_candidates.splice(elim_candidates.findIndex(c => c.order === order), 1);
 					continue;
 				}
 
-				if (old_card.blind_playing && playerIndex === state.ourPlayerIndex && !Array.from(matches).some(o => newPlayer.thoughts[o].focused)) {
+				if (old_card.blind_playing && playerIndex === state.ourPlayerIndex && !Array.from(matches).some(o => getThoughts(o).focused)) {
 					logger.warn(`tried to gt eliminate ${id_hash} from finessed card on us (order ${order})! could be bad touched`);
 					elim_candidates.splice(elim_candidates.findIndex(c => c.order === order), 1);
 					continue;
@@ -511,21 +523,19 @@ export function good_touch_elim(state, only_self = false) {
 				if (cm && !visible_elim)
 					continue;
 
-				const { inferred, reset } = newPlayer.thoughts[order];
+				const { inferred, reset } = getThoughts(order);
 				const new_inferred = inferred.subtract(identity);
 
-				newPlayer = produce(newPlayer, (draft) => { draft.thoughts[order].inferred = new_inferred; });
+				updateThoughts(order, (draft) => { draft.inferred = new_inferred; });
 
 				new_identities = new_identities.subtract(identity);
 				changed = true;
 
-				const newElims = new Map(newPlayer.elims);
 				newElims.set(id_hash, (newElims.get(id_hash) ?? []).concat(order));
-				newPlayer.elims = newElims;
 
 				if (!cm) {
 					if (new_inferred.length === 0 && !reset)
-						newPlayer.thoughts = newPlayer.thoughts.with(order, newPlayer.thoughts[order].reset_inferences());
+						newThoughts.set(order, getThoughts(order).reset_inferences());
 
 					// Newly eliminated
 					else if (new_inferred.length === 1 && old_card.inferred.length > 1 && !state.isBasicTrash(new_inferred.array[0]))
@@ -556,7 +566,7 @@ export function good_touch_elim(state, only_self = false) {
 			let change = false;
 
 			for (let i = 0; i < orders.size; i++) {
-				const card = newPlayer.thoughts[orders_arr[i]];
+				const card = getThoughts(orders_arr[i]);
 				const orig_clue = card.clues[0];
 
 				for (let j = 0; j < orders.size; j++) {
@@ -566,15 +576,15 @@ export function good_touch_elim(state, only_self = false) {
 					// Check if every match was from the clue giver (or vice versa)
 					const asymmetric_gt = !state.isCritical(other_card) &&
 						((other_orig_clue?.giver === holders[i] && other_orig_clue.turn > (orig_clue?.turn ?? 0)) ||
-							(orig_clue?.giver === holders[j] && newPlayer.thoughts[orders_arr[j]].possibilities.length > 1));
+							(orig_clue?.giver === holders[j] && getThoughts(orders_arr[j]).possibilities.length > 1));
 
 					if (asymmetric_gt)
 						continue;
 
 					// Globally, a player can subtract identities others have, knowing others can see the identities they have.
 					if (i !== j && holders[i] !== holders[j] && card.inferred.has(other_card)) {
-						const { inferred } = newPlayer.thoughts[orders_arr[i]];
-						newPlayer = produce(newPlayer, (draft) => { draft.thoughts[orders_arr[i]].inferred = inferred.subtract(other_card); });
+						const { inferred } = getThoughts(orders_arr[i]);
+						updateThoughts(orders_arr[i], (draft) => { draft.inferred = inferred.subtract(other_card); });
 						change = true;
 						changed = true;
 					}
@@ -600,6 +610,13 @@ export function good_touch_elim(state, only_self = false) {
 		if (basic_changed || cross_changed)
 			cross_changed = cross_elim();
 	}
+
+	const newPlayer = produce(this, (draft) => {
+		for (const [order, newCard] of newThoughts.entries())
+			draft.thoughts[order] = newCard;
+
+		draft.elims = newElims;
+	});
 
 	return newPlayer;
 }

@@ -51,6 +51,8 @@ export default class HGroup extends Game {
 		return update_turn(this, action);
 	}
 
+	level = 1;
+
 	/** @type {{turn: number, move: INTERP}[]} */
 	moveHistory;
 
@@ -66,21 +68,24 @@ export default class HGroup extends Game {
 	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
+	 * @param {{ state: State, players: HGroup_Player[], common: HGroup_Player }} base
 	 * @param {number} [level] 	The convention level (defaults to 1).
 	 */
-	constructor(tableID, state, in_progress, level = 1) {
+	constructor(tableID, state, in_progress, base = undefined, level = 1) {
 		super(tableID, state, in_progress);
 
-		this.players = this.players.map(p =>
+		this.players = base?.players.map(p => p.clone()) ?? this.players.map(p =>
 			new HGroup_Player(p.playerIndex, p.all_possible, p.all_inferred, p.hypo_stacks, p.hypo_plays, p.hypo_map, p.thoughts, p.links, p.play_links, p.unknown_plays, p.waiting_connections, p.elims));
 
 		const c = this.common;
-		this.common = new HGroup_Player(c.playerIndex, c.all_possible, c.all_inferred, c.hypo_stacks, c.hypo_plays, c.hypo_map, c.thoughts, c.links, c.play_links, c.unknown_plays, c.waiting_connections, c.elims);
+		this.common = base?.common.clone() ?? new HGroup_Player(c.playerIndex, c.all_possible, c.all_inferred, c.hypo_stacks, c.hypo_plays, c.hypo_map, c.thoughts, c.links, c.play_links, c.unknown_plays, c.waiting_connections, c.elims);
 
 		this.finesses_while_finessed = Array.from({ length: state.numPlayers }, _ => []);
 
 		this.level = level;
 		this.moveHistory = [];
+
+		this.base = { state: state.minimalCopy(), players: this.players.map(p => p.clone()), common: this.common.clone() };
 	}
 
 	/** @param {HGroup} json */
@@ -135,6 +140,9 @@ export default class HGroup extends Game {
 	shallowCopy() {
 		const newGame = super.shallowCopy();
 		newGame.level = this.level;
+		newGame.moveHistory = this.moveHistory;
+		newGame.finesses_while_finessed = this.finesses_while_finessed;
+		newGame.stalled_5 = this.stalled_5;
 		return newGame;
 	}
 

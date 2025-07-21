@@ -137,49 +137,12 @@ function init_game(game, options) {
 		}
 	}
 
-	let newCommon = game.common.card_elim(state);
-
-	if (game.good_touch)
-		newCommon = newCommon.good_touch_elim(state);
-
-	Object.assign(game.common, newCommon.refresh_links(state));
-
-	team_elim(game);
-
 	state.currentPlayerIndex = options.starting ?? 0;
 	state.clue_tokens = options.clue_tokens ?? 8;
 	state.strikes = options.strikes ?? 0;
 
 	if (options.init)
-		game.hookAfterDraws = options.init;
-}
-
-/**
- * Injects extra statements into state functions for ease of testing.
- * @this {Game}
- * @param {Partial<SetupOptions>} options
- */
-function injectFuncs(options) {
-	// @ts-ignore
-	this.createBlankDefault = this.createBlank;
-	this.createBlank = function () {
-		// @ts-ignore
-		const new_game = this.createBlankDefault();
-
-		init_game(new_game, options);
-		injectFuncs.bind(new_game)(options);
-		return new_game;
-	};
-
-	// @ts-ignore
-	this.minimalCopyDefault = this.minimalCopyDefault ?? this.minimalCopy;
-	this.minimalCopy = function () {
-		// @ts-ignore
-		const new_game = this.minimalCopyDefault();
-
-		injectFuncs.bind(new_game)(options);
-		return new_game;
-	};
+		options.init(game);
 }
 
 /**
@@ -213,7 +176,7 @@ export function setup(GameClass, hands, test_options = {}) {
 
 	const state = new State(playerNames, test_options.ourPlayerIndex ?? PLAYER.ALICE, variant, {});
 	const [minLevel, maxLevel] = [test_options?.level?.min ?? 1, test_options?.level?.max ?? MAX_H_LEVEL];
-	let game = new GameClass(-1, state, false, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
+	let game = new GameClass(-1, state, false, undefined, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
 	game.catchup = true;
 
 	let orderCounter = 0;
@@ -230,9 +193,6 @@ export function setup(GameClass, hands, test_options = {}) {
 	}
 
 	init_game(game, test_options);
-	injectFuncs.bind(game)(test_options);
-
-	game.hookAfterDraws(game);
 
 	let newCommon = game.common.card_elim(game.state);
 
@@ -242,6 +202,7 @@ export function setup(GameClass, hands, test_options = {}) {
 	Object.assign(game.common, newCommon.refresh_links(game.state));
 
 	team_elim(game);
+	game.base = { state: game.state.minimalCopy(), players: game.players.map(p => p.clone()), common: game.common.clone() };
 	Utils.globalModify({ game, cache: new Map() });
 	return game;
 }

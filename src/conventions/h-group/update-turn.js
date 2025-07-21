@@ -152,9 +152,12 @@ export function update_turn(game, action) {
 				demonstrated.set(order, [demonstration]);
 		}
 
-		waiting_connection.conn_index = remove ? -1 : next_index ?? waiting_connection.conn_index;
-		waiting_connection.ambiguousPassback ||= ambiguousPassback;
-		waiting_connection.selfPassback ||= selfPassback;
+		common.waiting_connections[i] = Object.freeze({
+			...waiting_connection,
+			conn_index: remove ? -1 : next_index ?? waiting_connection.conn_index,
+			ambiguousPassback:  waiting_connection.ambiguousPassback || ambiguousPassback,
+			selfPassback: waiting_connection.selfPassback || selfPassback
+		});
 	}
 
 	Object.assign(game.common, reset_superpositions(game));

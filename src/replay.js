@@ -84,7 +84,7 @@ async function main() {
 	await getShortForms(variant);
 
 	const state = new State(players, ourPlayerIndex, variant, options);
-	let game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, Number(level ?? 1));
+	let game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, undefined, Number(level ?? 1));
 	game.catchup = true;
 
 	Utils.globalModify({ game, cache: new Map() });

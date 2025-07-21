@@ -220,7 +220,7 @@ export const handle = {
 		const state = new State(playerNames, ourPlayerIndex, variant, options);
 
 		// Initialize game state using convention set
-		game = new conventions[/** @type {'HGroup' | 'RefSieve' | 'PlayfulSieve'} */ (settings.convention)](tableID, state, true, settings.level);
+		game = new conventions[/** @type {'HGroup' | 'RefSieve' | 'PlayfulSieve'} */ (settings.convention)](tableID, state, true, undefined, settings.level);
 
 		Utils.globalModify({ game, cache: new Map() });
 
