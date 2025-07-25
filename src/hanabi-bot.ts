@@ -1,6 +1,6 @@
 import * as https from 'https';
 
-import { handle } from './command-handler.js';
+import { Bot } from './command-handler.ts';
 import { initConsole } from './tools/console.js';
 import * as Utils from './tools/util.js';
 import { HANABI_HOSTNAME } from './constants.js';
@@ -17,8 +17,6 @@ function connect(bot_index = '') {
 	const username = encodeURIComponent(process.env[u_field]);
 	const password = encodeURIComponent(process.env[p_field]);
 	const data = `username=${username}&password=${password}&version=bot`;
-
-	Utils.globalModify({ username });
 
 	const options = {
 		hostname: HANABI_HOSTNAME,
@@ -71,12 +69,8 @@ async function main() {
 	// Establish websocket
 	const ws = new WebSocket(`wss://${HANABI_HOSTNAME}/ws`, { headers: { Cookie: cookie } });
 
-	// Pass the websocket to utils
-	Utils.globalModify({ ws });
-	initConsole();
-
-	if (manual)
-		Utils.globalModify({ manual: true });
+	const bot = new Bot(ws, manual !== undefined);
+	initConsole(bot);
 
 	ws.addEventListener('open', () => console.log('Established websocket connection!'));
 	ws.addEventListener('error', (event) => console.log('Websocket error:', event));
@@ -89,9 +83,7 @@ async function main() {
 		const [command, arg] = [str.slice(0, ind), str.slice(ind + 1)];
 
 		// Handle the command if there's a registered handler function for it
-		if (handle[command] !== undefined) {
-			handle[command](JSON.parse(arg));
-		}
+		bot.handle_msg(command, JSON.parse(arg));
 	});
 }
 

@@ -192,7 +192,7 @@ describe('unlock promise', () => {
 		const action = await game.take_action();
 
 		// Alice should play r1 instead of discarding.
-		assert.equal(action.type, ACTION.PLAY, `Actual action was (${logPerformAction(action)})`);
+		assert.equal(action.type, ACTION.PLAY, `Actual action was (${logPerformAction(game, action)})`);
 		assert.ok([2,3].map(index => game.state.hands[PLAYER.ALICE][index]).includes(action.target));
 	});
 

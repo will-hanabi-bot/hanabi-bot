@@ -205,7 +205,7 @@ describe('stalling', () => {
 
 		// Alice should give green to Cathy instead of red
 		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN },
-			`Expected (green to Cathy) but got ${logPerformAction(action)}`);
+			`Expected (green to Cathy) but got ${logPerformAction(game, action)}`);
 	});
 
 	it('gives a 5 stall on the 5 closest to chop', async () => {
@@ -223,7 +223,7 @@ describe('stalling', () => {
 
 		// Alice should 5 Stall on Cathy, since Bob's 5 is farther away from chop.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.CATHY, value: 5 }, `Expected (5 to Cathy), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.CATHY, value: 5 }, `Expected (5 to Cathy), got ${logPerformAction(game, action)}`);
 
 		// 5 to Bob is not a valid 5 stall.
 		const { stall_clues } = find_clues(game);
@@ -245,7 +245,7 @@ describe('stalling', () => {
 
 		// Alice should clue 1 to Bob.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 1 }, `Expected (1 to Bob), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 1 }, `Expected (1 to Bob), got ${logPerformAction(game, action)}`);
 
 		// 5 to Bob is not a valid 5 stall.
 		const { stall_clues } = find_clues(game);
@@ -268,7 +268,7 @@ describe('stalling', () => {
 
 		// Alice should discard rather than cluing red to Bob.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD }, `Expected (discard), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD }, `Expected (discard), got ${logPerformAction(game, action)}`);
 
 		// Red to Bob is not a valid tempo clue.
 		const { stall_clues } = find_clues(game);
@@ -302,7 +302,7 @@ describe('stalling', () => {
 
 		// Alice should hard burn on Bob's p5.
 		assert.ok((action.type === ACTION.RANK && action.value === 5) || (action.type === ACTION.COLOUR && action.value === COLOUR.PURPLE),
-			`Expected (5 to Bob) or (purple to Bob), got ${logPerformAction(action)}`);
+			`Expected (5 to Bob) or (purple to Bob), got ${logPerformAction(game, action)}`);
 	});
 });
 
@@ -325,7 +325,7 @@ describe('anxiety plays', () => {
 
 		// Alice should play slot 2 as r5.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target:game.state.hands[PLAYER.ALICE][1] }, `Expected (play slot 2), got ${logPerformAction(action)} instead`);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target:game.state.hands[PLAYER.ALICE][1] }, `Expected (play slot 2), got ${logPerformAction(game, action)} instead`);
 	});
 
 	it(`doesn't assume anxiety if there are clues available`, async () => {
@@ -364,7 +364,7 @@ describe('anxiety plays', () => {
 
 		// Alice should discard, since it isn't possible to play any card.
 		const action = await game.take_action();
-		assert.ok(action.type === ACTION.DISCARD, `Expected discard, got ${logPerformAction(action)} instead`);
+		assert.ok(action.type === ACTION.DISCARD, `Expected discard, got ${logPerformAction(game, action)} instead`);
 	});
 
 	it('forces the next player into anxiety', async () => {

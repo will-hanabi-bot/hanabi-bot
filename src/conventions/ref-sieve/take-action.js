@@ -9,7 +9,6 @@ import { find_sarcastics } from '../shared/sarcastic.js';
 
 import { Worker } from 'worker_threads';
 import * as path from 'path';
-import { shortForms } from '../../variants.js';
 import { CARD_STATUS } from '../../basics/Card.js';
 
 /**
@@ -113,13 +112,13 @@ export async function take_action(game) {
 	trash_orders = trash_orders.filter(o => !discards.includes(o) && !playable_trash.includes(o));
 
 	if (playable_orders.length > 0)
-		logger.info('playable cards', logHand(playable_orders));
+		logger.info('playable cards', logHand(playable_orders, common));
 
 	if (trash_orders.length > 0)
-		logger.info('trash cards', logHand(trash_orders));
+		logger.info('trash cards', logHand(trash_orders, common));
 
 	if (discards.length > 0)
-		logger.info('discards', logHand(discards));
+		logger.info('discards', logHand(discards, common));
 
 	/*const urgent = playable_orders.filter(o => me.thoughts[o].finesse_index !== -1);
 
@@ -180,7 +179,7 @@ export async function take_action(game) {
 	else if (state.inEndgame() && state.maxScore - state.score < 2*state.variant.suits.length) {
 		logger.highlight('purple', 'Attempting to solve endgame...');
 
-		const workerData = { game: Utils.toJSON(game), playerTurn: state.ourPlayerIndex, conv: 'RefSieve', logLevel: logger.level, shortForms };
+		const workerData = { game: Utils.toJSON(game), playerTurn: state.ourPlayerIndex, conv: 'RefSieve', logLevel: logger.level };
 		const worker = new Worker(path.resolve(import.meta.dirname, '../', 'shared', 'endgame.js'), { workerData });
 
 		const result = await new Promise((resolve, reject) => {

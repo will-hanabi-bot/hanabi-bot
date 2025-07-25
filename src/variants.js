@@ -7,7 +7,7 @@ import { combineRegex } from './tools/util.js';
  * @typedef {import('./types.js').BaseClue} BaseClue
  * @typedef {import('./types.js').Identity} Identity
  * 
- * @typedef Variant
+ * @typedef JSONVariant
  * @property {number} id
  * @property {string} name
  * @property {string[]} suits
@@ -22,6 +22,8 @@ import { combineRegex } from './tools/util.js';
  * @property {number} [criticalRank]
  * @property {number} [specialRank]
  * @property {number[]} [clueRanks]
+ * 
+ * @typedef {JSONVariant & { shortForms: string[] }} Variant
  */
 
 const variantsURL = 'https://raw.githubusercontent.com/Hanabi-Live/hanabi-live/main/packages/game/src/json/variants.json';
@@ -36,7 +38,7 @@ const prism = /Prism/;
 const noColour = combineRegex(whitish, rainbowish, prism);
 export const variantRegexes = {whitish, rainbowish, brownish, pinkish, dark, prism, noColour};
 
-/** @type {Promise<Variant[]>} */
+/** @type {Promise<JSONVariant[]>} */
 const variants_promise = new Promise((resolve, reject) => {
 	https.get(variantsURL, (res) => {
 		const { statusCode } = res;
@@ -95,19 +97,20 @@ const colours_promise = new Promise((resolve, reject) => {
 /**
  * Returns a variant's properties, given its name.
  * @param {string} name
+ * @returns {Promise<Variant>}
  */
 export async function getVariant(name) {
 	const variants = await variants_promise;
-	return variants.find(variant => variant.name === name);
-}
+	const variant = variants.find(variant => variant.name === name);
 
-export let shortForms = /** @type {string[]} */ (['r', 'y', 'g', 'b', 'p']);
+	return { ...variant, shortForms: await getShortForms(variant) };
+}
 
 /**
  * Edits shortForms to have the correct acryonyms.
- * @param {Variant} variant
+ * @param {JSONVariant} variant
  */
-export async function getShortForms(variant) {
+async function getShortForms(variant) {
 	const colours = await colours_promise;
 	const abbreviations = [];
 	for (const suitName of variant.suits) {
@@ -122,15 +125,7 @@ export async function getShortForms(variant) {
 
 		}
 	}
-	shortForms = abbreviations;
-}
-
-/**
- * Sets shortForms to contain the specified acryonyms.
- * @param {string[]} abbreviations
- */
-export function setShortForms(abbreviations) {
-	shortForms = abbreviations;
+	return abbreviations;
 }
 
 /** @param {Variant} variant */

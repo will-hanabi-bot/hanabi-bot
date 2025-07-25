@@ -45,58 +45,6 @@
  * @property {boolean} safe
  */
 /**
- * @typedef StatusAction
- * @property {'status'} type
- * @property {number}   clues
- * @property {number}   score
- * @property {number}   maxScore
- * 
- * @typedef TurnAction
- * @property {'turn'}   type
- * @property {number}   num
- * @property {number}   currentPlayerIndex
- * 
- * @typedef ClueAction
- * @property {'clue'}   type
- * @property {number} 	giver
- * @property {number} 	target
- * @property {number[]} list
- * @property {BaseClue} clue
- * @property {boolean}  [mistake]
- * @property {boolean}	[lock]
- * @property {boolean}  [important]
- * @property {boolean}  [hypothetical]
- * @property {boolean}  [noRecurse]
- * 
- * @typedef CardAction
- * @property {number} order
- * @property {number} playerIndex
- * @property {number} suitIndex
- * @property {number} rank
- * 
- * @typedef {CardAction & {type: 'draw'}} DrawAction
- * @typedef {CardAction & {type: 'play'}} PlayAction
- * @typedef {{type: 'identify', order: number, playerIndex: number, identities: Identity[], infer?: boolean}} IdentifyAction
- * @typedef {{type: 'ignore', conn_index: number, order: number, inference?: Identity}} IgnoreAction
- * @typedef {{type: 'finesse', list: number[], clue: BaseClue}} FinesseAction
- * @typedef {CardAction & {type: 'discard', failed: boolean, intentional?: boolean}} DiscardAction
- * 
- * @typedef GameOverAction
- * @property {'gameOver'}   type
- * @property {number}       endCondition
- * @property {number}       playerIndex
- * @property {any}          votes
- * 
- * @typedef {StatusAction | TurnAction | ClueAction | DrawAction | DiscardAction | PlayAction | GameOverAction | IdentifyAction | IgnoreAction | FinesseAction} Action
- */
-/**
- * @typedef PerformAction
- * @property {number} tableID
- * @property {ACTION[keyof ACTION]} type
- * @property {number} target
- * @property {number} [value]
- */
-/**
  * @typedef Connection
  * @property {'known' | 'playable' | 'prompt' | 'finesse' | 'terminate' | 'positional'} type
  * @property {number} reacting

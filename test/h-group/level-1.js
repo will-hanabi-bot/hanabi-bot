@@ -38,7 +38,7 @@ describe('save clue', () => {
 		const action = await game.take_action();
 
 		// Alice should give green to Cathy to finesse over save
-		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN }, `Expected (green to Cathy) but got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN }, `Expected (green to Cathy) but got ${logPerformAction(game, action)}`);
 	});
 
 	it('prefers touching less cards to save critical cards', async () => {
@@ -320,7 +320,7 @@ describe('strategy', async () => {
 		takeTurn(game, 'Donald discards y4', 'r1');
 
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: 0 }, `Expected (discard slot 4), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: 0 }, `Expected (discard slot 4), got ${logPerformAction(game, action)}`);
 	});
 
 	it('urgently gives play clues to chop when they may discard', async () => {

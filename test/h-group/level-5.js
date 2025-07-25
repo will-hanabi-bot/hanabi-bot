@@ -395,7 +395,7 @@ describe('guide principle', () => {
 		takeTurn(game, 'Donald clues blue to Cathy');
 
 		const action = await game.take_action();
-		assert(action.type == ACTION.COLOUR || action.type == ACTION.RANK, `Expected purple/4 to Bob, got ${logPerformAction(action)}.`);
+		assert(action.type == ACTION.COLOUR || action.type == ACTION.RANK, `Expected purple/4 to Bob, got ${logPerformAction(game, action)}.`);
 		if (action.type == ACTION.COLOUR)
 			ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: 1, value: 5 });
 		else
@@ -476,7 +476,7 @@ describe('guide principle', () => {
 		// Bob may think playing gives Cathy a play, but Alice can see that it doesn't,
 		// and should save Cathy's 5.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: 2, value: 5 }, `Expected (5 to Cathy), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: 2, value: 5 }, `Expected (5 to Cathy), got ${logPerformAction(game, action)}`);
 		takeTurn(game, 'Alice clues 5 to Cathy');
 
 		// Understands that Alice may have been deferring the finesse to save the 5 and allow Bob to play.

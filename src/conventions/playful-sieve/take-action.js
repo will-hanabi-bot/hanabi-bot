@@ -59,13 +59,13 @@ export async function take_action(game) {
 	trash_orders = trash_orders.filter(o => !discards.includes(o) && !playable_trash.includes(o));
 
 	if (playable_orders.length > 0)
-		logger.info('playable cards', logHand(playable_orders));
+		logger.info('playable cards', logHand(playable_orders, common));
 
 	if (trash_orders.length > 0)
-		logger.info('trash cards', logHand(trash_orders));
+		logger.info('trash cards', logHand(trash_orders, common));
 
 	if (discards.length > 0)
-		logger.info('discards', logHand(discards));
+		logger.info('discards', logHand(discards, common));
 
 	const playable_priorities = determine_playable_card(game, playable_orders);
 	const priority = playable_priorities.findIndex(priority_cards => priority_cards.length > 0);

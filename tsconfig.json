@@ -6,6 +6,7 @@
     "target": "esnext",
     "module": "nodenext",
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "strict": false
   },
   "include": ["src/**/*.js", "src/**/*.ts", "test/**/*.js"],

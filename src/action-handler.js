@@ -1,7 +1,6 @@
 import { BOT_VERSION, HAND_SIZE } from './constants.js';
 import { team_elimP } from './basics/helper.js';
 import * as Basics from './basics.js';
-import * as Utils from './tools/util.js';
 
 import logger from './tools/logger.js';
 import { logAction, logCard } from './tools/log.js';
@@ -38,7 +37,7 @@ export function handle_action(action) {
 		case 'clue': {
 			// {type: 'clue', clue: { type: 1, value: 1 }, giver: 0, list: [ 8, 9 ], target: 1, turn: 0}
 			const { giver, list } = action;
-			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
+			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(state, action)}`);
 
 			newGame = newGame.interpret_clue(action);
 
@@ -80,7 +79,7 @@ export function handle_action(action) {
 				draft.state.discard_state = undefined;
 			});
 
-			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
+			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(state, action)}`);
 
 			newGame = newGame.interpret_discard(action);
 			newGame = produce(newGame, (draft) => { draft.last_actions[playerIndex] = action; });
@@ -95,7 +94,7 @@ export function handle_action(action) {
 			break;
 		}
 		case 'gameOver': {
-			logger.highlight('redb', logAction(action));
+			logger.highlight('redb', logAction(state, action));
 			newGame = produce(newGame, (draft) => { draft.in_progress = false; });
 			break;
 		}
@@ -109,7 +108,7 @@ export function handle_action(action) {
 				if (num === 1 && newGame.notes[0] === undefined && !newGame.catchup && newGame.in_progress) {
 					const note = `[INFO: v${BOT_VERSION}, ${newGame.convention_name + (/** @type {any} */(newGame).level ?? '')}]`;
 
-					Utils.sendCmd('note', { tableID: newGame.tableID, order: 0, note });
+					this.queued_cmds.push({ arg: 'note', cmd: JSON.stringify({ tableID: newGame.tableID, order: 0, note }) });
 					draft.notes[0] = { last: note, turn: 0, full: note };
 				}
 			});
@@ -131,7 +130,7 @@ export function handle_action(action) {
 				draft.players[playerIndex].thoughts[order].rank = rank;
 			});
 
-			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(action)}`);
+			logger.highlight('yellowb', `Turn ${state.turn_count}: ${logAction(state, action)}`);
 
 			newGame = newGame.interpret_play(action);
 
@@ -195,6 +194,5 @@ export function handle_action(action) {
 		default:
 			break;
 	}
-	Utils.globalModify({ game: newGame });
 	return newGame;
 }

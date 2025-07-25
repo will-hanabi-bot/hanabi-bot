@@ -2,7 +2,6 @@ import HGroup from '../h-group.js';
 import RefSieve from '../ref-sieve.js';
 import { ACTION, ENDGAME_SOLVING_FUNCS } from '../../constants.js';
 import { ActualCard } from '../../basics/Card.js';
-import { setShortForms } from '../../variants.js';
 import { trivially_winnable, simpler_cache, unwinnable_state, winnable_if, remove_remaining } from './endgame-helper.js';
 import { Fraction } from '../../tools/fraction.js';
 import * as Utils from '../../tools/util.js';
@@ -500,9 +499,8 @@ function optimize({ undrawn, drawn }, actions, playerTurn, find_clues, find_disc
 
 if (!isMainThread) {
 	const game = conventions[workerData.conv].fromJSON(workerData.game);
-	Utils.globalModify({ game });
-
-	setShortForms(workerData.shortForms);
+	const { variant, playerNames } = game.state;
+	Utils.globalModify({ variant, playerNames, cache: new Map() });
 
 	simple_cache.clear();
 	simpler_cache.clear();

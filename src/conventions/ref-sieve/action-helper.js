@@ -122,7 +122,7 @@ export function predict_value(game, action) {
 
 	if (action.type === 'clue') {
 		if (hypo_game.lastMove === CLUE_INTERP.NONE) {
-			logger.info(`${logAction(action)}: -10 (${hypo_game.lastMove})`);
+			logger.info(`${logAction(state, action)}: -10 (${hypo_game.lastMove})`);
 			return -100;
 		}
 
@@ -147,7 +147,7 @@ export function predict_value(game, action) {
 	logger.info('starting value', value.toFixed(2));
 
 	const { value: best } = best_value(hypo_game, 1, value);
-	logger.highlight('green', `${logAction(action)}: ${best.toFixed(2)} (${hypo_game.lastMove})`);
+	logger.highlight('green', `${logAction(state, action)}: ${best.toFixed(2)} (${hypo_game.lastMove})`);
 	return best;
 }
 

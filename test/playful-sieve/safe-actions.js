@@ -101,7 +101,7 @@ describe('connecting cards', () => {
 
 		// Alice should play g2 to automatically cm r5.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] }, logPerformAction(action));
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] }, logPerformAction(game, action));
 	});
 
 	it('plays connections to a 1-away chop', async () => {
@@ -125,7 +125,7 @@ describe('connecting cards', () => {
 
 		// Alice should play g1 to make g2 playable.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] }, logPerformAction(action));
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][1] }, logPerformAction(game, action));
 	});
 });
 

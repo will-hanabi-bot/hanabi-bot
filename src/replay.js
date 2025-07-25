@@ -6,9 +6,9 @@ import RefSieve from './conventions/ref-sieve.js';
 import PlayfulSieve from './conventions/playful-sieve.js';
 
 import { ACTION, END_CONDITION } from './constants.js';
-import { getShortForms, getVariant } from './variants.js';
+import { getVariant } from './variants.js';
 
-import { initConsole } from './tools/console.js';
+import { initBaseConsole } from './tools/console.js';
 import * as Utils from './tools/util.js';
 import { State } from './basics/State.js';
 import { HANABI_HOSTNAME } from './constants.js';
@@ -55,7 +55,6 @@ async function main() {
 		throw new Error(`This program requires Node v22 or above! Currently using Node v${process.versions.node}.`);
 
 	const { id, file, level, index, convention = 'HGroup' } = Utils.parse_args();
-	initConsole();
 
 	let game_data;
 
@@ -73,6 +72,8 @@ async function main() {
 
 	const { players, deck, actions, options = {} } = game_data;
 	const variant = await getVariant(options?.variant ?? 'No Variant');
+	Utils.globalModify({ variant, playerNames: players, cache: new Map() });
+
 	const ourPlayerIndex = Number(index ?? 0);
 
 	if (ourPlayerIndex < 0 || ourPlayerIndex >= players.length)
@@ -81,19 +82,18 @@ async function main() {
 	if (!(convention in conventions))
 		throw new Error(`Convention ${convention} is not supported.`);
 
-	await getShortForms(variant);
-
 	const state = new State(players, ourPlayerIndex, variant, options);
-	let game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, undefined, Number(level ?? 1));
+	const game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, undefined, Number(level ?? 1));
 	game.catchup = true;
 
-	Utils.globalModify({ game, cache: new Map() });
+	const bot = { game };
+	initBaseConsole(bot);
 
 	// Draw cards in starting hands
 	for (let playerIndex = 0; playerIndex < state.numPlayers; playerIndex++) {
 		for (let i = 0; i < state.handSize; i++) {
 			const { suitIndex, rank } = playerIndex !== state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
-			game = game.handle_action({ type: 'draw', playerIndex, order, suitIndex, rank });
+			bot.game = bot.game.handle_action({ type: 'draw', playerIndex, order, suitIndex, rank });
 			order++;
 		}
 	}
@@ -103,28 +103,27 @@ async function main() {
 	// Take actions
 	for (const action of actions) {
 		if (turn !== 0)
-			game = game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
+			bot.game = bot.game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
 
-		game = game.handle_action(Utils.performToAction(game.state, action, currentPlayerIndex, deck));
+		bot.game = bot.game.handle_action(Utils.performToAction(bot.game.state, action, currentPlayerIndex, deck));
 
 		if ((action.type === ACTION.PLAY || action.type === ACTION.DISCARD) && order < deck.length) {
 			const { suitIndex, rank } = currentPlayerIndex !== state.ourPlayerIndex ? deck[order] : { suitIndex: -1, rank: -1 };
-			game = game.handle_action({ type: 'draw', playerIndex: currentPlayerIndex, order, suitIndex, rank });
+			bot.game = bot.game.handle_action({ type: 'draw', playerIndex: currentPlayerIndex, order, suitIndex, rank });
 			order++;
 		}
 
 		if (action.type === ACTION.PLAY && game.state.strikes === 3)
-			game = game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.STRIKEOUT, votes: -1 });
+			bot.game = bot.game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.STRIKEOUT, votes: -1 });
 
 		currentPlayerIndex = state.nextPlayerIndex(currentPlayerIndex);
 		turn++;
-		Utils.globalModify({ game });
 	}
 
 	if (actions.at(-1).type !== 'gameOver')
-		game = game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.NORMAL, votes: -1 });
+		bot.game = bot.game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.NORMAL, votes: -1 });
 
-	game.catchup = false;
+	bot.game.catchup = false;
 }
 
 main();

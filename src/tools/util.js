@@ -4,7 +4,6 @@ import { Player } from '../basics/Player.js';
 import { State } from '../basics/State.js';
 import { ACTION, CLUE } from '../constants.js';
 import { types } from 'node:util';
-import logger from './logger.js';
 import { IdentitySet } from '../basics/IdentitySet.js';
 import { cardTouched } from '../variants.js';
 
@@ -17,14 +16,15 @@ import { cardTouched } from '../variants.js';
  * @typedef {import('../types.js').Action} Action
  * @typedef {import('../types.js').PerformAction} PerformAction
  * @typedef {import('../types.js').ClueResult} ClueResult
+ * @typedef {import('../variants.js').Variant} Variant
  */
 
-/** @type {Record<string, any> & {cache: Map<string, { hypo_game: Game, result: ClueResult }>}} */
+/** @type {{variant?: Variant, playerNames?: string[], cache: Map<string, { hypo_game: Game, result: ClueResult }>}} */
 export const globals = { cache: new Map() };
 
 /**
  * Modifies the global object.
- * @param {any} obj
+ * @param {typeof globals} obj
  */
 export function globalModify(obj) {
 	Object.assign(globals, obj);
@@ -45,52 +45,6 @@ export function parse_args() {
 			args[parts[0]] = 'true';
 	}
 	return args;
-}
-
-/**
- * Sends a private chat message in hanab.live to the recipient.
- * @param {string} recipient
- * @param {string} msg
- */
-export function sendPM(recipient, msg) {
-	sendCmd('chatPM', { msg, recipient, room: 'lobby' });
-}
-
-/**
- * Sends a chat message in hanab.live to the room.
- * @param {number} tableID
- * @param {string} msg
- */
-export function sendChat(tableID, msg) {
-	sendCmd('chat', { msg, room: `table${tableID}` });
-}
-
-const cmdQueue = [];
-let queueTimer;
-
-/**
- * Sends a game command to hanab.live with an object as data.
- * @param {string} command
- * @param {any} arg
- */
-export function sendCmd(command, arg) {
-	cmdQueue.push(command + ' ' + JSON.stringify(arg));
-
-	if (queueTimer === undefined)
-		emptyCmdQueue();
-}
-
-function emptyCmdQueue() {
-	if (cmdQueue.length === 0) {
-		queueTimer = undefined;
-		return;
-	}
-
-	const cmd = cmdQueue.shift();
-	globals.ws.send(cmd);
-	logger.debug('sending cmd', cmd);
-
-	queueTimer = setTimeout(emptyCmdQueue, 500);
 }
 
 /**

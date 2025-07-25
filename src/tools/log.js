@@ -1,6 +1,6 @@
 import { ACTION, CLUE, END_CONDITION } from '../constants.js';
 import { Card } from '../basics/Card.js';
-import { colourableSuits, shortForms, variantRegexes } from '../variants.js';
+import { colourableSuits, variantRegexes } from '../variants.js';
 import { globals } from './util.js';
 
 /**
@@ -40,15 +40,15 @@ export function logCard(card) {
 	else {
 		return 'xx';
 	}
-	return shortForms[suitIndex] + rank + (append !== undefined ? ' ' + append : '');
+	return globals.variant.shortForms[suitIndex] + rank + (append !== undefined ? ' ' + append : '');
 }
 
 /**
  * Returns a log-friendly representation of a hand.
  * @param {number[]} hand
- * @param {Player} [player]
+ * @param {Player} player
  */
-export function logHand(hand, player = globals.game.common) {
+export function logHand(hand, player) {
 	const new_hand = [];
 
 	for (const order of hand) {
@@ -79,24 +79,23 @@ export function logClue(clue) {
 	if (clue === undefined)
 		return;
 
-	const { state } = globals.game;
-	const value = (clue.type === CLUE.COLOUR || clue.type === ACTION.COLOUR) ? colourableSuits(state.variant)[clue.value].toLowerCase() : clue.value;
+	const { variant, playerNames } = globals;
 
-	return `(${value} to ${state.playerNames[clue.target]})`;
+	const value = (clue.type === CLUE.COLOUR || clue.type === ACTION.COLOUR) ? colourableSuits(variant)[clue.value].toLowerCase() : clue.value;
+
+	return `(${value} to ${playerNames[clue.target]})`;
 }
 
 /**
  * Returns a log-friendly representation of a PerformAction.
+ * @param  {Game} game
  * @param  {Omit<PerformAction, 'tableID'>} action
  */
-export function logPerformAction(action) {
+export function logPerformAction(game, action) {
 	if (action === undefined)
 		return;
 
 	const { type, target } = action;
-
-	/** @type {Game} */
-	const game = globals.game;
 	const { common, state } = game;
 
 	switch(type) {
@@ -151,12 +150,10 @@ export function logObjectiveAction(state, action) {
 
 /**
  * Returns a log-friendly representation of an Action.
+ * @param  {State} state
  * @param  {Action} action
  */
-export function logAction(action) {
-	/** @type {State} */
-	const state = globals.game.state;
-
+export function logAction(state, action) {
 	if (action === undefined)
 		return;
 
@@ -227,7 +224,7 @@ export function logConnection(connection) {
 		(connection.possibly_bluff ? 'possibly bluff' :
 		(connection.bluff ? 'bluff' : 'finesse'));
 
-	return `${order} ${identity} ${logType} (${globals.game.state.playerNames[reacting]})${connection.certain ? ' (certain)' : connection.hidden ? ' (hidden)' : ''}`;
+	return `${order} ${identity} ${logType} (${globals.playerNames[reacting]})${connection.certain ? ' (certain)' : connection.hidden ? ' (hidden)' : ''}`;
 }
 
 /**
@@ -235,10 +232,9 @@ export function logConnection(connection) {
  * @param {Identity} nextIdentity
  */
 export function logConnections(connections, nextIdentity) {
-	const { suitIndex, rank } = nextIdentity;
-	const showNext = globals.game.state.max_ranks[suitIndex] >= rank;
+	const { rank } = nextIdentity;
 
-	return `[${connections.map(conn => logConnection(conn)).join(' -> ')} ${showNext ? `-> ${logCard(nextIdentity)}?` : ''}]`;
+	return `[${connections.map(conn => logConnection(conn)).join(' -> ')} ${(rank <= 5) ? `-> ${logCard(nextIdentity)}?` : ''}]`;
 }
 
 /**

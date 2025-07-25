@@ -15,7 +15,6 @@ import * as Utils from '../../tools/util.js';
 
 import { Worker } from 'worker_threads';
 import * as path from 'path';
-import { shortForms } from '../../variants.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -248,13 +247,13 @@ export async function take_action(game) {
 	trash_orders = trash_orders.filter(o => !discards.includes(o) && !playable_trash.includes(o));
 
 	if (playable_orders.length > 0)
-		logger.info('playable cards', logHand(playable_orders));
+		logger.info('playable cards', logHand(playable_orders, common));
 
 	if (trash_orders.length > 0)
-		logger.info('trash cards', logHand(trash_orders));
+		logger.info('trash cards', logHand(trash_orders, common));
 
 	if (discards.length > 0)
-		logger.info('discards', logHand(discards));
+		logger.info('discards', logHand(discards, common));
 
 	const playable_priorities = determine_playable_card(game, playable_orders);
 
@@ -295,7 +294,7 @@ export async function take_action(game) {
 	const urgent_actions = find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities, is_finessed ? best_playable_order : -1);
 
 	if (urgent_actions.some(actions => actions.length > 0))
-		logger.info('all urgent actions', urgent_actions.flatMap((actions, index) => actions.map(action => ({ [index]: logPerformAction(action) }))));
+		logger.info('all urgent actions', urgent_actions.flatMap((actions, index) => actions.map(action => ({ [index]: logPerformAction(game, action) }))));
 
 	// Unlock next player
 	if (urgent_actions[ACTION_PRIORITY.UNLOCK].length > 0)
@@ -426,7 +425,7 @@ export async function take_action(game) {
 	if (state.inEndgame() && state.maxScore - state.score < 2*state.variant.suits.length) {
 		logger.highlight('purple', 'Attempting to solve endgame...');
 
-		const workerData = { game: Utils.toJSON(game), playerTurn: state.ourPlayerIndex, conv: 'HGroup', logLevel: logger.level, shortForms };
+		const workerData = { game: Utils.toJSON(game), playerTurn: state.ourPlayerIndex, conv: 'HGroup', logLevel: logger.level };
 		// const resourceLimits = { maxOldGenerationSizeMb: 4096, maxYoungGenerationSizeMb: 4096, stackSizeMb: 2048 };
 		const worker = new Worker(path.resolve(import.meta.dirname, '../', 'shared', 'endgame.js'), { workerData });
 

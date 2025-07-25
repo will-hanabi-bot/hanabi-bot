@@ -1,7 +1,7 @@
 import { CLUE, MAX_H_LEVEL } from '../src/constants.js';
 import { CARD_STATUS } from '../src/basics/Card.js';
 import { State } from '../src/basics/State.js';
-import { find_possibilities, shortForms } from '../src/variants.js';
+import { find_possibilities } from '../src/variants.js';
 import * as Utils from '../src/tools/util.js';
 
 import { logAction, logCard, logClue } from '../src/tools/log.js';
@@ -46,41 +46,22 @@ export const PLAYER = /** @type {const} */ ({
 });
 
 export const VARIANTS = /** @type {Record<string, Variant>} */ ({
-	NO_VARIANT: { id: 0, name: 'No Variant', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Purple'] },
-	SIX_SUITS: { id: 1, name: '6 Suits', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Purple', 'Teal'] },
-	RAINBOW: { id: 16,  name: 'Rainbow (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Rainbow'] },
-	BLACK: { id: 21,  name: 'Black (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Black'] },
-	WHITE: { id: 22,  name: 'White (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'White'] },
-	BROWN: { id : 70,  name: "Brown (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Brown"] },
-	PINK: { id: 107, name: 'Pink (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Pink'] },
-	OMNI: { id: 177, name: 'Omni (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Omni'] },
-	PRISM: { id: 1465, name: 'Prism (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Prism'] },
-	DECEPTIVE_1S: { id: 1672, name: "Deceptive-Ones (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple"], specialRank: 1, specialRankDeceptive: true, clueRanks: [2, 3, 4, 5] },
-	PINK_1S: { id: 327, name: "Pink-Ones (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple"], specialRank: 1, specialRankAllClueRanks: true, clueRanks: [2, 3, 4, 5] },
-	MUDDY_RAINBOW: { id: 161, name: "Muddy Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Muddy Rainbow"] },
-	COCOA_RAINBOW: { id: 291, name: "Cocoa Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Cocoa Rainbow"] }
+	NO_VARIANT: { id: 0, name: 'No Variant', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Purple'], shortForms: ['r', 'y', 'g', 'b', 'p'] },
+	SIX_SUITS: { id: 1, name: '6 Suits', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Purple', 'Teal'], shortForms: ['r', 'y', 'g', 'b', 'p', 't'] },
+	RAINBOW: { id: 16,  name: 'Rainbow (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Rainbow'], shortForms: ['r', 'y', 'g', 'b', 'm'] },
+	BLACK: { id: 21,  name: 'Black (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Black'], shortForms: ['r', 'y', 'g', 'b', 'k'] },
+	WHITE: { id: 22,  name: 'White (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'White'], shortForms: ['r', 'y', 'g', 'b', 'w'] },
+	BROWN: { id : 70,  name: "Brown (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Brown"], shortForms: ['r', 'y', 'g', 'b', 'n'] },
+	PINK: { id: 107, name: 'Pink (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Pink'], shortForms: ['r', 'y', 'g', 'b', 'i'] },
+	OMNI: { id: 177, name: 'Omni (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Omni'], shortForms: ['r', 'y', 'g', 'b', 'o'] },
+	PRISM: { id: 1465, name: 'Prism (5 Suits)', suits: ['Red', 'Yellow', 'Green', 'Blue', 'Prism'], shortForms: ['r', 'y', 'g', 'b', 'i'] },
+	DECEPTIVE_1S: { id: 1672, name: "Deceptive-Ones (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple"], specialRank: 1, specialRankDeceptive: true, clueRanks: [2, 3, 4, 5], shortForms: ['r', 'y', 'g', 'b', 'p'] },
+	PINK_1S: { id: 327, name: "Pink-Ones (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Purple"], specialRank: 1, specialRankAllClueRanks: true, clueRanks: [2, 3, 4, 5], shortForms: ['r', 'y', 'g', 'b', 'p'] },
+	MUDDY_RAINBOW: { id: 161, name: "Muddy Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Muddy Rainbow"], shortForms: ['r', 'y', 'g', 'b', 'm'] },
+	COCOA_RAINBOW: { id: 291, name: "Cocoa Rainbow (5 Suits)", suits: ["Red", "Yellow", "Green", "Blue", "Cocoa Rainbow"], shortForms: ['r', 'y', 'g', 'b', 'm'] }
 });
 
 const DEFAULT_LEVEL = parseInt(process.env['HANABI_LEVEL'] ?? '1');
-
-const sampleColours = /** @type {const} */ ({
-	'Rainbow': 'm',
-	'Muddy Rainbow': 'm',
-	'Light Pink': 'i',
-	'Prism': 'i',
-	'Dark Rainbow': 'm',
-	'Dark Pink': 'i',
-	'Gray': 'a',
-	'Dark Brown': 'n',
-	'Dark Omni': 'o',
-	'Dark Null': 'u',
-	'Cocoa Rainbow': 'm',
-	'Gray Pink': 'i',
-	'Dark Prism': 'i',
-	'Forest': 'r',
-	'Sapphire EA': 'a',
-	'Forest AD': 'r'
-});
 
 const names = ['Alice', 'Bob', 'Cathy', 'Donald', 'Emily'];
 
@@ -155,26 +136,10 @@ function init_game(game, options) {
 export function setup(GameClass, hands, test_options = {}) {
 	const playerNames = names.slice(0, hands.length);
 	const variant = test_options.variant ?? VARIANTS.NO_VARIANT;
-
-	// Overwrite the global short forms
-	shortForms.length = 0;
-
-	for (const suitName of variant.suits) {
-		if (['Black', 'Pink', 'Brown'].includes(suitName)) {
-			shortForms.push(['k', 'i', 'n'][['Black', 'Pink', 'Brown'].indexOf(suitName)]);
-		}
-		else {
-			const abbreviation = sampleColours[suitName] ?? suitName.charAt(0).toLowerCase();
-			if (shortForms.includes(abbreviation))
-				shortForms.push(suitName.toLowerCase().split('').find(char => !shortForms.includes(char)));
-			else
-				shortForms.push(abbreviation);
-		}
-	}
-
-	testShortForms = shortForms.toSpliced(0, 0, 'x');
+	Utils.globalModify({ variant, playerNames, cache: new Map() });
 
 	const state = new State(playerNames, test_options.ourPlayerIndex ?? PLAYER.ALICE, variant, {});
+	testShortForms = ['x', ...variant.shortForms];
 	const [minLevel, maxLevel] = [test_options?.level?.min ?? 1, test_options?.level?.max ?? MAX_H_LEVEL];
 	let game = new GameClass(-1, state, false, undefined, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
 	game.catchup = true;
@@ -203,7 +168,6 @@ export function setup(GameClass, hands, test_options = {}) {
 
 	team_elim(game);
 	game.base = { state: game.state.minimalCopy(), players: game.players.map(p => p.clone()), common: game.common.clone() };
-	Utils.globalModify({ game, cache: new Map() });
 	return game;
 }
 
@@ -224,7 +188,7 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 
 	if (turnTaker !== state.currentPlayerIndex) {
 		const expectedPlayer = state.playerNames[state.currentPlayerIndex];
-		throw new Error(`Expected ${expectedPlayer}'s turn for action (${logAction(action)}), test written incorrectly?`);
+		throw new Error(`Expected ${expectedPlayer}'s turn for action (${logAction(state, action)}), test written incorrectly?`);
 	}
 
 	if (action.type === 'clue' && state.clue_tokens === 0)
@@ -238,7 +202,7 @@ export function takeTurn(game, rawAction, draw = 'xx') {
 
 	if (state.cardsLeft > 0 && (action.type === 'play' || action.type === 'discard')) {
 		if (draw === 'xx' && state.currentPlayerIndex !== state.ourPlayerIndex)
-			throw new Error(`Missing draw for ${state.playerNames[state.currentPlayerIndex]}'s action (${logAction(action)}).`);
+			throw new Error(`Missing draw for ${state.playerNames[state.currentPlayerIndex]}'s action (${logAction(state, action)}).`);
 
 		const identity = expandShortCard(draw);
 		Object.assign(game, game.handle_action({ type: 'draw', playerIndex: state.currentPlayerIndex, order: state.cardOrder + 1, ...identity }));

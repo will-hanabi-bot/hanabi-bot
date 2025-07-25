@@ -333,7 +333,7 @@ describe('giving order chop move', () => {
 
 		// Alice should not OCM r1.
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 1 }, `Expected (play slot 4), suggested ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: 1 }, `Expected (play slot 4), suggested ${logPerformAction(game, action)}`);
 	});
 
 	it('plays the last 1 in the correct order when not wanting to ocm', async () => {

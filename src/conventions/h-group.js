@@ -132,8 +132,6 @@ export default class HGroup extends Game {
 	createBlank() {
 		const blank = super.createBlank();
 		blank.level = this.level;
-		blank.notes = this.notes;
-		blank.rewinds = this.rewinds;
 		return blank;
 	}
 

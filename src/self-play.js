@@ -6,7 +6,7 @@ import PlayfulSieve from './conventions/playful-sieve.js';
 
 import { ACTION, END_CONDITION, MAX_H_LEVEL } from './constants.js';
 import { State } from './basics/State.js';
-import { cardCount, getShortForms, getVariant } from './variants.js';
+import { cardCount, getVariant } from './variants.js';
 import * as Utils from './tools/util.js';
 
 import logger from './tools/logger.js';
@@ -35,8 +35,6 @@ async function main() {
 
 	if (variant === undefined)
 		throw new Error(`Undefined variant ${vStr}.`);
-
-	await getShortForms(variant);
 
 	if (conventions[convention] === undefined)
 		throw new Error(`Convention ${convention} is not supported.`);
@@ -124,13 +122,13 @@ async function main() {
  * @param {Variant} variant
  */
 async function simulate_game(playerNames, deck, convention, level, variant) {
+	Utils.globalModify({ variant, playerNames, cache: new Map() });
+
 	let games = playerNames.map((_, index) => {
 		const game = new conventions[convention](-1, new State(playerNames, index, variant, {}), false, undefined, level);
 		game.catchup = true;
 		return game;
 	});
-
-	Utils.globalModify({ game: games[0], cache: new Map() });
 
 	games = games.map(game => {
 		let newGame = game;
@@ -157,13 +155,11 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 			if (turn !== 0) {
 				games = games.map((game, i) => {
 					logger.debug('Turn for', game.state.playerNames[i]);
-					Utils.globalModify({ game });
 					return game.handle_action({ type: 'turn', num: turn, currentPlayerIndex });
 				});
 			}
 
 			const currentPlayerGame = games[currentPlayerIndex];
-			Utils.globalModify({ game: currentPlayerGame });
 
 			// @ts-ignore (one day static analysis will get better)
 			const performAction = await currentPlayerGame.take_action();
@@ -176,7 +172,6 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 
 				logger.debug('Action for', state.playerNames[gameIndex], action);
 
-				Utils.globalModify({ game });
 				let newGame = game.handle_action(action);
 
 				if (newGame.state.strikes === 3 || newGame.state.score === state.variant.suits.length * 5)

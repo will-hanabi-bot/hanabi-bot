@@ -281,7 +281,7 @@ describe('generation discards', () => {
 		const action = await game.take_action();
 
 		// Alice should play slot 5 (r4 -> r5) rather than generating for Cathy.
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] }, `Expected (Play slot 5), got (${logPerformAction(action)}).`);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] }, `Expected (Play slot 5), got (${logPerformAction(game, action)}).`);
 	});
 
 	it(`doesn't perform a gen discard if next player can connect`, async () => {
@@ -311,6 +311,6 @@ describe('generation discards', () => {
 		const action = await game.take_action();
 
 		// Alice should play slot 4 (g2) instead of generating for Cathy. Bob also cannot scream.
-		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] }, `Expected (Play slot 4), got (${logPerformAction(action)}).`);
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] }, `Expected (Play slot 4), got (${logPerformAction(game, action)}).`);
 	});
 });

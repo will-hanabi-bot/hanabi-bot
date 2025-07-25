@@ -869,10 +869,10 @@ export function interpret_clue(game, action) {
 	}
 
 	try {
-		logger.debug('hand state after clue', logHand(state.hands[target]));
+		logger.debug('hand state after clue', logHand(state.hands[target], common));
 	}
 	catch (err) {
-		logger.info('Failed to debug hand state', err, state.hands[target], Utils.globals.game.common.thoughts.map(c => c.order));
+		logger.info('Failed to debug hand state', err, state.hands[target], common.thoughts.map(c => c.order));
 	}
 	team_elim(game);
 	return game;

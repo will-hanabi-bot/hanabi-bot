@@ -32,7 +32,7 @@ describe('reverse finesse', () => {
 		const action = await game.take_action();
 
 		// // Alice should give green to Bob to finesse over save
-		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.BOB, value: COLOUR.GREEN }, `Expected (green to Bob), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { type: ACTION.COLOUR, target: PLAYER.BOB, value: COLOUR.GREEN }, `Expected (green to Bob), got ${logPerformAction(game, action)}`);
 	});
 
 	it('understands a continuing finesse', () => {
@@ -897,7 +897,7 @@ describe('early game', () => {
 
 		assert.ok(action.type === ACTION.RANK && action.value === 1 && action.target === PLAYER.CATHY ||
 			action.type === ACTION.COLOUR && action.value === COLOUR.YELLOW && action.target === PLAYER.CATHY,
-		`Expected 1 or yellow to Cathy, got ${logPerformAction(action)}`);
+		`Expected 1 or yellow to Cathy, got ${logPerformAction(game, action)}`);
 	});
 
 	it('discards rather than giving a bad touch play clue in the early game', async () => {

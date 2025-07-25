@@ -243,7 +243,7 @@ describe('tempo clue chop moves', () => {
 		takeTurn(game, 'Cathy clues purple to Bob');
 
 		const action = await game.take_action();
-		ExAsserts.objHasProperties(action, { target: PLAYER.BOB, type: ACTION.RANK, value: 2 }, `Expected (2 to Bob), got ${logPerformAction(action)}`);
+		ExAsserts.objHasProperties(action, { target: PLAYER.BOB, type: ACTION.RANK, value: 2 }, `Expected (2 to Bob), got ${logPerformAction(game, action)}`);
 	});
 });
 

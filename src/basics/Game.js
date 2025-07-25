@@ -59,6 +59,9 @@ export class Game {
 	/** @type {{ state: State, players: Player[], common: Player }} */
 	base;
 
+	/** @type {{cmd: string, arg: { [_: string]: unknown }}[]} */
+	queued_cmds = [];
+
 	/**
 	 * @param {number} tableID
 	 * @param {State} state
@@ -162,6 +165,7 @@ export class Game {
 
 	/**
 	 * @param {Action} 	action
+	 * @returns {this}
 	 */
 	handle_action(action) {
 		return handle_action.bind(this)(action);
@@ -253,7 +257,7 @@ export class Game {
 					draft[order].full += `t${state.turn_count}: ${note}`;
 
 					if (!this.catchup && this.in_progress)
-						Utils.sendCmd('note', { tableID: this.tableID, order, note: draft[order].full });
+						this.queued_cmds.push({ cmd: 'note', arg: { tableID: this.tableID, order, note: draft[order].full } });
 				}
 			}
 		});
@@ -300,22 +304,16 @@ export class Game {
 		newGame.notes = [];
 		const history = actionList.slice(0, action_index).flat();
 
-		const old_global_game = Utils.globals.game;
-		Utils.globalModify({ game: newGame });
+		logger.off();
 
-		/** @param {Action} action */
-		const catchup_action = (action) => {
+		for (const action of history) {
 			if (action.type === 'draw' && newGame.state.hands[action.playerIndex].includes(action.order))
-				return;
+				continue;
 
 			newGame = newGame.handle_action(action);
-		};
+		}
 
-		logger.wrapLevel(logger.LEVELS.ERROR, () => {
-			// Get up to speed
-			for (const action of history)
-				catchup_action(action);
-		});
+		logger.on();
 
 		const remaining_id_actions = /** @type {IdentifyAction[]} */ ([]);
 
@@ -350,8 +348,6 @@ export class Game {
 		for (const [order, noteObj] of this.notes.entries())
 			newGame.notes[order] = noteObj;
 
-		Utils.globalModify({ game: old_global_game });
-
 		return /** @type {this} */ (newGame);
 	}
 
@@ -365,9 +361,6 @@ export class Game {
 		let new_game = this.createBlank();
 		new_game.catchup = true;
 		new_game.notes = [];
-
-		const old_global_game = Utils.globals.game;
-		Utils.globalModify({ game: new_game });
 
 		// Remove special actions from the action list (they will be added back in when rewinding)
 		const actionList = this.state.actionList.map(list => list.filter(action => !['identify', 'ignore', 'finesse'].includes(action.type)).map(Utils.cleanAction));
@@ -387,13 +380,13 @@ export class Game {
 		}
 		else {
 			// Don't log history
-			logger.wrapLevel(logger.LEVELS.ERROR, () => {
-				while (new_game.state.turn_count < turn - 1) {
-					new_game = new_game.handle_action(actions[action_index]);
-					action_index++;
+			logger.off();
+			while (new_game.state.turn_count < turn - 1) {
+				new_game = new_game.handle_action(actions[action_index]);
+				action_index++;
 
-				}
-			});
+			}
+			logger.on();
 
 			// Log the previous turn and the 'turn' action leading to the desired turn
 			while (new_game.state.turn_count < turn && actions[action_index] !== undefined) {
@@ -406,12 +399,11 @@ export class Game {
 
 		if (!new_game.catchup && new_game.state.currentPlayerIndex === this.state.ourPlayerIndex) {
 			new_game.take_action().then(suggested_action =>
-				logger.highlight('cyan', 'Suggested action:', logPerformAction(suggested_action)));
+				logger.highlight('cyan', 'Suggested action:', logPerformAction(new_game, suggested_action)));
 		}
 
 		// Copy over the full game history
 		new_game.state.actionList = actionList;
-		Utils.globalModify({ game: old_global_game });
 		return new_game;
 	}
 
@@ -452,16 +444,12 @@ export class Game {
 	simulate_clue(action, options = {}) {
 		let hypo_game = this.simulateClean();
 
-		const old_global_game = Utils.globals.game;
-		Utils.globalModify({ game: hypo_game });
-
 		const last_level = logger.level;
 		logger.setLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR);
 
 		hypo_game = hypo_game.interpret_clue(action);
 
 		logger.setLevel(last_level);
-		Utils.globalModify({ game: old_global_game });
 
 		hypo_game.catchup = false;
 		hypo_game.state.turn_count++;
@@ -479,9 +467,6 @@ export class Game {
 	simulate_action(action, options = {}) {
 		let hypo_game = this.simulateClean();
 
-		const old_global_game = Utils.globals.game;
-		Utils.globalModify({ game: hypo_game });
-
 		const last_level = logger.level;
 		logger.setLevel(options.enableLogs ? logger.level : logger.LEVELS.ERROR);
 
@@ -498,7 +483,6 @@ export class Game {
 		}
 
 		logger.setLevel(last_level);
-		Utils.globalModify({ game: old_global_game });
 
 		hypo_game.catchup = false;
 		return hypo_game;
