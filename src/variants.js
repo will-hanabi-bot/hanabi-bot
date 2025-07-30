@@ -122,7 +122,6 @@ async function getShortForms(variant) {
 				abbreviations.push(suitName.toLowerCase().split('').find(char => !abbreviations.includes(char)));
 			else
 				abbreviations.push(abbreviation.toLowerCase());
-
 		}
 	}
 	return abbreviations;

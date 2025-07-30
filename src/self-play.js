@@ -13,8 +13,8 @@ import logger from './tools/logger.js';
 
 /**
  * @typedef {import('./types.js').Identity} Identity
- * @typedef {import('./types.js').Action} Action
- * @typedef {import('./types.js').PerformAction} PerformAction
+ * @typedef {import('./basics/Action.ts').Action} Action
+ * @typedef {import('./basics/Action.ts').PerformAction} PerformAction
  * @typedef {import('./variants.js').Variant} Variant
  */
 

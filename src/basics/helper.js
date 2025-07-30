@@ -16,7 +16,7 @@ import { applyPatches, produce } from '../StateProxy.js';
  * @typedef {import('../types.js').BaseClue} BaseClue
  * @typedef {import('../types.js').Clue} Clue
  * @typedef {import('../types.js').Identity} Identity
- * @typedef {import('../types.js').ClueAction} ClueAction
+ * @typedef {import('../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../variants.js').Variant} Variant
  */
 

@@ -10,9 +10,9 @@ import { logCard, logConnection } from '../../tools/log.js';
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../types.js').Identity} Identity
- * @typedef {import('../../types.js').TurnAction} TurnAction
+ * @typedef {import('../../basics/Action.ts').TurnAction} TurnAction
  * @typedef {import('../../types.js').Connection} Connection
- * @typedef {import('../../types.js').IdentifyAction} IdentifyAction
+ * @typedef {import('../../basics/Action.ts').IdentifyAction} IdentifyAction
  * @typedef {import('../../types.js').WaitingConnection} WaitingConnection
  * @typedef {import('../../types.js').Demonstration} Demonstration
  */

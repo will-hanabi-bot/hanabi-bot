@@ -12,7 +12,7 @@ import { visibleFind } from '../src/basics/hanabi-util.js';
 /**
  * @typedef {import('../src/basics/Game.js').Game} Game
  * @typedef {import('../src/basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../src/types.js').Action} Action
+ * @typedef {import('../src/basics/Action.ts').Action} Action
  * @typedef {import('../src/types.js').BaseClue} BaseClue
  * @typedef {import('../src/types.js').Identity} Identity
  * @typedef {import('../src/variants.js').Variant} Variant

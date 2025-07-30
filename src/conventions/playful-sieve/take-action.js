@@ -15,7 +15,7 @@ import * as Utils from '../../tools/util.js';
  * @typedef {import('../../basics/State.js').State} State
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../types.js').Clue} Clue
- * @typedef {import('../../types.js').PerformAction} PerformAction
+ * @typedef {import('../../basics/Action.ts').PerformAction} PerformAction
  */
 
 /**

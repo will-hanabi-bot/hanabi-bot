@@ -28,7 +28,7 @@ function debug_hand(game, parts) {
 	const playerIndex = state.playerNames.indexOf(playerName);
 	const player = !isNaN(Number(parts[2])) ? game.players[Number(parts[2])] : undefined;
 	console.log('viewing from', player === undefined ? 'common' : state.playerNames[player.playerIndex]);
-	console.log(logHand(state.hands[playerIndex], player), logLinks(game.players[playerIndex].links));
+	console.log(logHand(state.hands[playerIndex], player ?? game.common), logLinks(game.players[playerIndex].links));
 }
 
 /**

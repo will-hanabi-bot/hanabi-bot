@@ -21,7 +21,7 @@ import { produce } from '../../StateProxy.js';
  * @typedef {import('../../types.js').Clue} Clue
  * @typedef {import('../../types.js').SaveClue} SaveClue
  * @typedef {import('../../types.js').FixClue} FixClue
- * @typedef {import('../../types.js').PerformAction} PerformAction
+ * @typedef {import('../../basics/Action.ts').PerformAction} PerformAction
  */
 
 /**

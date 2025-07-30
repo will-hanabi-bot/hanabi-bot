@@ -7,7 +7,7 @@ import { logCard, logConnections } from '../../tools/log.js';
 /**
  * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/State.js').State} State
- * @typedef {import('../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../types.js').Connection} Connection
  * @typedef {import('../../types.js').Identity} Identity
  * @typedef {import('../../types.js').FocusPossibility} FocusPossibility

@@ -9,10 +9,10 @@ import { logCard, logConnection } from '../../tools/log.js';
  * @typedef {import('../rs-player.js').RS_Player} Player
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../../types.js').TurnAction} TurnAction
+ * @typedef {import('../../basics/Action.ts').TurnAction} TurnAction
  * @typedef {import('../../types.js').Connection} Connection
  * @typedef {import('../../types.js').WaitingConnection} WaitingConnection
- * @typedef {import('../../types.js').IgnoreAction} IgnoreAction
+ * @typedef {import('../../basics/Action.ts').IgnoreAction} IgnoreAction
  * @typedef {Partial<{ remove: boolean, remove_finesse: boolean, next_index: number, rewind: boolean }>} ResolveResult
  */
 

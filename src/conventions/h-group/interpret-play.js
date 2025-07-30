@@ -9,8 +9,8 @@ import logger from '../../tools/logger.js';
 /**
  * @typedef {import('../h-group.js').default} Game
  * @typedef {import('../h-player.js').HGroup_Player} Player
- * @typedef {import('../../types.js').CardAction} CardAction
- * @typedef {import('../../types.js').PlayAction} PlayAction
+ * @typedef {import('../../basics/Action.ts').CardAction} CardAction
+ * @typedef {import('../../basics/Action.ts').PlayAction} PlayAction
  */
 
 /**

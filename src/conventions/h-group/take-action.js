@@ -25,7 +25,7 @@ import * as path from 'path';
  * @typedef {import('../../types.js').Clue} Clue
  * @typedef {import('../../types.js').SaveClue} SaveClue
  * @typedef {import('../../types.js').Identity} Identity
- * @typedef {import('../../types.js').PerformAction} PerformAction
+ * @typedef {import('../../basics/Action.ts').PerformAction} PerformAction
  */
 
 /**

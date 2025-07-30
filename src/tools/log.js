@@ -9,9 +9,9 @@ import { globals } from './util.js';
  * @typedef {import('../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../basics/Player.js').Player} Player
  * @typedef {import('../types.js').Clue} Clue
- * @typedef {import('../types.js').Action} Action
+ * @typedef {import('../basics/Action.ts').Action} Action
  * @typedef {import('../types.js').Identity} Identity
- * @typedef {import('../types.js').PerformAction} PerformAction
+ * @typedef {import('../basics/Action.ts').PerformAction} PerformAction
  * @typedef {import('../types.js').Connection} Connection
  * @typedef {import('../types.js').Link} Link
  */
@@ -192,7 +192,7 @@ export function logAction(state, action) {
 				case END_CONDITION.TERMINATED:
 					return `${state.playerNames[playerIndex]} terminated the game!`;
 				case END_CONDITION.TERMINATED_BY_VOTE:
-					return `${votes.map(v => state.playerNames[v]).join(', ')} voted to terminate the game!`;
+					return `${votes?.map(v => state.playerNames[v]).join(', ')} voted to terminate the game!`;
 				case END_CONDITION.IDLE_TIMEOUT:
 					return 'Players were idle for too long.';
 				default:

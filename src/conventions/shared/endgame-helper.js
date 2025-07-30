@@ -11,8 +11,8 @@ import { logCard } from '../../tools/log.js';
  * @typedef {import('../../basics/State.js').State} State
  * @typedef {import('../../types.js').Identity} Identity
  * @typedef {import('../../types.js').Clue} Clue
- * @typedef {import('../../types.js').Action} Action
- * @typedef {import('../../types.js').PerformAction} PerformAction
+ * @typedef {import('../../basics/Action.ts').Action} Action
+ * @typedef {import('../../basics/Action.ts').PerformAction} PerformAction
  * @typedef {Omit<PerformAction, 'tableID'> & {playerIndex: number}} ModPerformAction
  * @typedef {{ id: Identity, missing: number, all: boolean }[]} RemainingSet
  */

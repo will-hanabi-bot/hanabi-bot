@@ -15,7 +15,7 @@ import { logClue } from '../../tools/log.js';
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').BaseClue} BaseClue
  * @typedef {import('../../types.js').Clue} Clue
- * @typedef {import('../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../types.js').Connection} Connection
  * @typedef {import('../../types.js').Identity} Identity
  * @typedef {import('../../types.js').FocusResult} FocusResult

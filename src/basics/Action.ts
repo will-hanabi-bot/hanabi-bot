@@ -72,7 +72,7 @@ export type GameOverAction = {
 	type: 'gameOver',
 	endCondition: number,
 	playerIndex: number,
-	votes: unknown
+	votes?: number[]
 };
 
 export type Action = StatusAction | TurnAction | ClueAction | DrawAction | DiscardAction | PlayAction | GameOverAction | IdentifyAction | IgnoreAction | FinesseAction;

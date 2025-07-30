@@ -16,10 +16,10 @@ import * as Utils from '../tools/util.js';
  * @typedef {typeof import('./ref-sieve/rs-constants.js').PLAY_INTERP} PLAY_INTERP
  * @typedef {typeof import('./ref-sieve/rs-constants.js').DISCARD_INTERP} DISCARD_INTERP
  * @typedef {CLUE_INTERP[keyof CLUE_INTERP] | PLAY_INTERP[keyof PLAY_INTERP] | DISCARD_INTERP[keyof DISCARD_INTERP]} INTERP
- * @typedef {import('../types.js').ClueAction} ClueAction
- * @typedef {import('../types.js').DiscardAction} DiscardAction
- * @typedef {import('../types.js').TurnAction} TurnAction
- * @typedef {import('../types.js').PlayAction} PlayAction
+ * @typedef {import('../basics/Action.ts').ClueAction} ClueAction
+ * @typedef {import('../basics/Action.ts').DiscardAction} DiscardAction
+ * @typedef {import('../basics/Action.ts').TurnAction} TurnAction
+ * @typedef {import('../basics/Action.ts').PlayAction} PlayAction
  */
 
 export default class RefSieve extends Game {

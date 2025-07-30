@@ -13,7 +13,7 @@ import { logCard, logConnections } from '../../../tools/log.js';
 /**
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../../types.js').FocusResult} FocusResult
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../types.js').FocusPossibility} FocusPossibility
  * @typedef {import('../../../types.js').Identity} Identity

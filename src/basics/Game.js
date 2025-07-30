@@ -10,15 +10,15 @@ import { logCard, logPerformAction } from '../tools/log.js';
 import { produce, produceC } from '../StateProxy.js';
 
 /**
- * @typedef {import('../types.js').Action} Action
+ * @typedef {import('../basics/Action.ts').Action} Action
  * @typedef {import('../types.js').BaseClue} BaseClue
  * @typedef {import('../types.js').Identity} Identity
- * @typedef {import('../types.js').ClueAction} ClueAction
- * @typedef {import('../types.js').DiscardAction} DiscardAction
- * @typedef {import('../types.js').TurnAction} TurnAction
- * @typedef {import('../types.js').PlayAction} PlayAction
- * @typedef {import('../types.js').IdentifyAction} IdentifyAction
- * @typedef {import('../types.js').PerformAction} PerformAction
+ * @typedef {import('../basics/Action.ts').ClueAction} ClueAction
+ * @typedef {import('../basics/Action.ts').DiscardAction} DiscardAction
+ * @typedef {import('../basics/Action.ts').TurnAction} TurnAction
+ * @typedef {import('../basics/Action.ts').PlayAction} PlayAction
+ * @typedef {import('../basics/Action.ts').IdentifyAction} IdentifyAction
+ * @typedef {import('../basics/Action.ts').PerformAction} PerformAction
  */
 
 export class Game {

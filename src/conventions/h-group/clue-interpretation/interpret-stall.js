@@ -14,7 +14,7 @@ import { logClue } from '../../../tools/log.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').BaseClue} BaseClue
  * @typedef {import('../../../types.js').Clue} Clue
  * @typedef {import('../../../types.js').ClueResult} ClueResult

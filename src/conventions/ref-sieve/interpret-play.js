@@ -10,7 +10,7 @@ import { CARD_STATUS } from '../../basics/Card.js';
 /**
  * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../../types.js').PlayAction} PlayAction
+ * @typedef {import('../../basics/Action.ts').PlayAction} PlayAction
  */
 
 /**

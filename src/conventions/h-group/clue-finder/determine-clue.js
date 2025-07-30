@@ -15,7 +15,7 @@ import { logCard, logClue } from '../../../tools/log.js';
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../../types.js').Clue} Clue
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').ClueResult} ClueResult
  *
  * @typedef {{ excludeColour: boolean, excludeRank: boolean, save: boolean }} ClueOptions

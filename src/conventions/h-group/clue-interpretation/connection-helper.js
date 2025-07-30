@@ -15,7 +15,7 @@ import { colour_save, rank_save } from './focus-possible.js';
  * @typedef {import('../../../basics/State.js').State} State
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../h-player.js').HGroup_Player} Player
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../types.js').Identity} Identity
  * @typedef {import('../../../types.js').FocusPossibility} FocusPossibility

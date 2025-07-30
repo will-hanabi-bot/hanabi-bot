@@ -7,7 +7,7 @@ import { logCard, logConnection } from '../../tools/log.js';
 /**
  * @typedef {import('../h-group.js').default} Game
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../../types.js').PlayAction} PlayAction
+ * @typedef {import('../../basics/Action.ts').PlayAction} PlayAction
  * @typedef {import('../../types.js').WaitingConnection} WaitingConnection
  * @typedef {import('../../types.js').Demonstration} Demonstration
  * @typedef {import('../../types.js').INTERP} INTERP

@@ -9,7 +9,7 @@ import { logCard, logClue } from '../../tools/log.js';
  * @typedef {import('../playful-sieve.js').default} Game
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../types.js').Clue} Clue
- * @typedef {import('../../types.js').PerformAction} PerformAction
+ * @typedef {import('../../basics/Action.ts').PerformAction} PerformAction
  */
 
 /**

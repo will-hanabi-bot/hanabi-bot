@@ -14,7 +14,7 @@ import { visibleFind } from '../../../basics/hanabi-util.js';
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../../basics/Card.js').Card} Card
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../types.js').Identity} Identity
  * @typedef {import('../../../types.js').Link} Link

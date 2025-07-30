@@ -7,7 +7,7 @@ import logger from '../../tools/logger.js';
  * @typedef {import('../../basics/State.js').State} State
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../../types.js').TurnAction} TurnAction
+ * @typedef {import('../../basics/Action.ts').TurnAction} TurnAction
  * @typedef {import('../../types.js').Connection} Connection
  */
 

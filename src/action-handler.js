@@ -8,11 +8,11 @@ import { logAction, logCard } from './tools/log.js';
 import { produce } from './StateProxy.js';
 
 /**
- * @typedef {import('./types.js').Action} Action
- * @typedef {import('./types.js').ClueAction} ClueAction
- * @typedef {import('./types.js').DiscardAction} DiscardAction
- * @typedef {import('./types.js').CardAction} CardAction
- * @typedef {import('./types.js').PlayAction} PlayAction
+ * @typedef {import('./basics/Action.ts').Action} Action
+ * @typedef {import('./basics/Action.ts').ClueAction} ClueAction
+ * @typedef {import('./basics/Action.ts').DiscardAction} DiscardAction
+ * @typedef {import('./basics/Action.ts').CardAction} CardAction
+ * @typedef {import('./basics/Action.ts').PlayAction} PlayAction
  * @typedef {import('./basics/Game.js').Game} Game
  */
 
@@ -108,7 +108,7 @@ export function handle_action(action) {
 				if (num === 1 && newGame.notes[0] === undefined && !newGame.catchup && newGame.in_progress) {
 					const note = `[INFO: v${BOT_VERSION}, ${newGame.convention_name + (/** @type {any} */(newGame).level ?? '')}]`;
 
-					this.queued_cmds.push({ arg: 'note', cmd: JSON.stringify({ tableID: newGame.tableID, order: 0, note }) });
+					this.queued_cmds.push({ cmd: 'note', arg: { tableID: newGame.tableID, order: 0, note } });
 					draft.notes[0] = { last: note, turn: 0, full: note };
 				}
 			});

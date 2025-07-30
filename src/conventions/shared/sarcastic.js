@@ -11,7 +11,7 @@ import { produce } from '../../StateProxy.js';
  * @typedef {import('../../basics/Player.js').Player} Player
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').Identity} Identity
- * @typedef {import('../../types.js').DiscardAction} DiscardAction
+ * @typedef {import('../../basics/Action.ts').DiscardAction} DiscardAction
  */
 
 /**

@@ -28,7 +28,7 @@ import { produce } from '../../../StateProxy.js';
  * @typedef {import('../../../basics/State.js').State} State
  * @typedef {import('../../../basics/Card.js').Card} Card
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../types.js').Identity} Identity
  * @typedef {import('../../../types.js').FocusPossibility} FocusPossibility

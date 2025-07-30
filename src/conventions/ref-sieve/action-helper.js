@@ -12,9 +12,9 @@ import { produce } from '../../StateProxy.js';
  * @typedef {import('../ref-sieve.js').default} Game
  * @typedef {import('../../basics/Card.js').Card} Card
  * @typedef {import('../../types.js').Clue} Clue
- * @typedef {import('../../types.js').Action} Action
- * @typedef {import('../../types.js').ClueAction} ClueAction
- * @typedef {import('../../types.js').PerformAction} PerformAction
+ * @typedef {import('../../basics/Action.ts').Action} Action
+ * @typedef {import('../../basics/Action.ts').ClueAction} ClueAction
+ * @typedef {import('../../basics/Action.ts').PerformAction} PerformAction
  */
 
 /**

@@ -114,14 +114,14 @@ async function main() {
 		}
 
 		if (action.type === ACTION.PLAY && game.state.strikes === 3)
-			bot.game = bot.game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.STRIKEOUT, votes: -1 });
+			bot.game = bot.game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.STRIKEOUT });
 
 		currentPlayerIndex = state.nextPlayerIndex(currentPlayerIndex);
 		turn++;
 	}
 
 	if (actions.at(-1).type !== 'gameOver')
-		bot.game = bot.game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.NORMAL, votes: -1 });
+		bot.game = bot.game.handle_action({ type: 'gameOver', playerIndex: currentPlayerIndex, endCondition: END_CONDITION.NORMAL });
 
 	bot.game.catchup = false;
 }

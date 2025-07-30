@@ -6,10 +6,10 @@ import { produce } from './StateProxy.js';
 
 /**
  * @typedef {import('./basics/Game.js').Game} Game
- * @typedef {import('./types.js').ClueAction} ClueAction
- * @typedef {import('./types.js').DiscardAction} DiscardAction
- * @typedef {import('./types.js').CardAction} DrawAction
- * @typedef {import('./types.js').PlayAction} PlayAction
+ * @typedef {import('./basics/Action.ts').ClueAction} ClueAction
+ * @typedef {import('./basics/Action.ts').DiscardAction} DiscardAction
+ * @typedef {import('./basics/Action.ts').CardAction} DrawAction
+ * @typedef {import('./basics/Action.ts').PlayAction} PlayAction
  */
 
 /**

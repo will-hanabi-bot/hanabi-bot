@@ -13,8 +13,8 @@ import { cardTouched } from '../variants.js';
  * @typedef {import('../types.js').Clue} Clue
  * @typedef {import('../types.js').SaveClue} SaveClue
  * @typedef {import('../types.js').FixClue} FixClue
- * @typedef {import('../types.js').Action} Action
- * @typedef {import('../types.js').PerformAction} PerformAction
+ * @typedef {import('../basics/Action.ts').Action} Action
+ * @typedef {import('../basics/Action.ts').PerformAction} PerformAction
  * @typedef {import('../types.js').ClueResult} ClueResult
  * @typedef {import('../variants.js').Variant} Variant
  */
@@ -343,7 +343,7 @@ export function performToAction(state, action, playerIndex, deck) {
 			return { type: 'clue', giver: playerIndex, target, clue, list };
 		}
 		case ACTION.END_GAME: {
-			return { type: 'gameOver', playerIndex: target, endCondition: value, votes: -1 };
+			return { type: 'gameOver', playerIndex: target, endCondition: value };
 		}
 	}
 }

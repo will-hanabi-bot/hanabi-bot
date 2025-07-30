@@ -19,7 +19,7 @@ export class IllegalInterpretation extends Error {
 /**
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
- * @typedef {import('../../../types.js').ClueAction} ClueAction
+ * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../types.js').Identity} Identity
  */

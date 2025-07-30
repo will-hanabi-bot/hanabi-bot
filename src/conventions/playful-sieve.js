@@ -10,10 +10,10 @@ import { update_turn } from './playful-sieve/update-turn.js';
  * @typedef {import('../basics/State.js').State} State
  * @typedef {import('../basics/Player.js').Player} Player
  * @typedef {import('../types-live.js').TableOptions} TableOptions
- * @typedef {import('../types.js').ClueAction} ClueAction
- * @typedef {import('../types.js').DiscardAction} DiscardAction
- * @typedef {import('../types.js').TurnAction} TurnAction
- * @typedef {import('../types.js').PlayAction} PlayAction
+ * @typedef {import('../basics/Action.ts').ClueAction} ClueAction
+ * @typedef {import('../basics/Action.ts').DiscardAction} DiscardAction
+ * @typedef {import('../basics/Action.ts').TurnAction} TurnAction
+ * @typedef {import('../basics/Action.ts').PlayAction} PlayAction
  */
 
 export default class PlayfulSieve extends Game {

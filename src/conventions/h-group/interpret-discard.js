@@ -17,7 +17,7 @@ import { interpret_baton, interpret_gd } from '../shared/special-discards.js';
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').Connection} Connection
  * @typedef {import('../../types.js').Identity} Identity
- * @typedef {import('../../types.js').DiscardAction} DiscardAction
+ * @typedef {import('../../basics/Action.ts').DiscardAction} DiscardAction
  * @typedef {import('../../types.js').WaitingConnection} WaitingConnection
  */
 
