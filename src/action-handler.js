@@ -152,7 +152,10 @@ export function handle_action(action) {
 			const newCommon = newGame.common.withThoughts(order, (draft) => {
 				draft.rewinded = true;
 				if (infer) {
-					draft.inferred = newGame.common.thoughts[order].inferred.intersect(identities);
+					// draft.inferred = newGame.common.thoughts[order].inferred.intersect(identities);
+					newGame = produce(newGame, (draft) => {
+						draft.players[state.ourPlayerIndex].thoughts[order].rewind_ids = state.base_ids.union(identities);
+					});
 				}
 				else if (identities.length === 1) {
 					draft.suitIndex = identities[0].suitIndex;
@@ -162,15 +165,22 @@ export function handle_action(action) {
 
 			newGame.common = newCommon;
 
-			if (!infer && identities.length === 1) {
-				const { suitIndex, rank } = identities[0];
+			if (identities.length === 1) {
+				if (infer) {
+					newGame = produce(newGame, (draft) => {
+						draft.players[state.ourPlayerIndex].thoughts[order].rewind_ids = state.base_ids.union(identities);
+					});
+				}
+				else {
+					const { suitIndex, rank } = identities[0];
 
-				newGame = produce(newGame, (draft) => {
-					draft.state.deck[order].suitIndex = suitIndex;
-					draft.state.deck[order].rank = rank;
-					draft.players[state.ourPlayerIndex].thoughts[order].suitIndex = suitIndex;
-					draft.players[state.ourPlayerIndex].thoughts[order].rank = rank;
-				});
+					newGame = produce(newGame, (draft) => {
+						draft.state.deck[order].suitIndex = suitIndex;
+						draft.state.deck[order].rank = rank;
+						draft.players[state.ourPlayerIndex].thoughts[order].suitIndex = suitIndex;
+						draft.players[state.ourPlayerIndex].thoughts[order].rank = rank;
+					});
+				}
 			}
 			newGame = team_elimP(newGame);
 			break;

@@ -282,6 +282,7 @@ describe('sacrifice discards', () => {
 	it('discards the farthest critical card when locked with crits', () => {
 		const game = setup(HGroup, [
 			['r4', 'b4', 'r5', 'b2', 'y5'],
+			['g4', 'r2', 'g1', 'p4', 'b3'],
 		], {
 			level: { min: 1 },
 			play_stacks: [2, 1, 0, 0, 0],

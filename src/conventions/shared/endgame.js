@@ -136,17 +136,20 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 	})));
 
 	const arranged_games = arrangements.length === 0 ? [{ hypo_game: game, prob: 1, remaining: [] }] : arrangements.map(({ ids, prob, new_remaining }) => {
+		const new_deck_ids = game.deck_ids.slice();
 		const new_deck = state.deck.slice();
 
 		for (let i = 0; i < ids.length; i++) {
 			const order = unknown_own[i];
 			const id = ids[i];
 			new_deck[order] = produce(state.deck[order], Utils.assignId(id));
+			new_deck_ids[order] = id;
 		}
 
 		const hypo_game = game.shallowCopy();
 		hypo_game.state = state.shallowCopy();
 		hypo_game.state.deck = new_deck;
+		hypo_game.deck_ids = new_deck_ids;
 
 		return { hypo_game, prob, remaining: new_remaining };
 	});
@@ -345,7 +348,7 @@ function gen_hypo_games(game, actions, remaining_ids) {
 	if (actions.every(({ action }) => action.type === ACTION.COLOUR || action.type === ACTION.RANK))
 		return { undrawn: [default_game], drawn: [] };
 
-	const { state } = game;
+	const { state, deck_ids } = game;
 
 	/** @type {HypoGame[]} */
 	const hypo_games = [];
@@ -355,7 +358,9 @@ function gen_hypo_games(game, actions, remaining_ids) {
 		const { id, missing } = remaining_ids[i];
 
 		const new_deck = state.deck.slice();
+		const new_deck_ids = deck_ids.slice();
 		new_deck[state.cardOrder + 1] = Object.freeze(new ActualCard(id.suitIndex, id.rank, state.cardOrder + 1));
+		new_deck_ids[state.cardOrder + 1] = id;
 
 		const new_remaining_ids = missing === 1 ?
 			remaining_ids.toSpliced(i, 1) :
@@ -364,6 +369,7 @@ function gen_hypo_games(game, actions, remaining_ids) {
 		const hypo_game = game.shallowCopy();
 		hypo_game.state = game.state.shallowCopy();
 		hypo_game.state.deck = new_deck;
+		hypo_game.deck_ids = new_deck_ids;
 
 		hypo_games.push({ hypo_game, prob: new Fraction(missing, state.cardsLeft), remaining: new_remaining_ids, drew: id });
 	}
@@ -460,7 +466,7 @@ function optimize({ undrawn, drawn }, actions, playerTurn, find_clues, find_disc
 				continue;
 
 			if (action.type === ACTION.PLAY || action.type === ACTION.DISCARD)
-				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}drawing ${logCard(new_game.state.deck[new_game.state.cardOrder])} after ${logObjectiveAction(new_game.state, action)} ${new_game.state.hands[playerTurn].map(o => logCard(new_game.state.deck[o]))} ${new_game.state.cardsLeft} ${new_game.state.endgameTurns} {`);
+				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}drawing ${logCard(new_game.state.deck[new_game.state.cardOrder])} ${new_game.state.cardOrder} after ${logObjectiveAction(new_game.state, action)} ${new_game.state.hands[playerTurn].map(o => logCard(new_game.state.deck[o]))} ${new_game.state.cardsLeft} ${new_game.state.endgameTurns} {`);
 			else
 				logger.info(`${Array.from({ length: depth }, _ => '  ').join('')}${logObjectiveAction(new_game.state, action)} cardsLeft ${new_game.state.cardsLeft} endgameTurns ${new_game.state.endgameTurns} {`);
 
@@ -505,8 +511,8 @@ if (!isMainThread) {
 	simple_cache.clear();
 	simpler_cache.clear();
 
-	logger.setLevel(workerData.logLevel);
-	logger.off();
+	// logger.setLevel(workerData.logLevel);
+	// logger.off();
 
 	const { find_clues, find_discards } = ENDGAME_SOLVING_FUNCS[workerData.conv];
 

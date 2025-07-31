@@ -1,6 +1,5 @@
 import { IdentitySet } from './IdentitySet.js';
 import { Player } from './Player.js';
-import { ActualCard } from '../basics/Card.js';
 import { State } from '../basics/State.js';
 import { handle_action } from '../action-handler.js';
 import * as Utils from '../tools/util.js';
@@ -30,6 +29,9 @@ export class Game {
 
 	/** @type {State} */
 	state;
+
+	/** @type {Identity[]} */
+	deck_ids = [];
 
 	players = /** @type {Player[]} */ ([]);
 
@@ -73,6 +75,8 @@ export class Game {
 		this.tableID = tableID;
 		this.state = state;
 		this.in_progress = in_progress;
+
+		this.deck_ids = new Array(state.cardsLeft);
 
 		const all_possible = new IdentitySet(state.variant.suits.length);
 
@@ -127,6 +131,7 @@ export class Game {
 		newGame.notes = this.notes;
 		newGame.rewinds = this.rewinds;
 		newGame.base = this.base;
+		newGame.deck_ids = this.deck_ids;
 		return newGame;
 	}
 
@@ -153,7 +158,7 @@ export class Game {
 		if (this.copyDepth > 100)
 			throw new Error('Maximum recursive depth reached.');
 
-		const minimalProps = ['players', 'common', 'last_actions', 'rewindDepth', 'next_ignore', 'next_finesse', 'handHistory'];
+		const minimalProps = ['players', 'common', 'last_actions', 'rewindDepth', 'next_ignore', 'next_finesse', 'handHistory', 'deck_ids'];
 
 		for (const property of minimalProps)
 			newGame[property] = Utils.objClone(this[property]);
@@ -294,7 +299,7 @@ export class Game {
 			return;
 		}
 
-		if (pivotal_action.type === 'clue')
+		if (pivotal_action?.type === 'clue')
 			pivotal_action.mistake = this.rewindDepth > 1;
 
 		logger.highlight('green', '------- STARTING REWIND -------');
@@ -304,14 +309,18 @@ export class Game {
 		newGame.notes = [];
 		const history = actionList.slice(0, action_index).flat();
 
-		logger.off();
-
-		for (const action of history) {
+		/** @param {Action} action */
+		const update_game = (action) => {
 			if (action.type === 'draw' && newGame.state.hands[action.playerIndex].includes(action.order))
-				continue;
+				return;
 
 			newGame = newGame.handle_action(action);
-		}
+		};
+
+		logger.off();
+
+		for (const action of history)
+			update_game(action);
 
 		logger.on();
 
@@ -323,7 +332,7 @@ export class Game {
 				remaining_id_actions.push(action);
 			}
 			else {
-				newGame = newGame.handle_action(action);
+				update_game(action);
 
 				if (action.type === 'draw' && action.order === remaining_id_actions[0]?.order)
 					newGame = newGame.handle_action(remaining_id_actions.shift());
@@ -333,7 +342,7 @@ export class Game {
 		// Redo all the following actions
 		const future = actionList.slice(action_index, -1).flat();
 		for (const action of future) {
-			newGame = newGame.handle_action(action);
+			update_game(action);
 
 			if (action.type === 'draw' && action.order === remaining_id_actions[0]?.order)
 				newGame = newGame.handle_action(remaining_id_actions.shift());
@@ -477,7 +486,7 @@ export class Game {
 
 			if (hypo_game.state.cardsLeft > 0) {
 				const order = hypo_game.state.cardOrder + 1;
-				const { suitIndex, rank } = hypo_game.state.deck[order] ?? Object.freeze(new ActualCard(-1, -1, order, hypo_game.state.turn_count));
+				const { suitIndex = -1, rank = -1 } = this.deck_ids[order] ?? {};
 				hypo_game = hypo_game.handle_action({ type: 'draw', playerIndex: action.playerIndex, order, suitIndex, rank });
 			}
 		}

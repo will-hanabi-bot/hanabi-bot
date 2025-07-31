@@ -194,7 +194,7 @@ export function update_turn(game, action) {
 		if (id === undefined)
 			return acc;
 
-		acc.push({ type: 'identify', order: order, playerIndex: state.ourPlayerIndex, identities: [id] });
+		acc.push({ type: 'identify', order: order, playerIndex: state.ourPlayerIndex, identities: [id], infer: true });
 
 		if (state.deck[order].drawn_index < min_drawn_index)
 			min_drawn_index = state.deck[order].drawn_index;

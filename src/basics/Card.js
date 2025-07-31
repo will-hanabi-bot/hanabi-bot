@@ -141,6 +141,12 @@ export class Card extends ActualCard {
 	finesse_ids;
 
 	/**
+	 * All rewind possibilities of the card.
+	 * @type {IdentitySet | undefined}
+	 */
+	rewind_ids;
+
+	/**
 	 * Only used when undoing a finesse and after a card has been revealed.
 	 * @type {IdentitySet | undefined}
 	 */
@@ -207,7 +213,7 @@ export class Card extends ActualCard {
 
 		for (const key of Object.keys(json)) {
 			if (json[key] !== undefined) {
-				if (['inferred', 'possible', 'finesse_ids', 'old_inferred', 'old_possible', 'info_lock'].includes(key))
+				if (['inferred', 'possible', 'finesse_ids', 'rewind_ids', 'old_inferred', 'old_possible', 'info_lock'].includes(key))
 					res[key] = IdentitySet.fromJSON(json[key]);
 				else
 					res[key] = json[key];
@@ -288,6 +294,9 @@ export class Card extends ActualCard {
 
 		if (this.suitIndex !== -1 && this.rank !== -1 && !options.symmetric)
 			return new BasicCard(this.suitIndex, this.rank);
+
+		if (this.rewind_ids?.length === 1 && !options.symmetric)
+			return this.rewind_ids.array[0];
 
 		if (options.infer) {
 			if (this.info_lock?.length === 1)

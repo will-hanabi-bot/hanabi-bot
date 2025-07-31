@@ -103,7 +103,7 @@ export function card_elim(state) {
 				const updated_card = getThoughts(order);
 
 				if (updated_card.possible.length === 0)
-					throw new Error(`order ${order} has no more possible ids after removing ${logCard(id)}!`);
+					throw new Error(`order ${order} has no more possible ids after removing ${logCard(id)}! ${state.hands[playerIndex]}`);
 
 				if (updated_card.inferred.length === 0 && !reset) {
 					newThoughts.set(order, updated_card.reset_inferences());

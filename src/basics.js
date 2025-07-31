@@ -92,6 +92,9 @@ export function onDiscard(game, action) {
 	let newGame = game.shallowCopy();
 	const index = state.hands[playerIndex].indexOf(order);
 
+	if (suitIndex !== -1 && rank !== -1)
+		newGame.deck_ids = newGame.deck_ids.with(order, { suitIndex, rank });
+
 	const newState = produce(state, (draft) => {
 		draft.hands[playerIndex].splice(index, 1);
 
@@ -145,9 +148,13 @@ export function onDraw(game, action) {
 	const { common, state } = game;
 	const { order, playerIndex, suitIndex, rank } = action;
 
+	if (state.hands[playerIndex].length > state.handSize)
+		throw new Error(`drew card when hand was ${state.hands[playerIndex]}! max size ${state.handSize}`);
+
 	const newState = produce(state, (draft) => {
 		draft.hands[playerIndex].unshift(order);
-		draft.deck[order] = Object.freeze(new ActualCard(suitIndex, rank, order, state.turn_count));
+		const id = game.deck_ids[order];
+		draft.deck[order] = Object.freeze(new ActualCard(id?.suitIndex ?? suitIndex, id?.rank ?? rank, order, state.turn_count));
 
 		draft.cardOrder = order;
 		draft.cardsLeft--;
@@ -176,6 +183,8 @@ export function onDraw(game, action) {
 	newCommon = newCommon.refresh_links(newState);
 
 	const newGame = game.shallowCopy();
+	if (suitIndex !== -1 && rank !== -1)
+		newGame.deck_ids = newGame.deck_ids.with(order, { suitIndex, rank });
 	newGame.state = newState;
 	newGame.players = newPlayers;
 	newGame.common = newCommon;
@@ -194,6 +203,9 @@ export function onPlay(game, action) {
 
 	let newGame = game.shallowCopy();
 	const index = state.hands[playerIndex].indexOf(order);
+
+	if (suitIndex !== -1 && rank !== -1)
+		newGame.deck_ids = newGame.deck_ids.with(order, { suitIndex, rank });
 
 	const newState = produce(state, (draft) => {
 		draft.hands[playerIndex].splice(index, 1);
