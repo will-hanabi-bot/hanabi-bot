@@ -23,6 +23,13 @@ describe('simple endgames with 1 card left', () => {
 			['r4', 'p1', 'p1', 'b5'],
 		], {
 			play_stacks: [3, 4, 5, 4, 5],
+			discarded: [
+				'r2', 'r3',
+				'y2', 'y3', 'y4',
+				'g2', 'g3', 'g4',
+				'b2', 'b3', 'b4',
+				'p2',
+			],	// Missing: y1, y1, p3, p4
 			clue_tokens: 2,
 			init: (game) => {
 				preClue(game, game.state.hands[PLAYER.ALICE][0], [
@@ -32,10 +39,10 @@ describe('simple endgames with 1 card left', () => {
 				preClue(game, game.state.hands[PLAYER.DONALD][3], [
 					{ giver: PLAYER.ALICE, type: CLUE.RANK, value: 5 },
 					{ giver: PLAYER.ALICE, type: CLUE.COLOUR, value: COLOUR.BLUE }]);
-
-				game.state.cardsLeft = 1;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		const { action } = solve_game(game, PLAYER.ALICE, find_all_clues);
 		assert.ok(action.type === ACTION.RANK || action.type === ACTION.COLOUR);
@@ -50,7 +57,13 @@ describe('simple endgames with 1 undrawn identity', () => {
 			['y1', 'b1', 'p5', 'r3', 'y3'],
 		], {
 			play_stacks: [5, 5, 5, 4, 2],
-			discarded: ['p3', 'p4'],
+			discarded: [
+				'r1', 'r2',       'r4',
+				'y1', 'y2',       'y4',
+				'g1', 'g2',       'g4',
+				      'b2',
+				            'p3', 'p4'
+			],	// Missing: r1, g1, b4, p1, p1
 			clue_tokens: 5,
 			init: (game) => {
 				// Alice has known p4 in slot 5.
@@ -67,10 +80,10 @@ describe('simple endgames with 1 undrawn identity', () => {
 				preClue(game, game.state.hands[PLAYER.CATHY][2], [
 					{ type: CLUE.COLOUR, value: COLOUR.PURPLE, giver: PLAYER.BOB },
 					{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }]);
-
-				game.state.cardsLeft = 2;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 2);
 
 		const { action } = solve_game(game, PLAYER.ALICE, find_all_clues);
 		assert.ok(action.type === ACTION.RANK || action.type === ACTION.COLOUR);
@@ -84,7 +97,11 @@ describe('simple endgames with 1 undrawn identity', () => {
 			['r2', 'b2', 'g2', 'y2', 'p2']
 		], {
 			play_stacks: [2, 5, 5, 5, 5],
-			discarded: ['r3', 'r4'],
+			discarded: [
+				'r3', 'r4',
+				'y3', 'y4',
+				'g3', 'g4',
+			],	// Missing: r4, b3, b4, p3, p4
 			init: (game) => {
 				// Alice has known p4 in slot 4.
 				preClue(game, game.state.hands[PLAYER.ALICE][3], [
@@ -95,10 +112,10 @@ describe('simple endgames with 1 undrawn identity', () => {
 				preClue(game, game.state.hands[PLAYER.ALICE][4], [
 					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB },
 					{ type: CLUE.RANK, value: 5, giver: PLAYER.CATHY }]);
-
-				game.state.cardsLeft = 2;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 2);
 
 		// We win as long as r4 isn't bottom decked.
 		const { action, winrate } = solve_game(game, PLAYER.ALICE, find_all_clues);
@@ -114,17 +131,21 @@ describe('simple endgames with 1 undrawn identity', () => {
 			['p1', 'p1', 'r2', 'y2', 'y5']
 		], {
 			play_stacks: [2, 4, 5, 5, 5],
-			discarded: ['r3', 'r4'],
+			discarded: [
+				      'r3', 'r4',
+				      'y3', 'y4',
+				'g2', 'g3'
+			],	// Missing: r5, g4, b2, b3, b4, p2, p3, p4
 			clue_tokens: 1,
 			init: (game) => {
 				// Bob has known r3 in slot 5.
 				preClue(game, game.state.hands[PLAYER.BOB][4], [
 					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE },
 					{ type: CLUE.RANK, value: 3, giver: PLAYER.CATHY }]);
-
-				game.state.cardsLeft = 3;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 3);
 
 		// Alice should clue 4 to Cathy. (the line is Bob discards, Cathy clues y5, )
 		const { action, winrate } = solve_game(game, PLAYER.ALICE, find_all_clues);

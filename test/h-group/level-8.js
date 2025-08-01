@@ -21,15 +21,23 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r5, y1, y5, g5, b5, p4, p5
 			starting: PLAYER.CATHY,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Cathy discards g1', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Cathy discards g1', 'p4');
 
 		// Alice's slot 3 should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -47,15 +55,23 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r2, r5, y1, y5, g5, b5, p4
 			starting: PLAYER.CATHY,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Cathy discards g1', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Cathy discards g1', 'p4');
 
 		// Alice's slot 3 not should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
@@ -69,20 +85,28 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r4, r5, y1, y5, g5, b5, p4
 			starting: PLAYER.BOB,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Bob discards r2', 'g3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Bob discards r2', 'p4');
 
 		// Cathy's slot 3 should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CALLED_TO_PLAY);
 
-		takeTurn(game, 'Cathy plays p5', 'b3');
+		takeTurn(game, 'Cathy plays p5', 'y5');
 
 		// Alice's slot 3 should not be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
@@ -96,15 +120,21 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r2, r5, y1, y5, g5, b5, p4
 			starting: PLAYER.CATHY,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Cathy discards p1', 'b3');
+		takeTurn(game, 'Cathy discards p1', 'p4');
 
 		// Alice's slot 5 not should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
@@ -118,15 +148,25 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r2, r5, y1, y5, g5, b5, p4
 			starting: PLAYER.CATHY,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
+				preClue(game, game.state.hands[PLAYER.CATHY][2], [{ type: CLUE.RANK, value: 1, giver: PLAYER.ALICE }]);
+				preClue(game, game.state.hands[PLAYER.CATHY][4], [{ type: CLUE.RANK, value: 1, giver: PLAYER.ALICE }]);
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Cathy discards p1', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Cathy discards g1', 'p4');
 
 		// Alice's slot 5 not should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
@@ -140,16 +180,24 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r4, r5, y1, y5, g5, b5, p4
 			starting: PLAYER.BOB,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Bob discards r2', 'g3');
-		takeTurn(game, 'Cathy discards p1', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Bob discards r2', 'p4');
+		takeTurn(game, 'Cathy discards p1', 'y1');
 
 		// Alice's slot 3 should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -163,16 +211,24 @@ describe('positional discards', () => {
 			['g1', 'g3', 'r3', 'p4'],
 		], {
 			level: { min: 8 },
-			play_stacks: [4, 4, 4, 4, 4],
+			play_stacks: [4, 4, 4, 4, 5],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				      'g2',       'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r2, r4, r5, y1, y5, p1
 			starting: PLAYER.DONALD,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Donald discards r3', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Donald discards r3', 'r5');
 
 		// Cathy's slot 3 should be called to play from a positional discard, while Bob's should not.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -188,13 +244,21 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [5, 5, 5, 4, 5],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				      'g2',       'g4',
+				            'b3', 'b4',
+				'p1', 'p2'
+
+			],	// Missing: r4, y1, p1, p3
 			clue_tokens: 0,
 			init: (game) => {
-				game.state.cardsLeft = 0;
 				game.state.endgameTurns = 4;
 				game.state.early_game = false;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 0);
 
 		const action = await game.take_action();
 
@@ -211,17 +275,25 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 5, 5, 5],
+			discarded: [
+				'y2', 'y3', 'y4',
+				'g2',       'g4',
+				      'b3', 'b4',
+				'i2', 'i3'
+
+			],	// Missing: r3, r4, y5, g3, b2, i4
 			clue_tokens: 2,
 			variant: VARIANTS.PINK,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
+		assert.equal(game.state.cardsLeft, 2);
+
 		takeTurn(game, 'Alice clues 5 to Donald');	// bad touching i1
 		takeTurn(game, 'Bob clues red to Donald');
-		takeTurn(game, 'Cathy discards r1', 'y2');
+		takeTurn(game, 'Cathy discards r1', 'r3');
 
 		// Alice's slot 2 should be gotten from the positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -240,16 +312,23 @@ describe('positional discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 5, 5, 5],
+			discarded: [
+				      'y2', 'y3', 'y4',
+				      'g2', 'g3', 'g4',
+				'b1', 'b2', 'b3', 'b4',
+
+			],	// Missing: r3, r4, y5, p1, p2, p3, p4
 			clue_tokens: 0,
 			starting: PLAYER.BOB,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Bob discards y1', 'b1');
-		takeTurn(game, 'Cathy discards r1', 'p1');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Bob discards y1', 'r3');
+		takeTurn(game, 'Cathy discards r1', 'p4');
 
 		// Alice's slot 2 should be gotten from the positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -273,15 +352,23 @@ describe('positional misplays', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r2, y1, y5, g5, b5, p4, p5
 			starting: PLAYER.CATHY,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Cathy bombs p1', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Cathy bombs p1', 'p4');
 
 		// Alice's slot 5 should be called to play from a positional misplay.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -299,15 +386,23 @@ describe('positional misplays', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 4, 4, 4, 4],
+			discarded: [
+				'y1', 'y2', 'y3', 'y4',
+				'g1', 'g2', 'g3', 'g4',
+				            'b3', 'b4',
+				'p1', 'p2', 'p3'
+
+			],	// Missing: r2, y1, y5, g5, b5, p4, p5
 			starting: PLAYER.CATHY,
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 2;
 				game.state.early_game = false;
 			}
 		});
 
-		takeTurn(game, 'Cathy bombs g1', 'b3');
+		assert.equal(game.state.cardsLeft, 2);
+
+		takeTurn(game, 'Cathy bombs g1', 'p4');
 
 		// Alice's slot 3 should be called to play from a positional misplay.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CALLED_TO_PLAY);
@@ -327,12 +422,20 @@ describe('mistake discards', () => {
 		], {
 			level: { min: 8 },
 			play_stacks: [4, 5, 5, 4, 5],
+			discarded: [
+				'r1', 'r2', 'r3',
+				'y1', 'y2', 'y3',
+				'g1',       'g3',
+				'b1', 'b2',
+				'p1',
+			],	// Missing: r1, y1, g1, b1, p1, p4
 			clue_tokens: 1,
 			init: (game) => {
-				game.state.cardsLeft = 1;
 				game.state.early_game = false;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		takeTurn(game, 'Alice clues red to Cathy');
 		takeTurn(game, 'Bob discards g4', 'r1');

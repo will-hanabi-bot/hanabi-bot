@@ -38,7 +38,7 @@ export class Fraction {
 		return this.numerator / this.denominator;
 	}
 
-	get toString() {
+	toString() {
 		return this.denominator === 1 ? `${this.numerator}` : `${this.numerator}/${this.denominator}`;
 	}
 

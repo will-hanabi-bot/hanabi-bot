@@ -59,6 +59,7 @@ function connectable(game, start, target) {
 
 		const new_game = produce(game, (draft) => {
 			draft.state.play_stacks[id.suitIndex]++;
+			draft.state.hands[start].splice(game.state.hands[start].indexOf(order), 1);
 		});
 
 		return connectable(new_game, state.nextPlayerIndex(start), target);
@@ -92,6 +93,7 @@ function getNextDiscard(game, player, startIndex, clue_tokens) {
 		else {
 			const finessed_card = state.deck[finessed_order];
 			state.play_stacks[finessed_card.suitIndex] = finessed_card.rank;
+			state.hands[next_discard].splice(state.hands[next_discard].indexOf(finessed_order), 1);
 			Object.assign(game.common, game.common.good_touch_elim(state));
 			team_elim(game);
 		}

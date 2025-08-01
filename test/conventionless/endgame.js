@@ -32,6 +32,13 @@ describe('simple endgames with 1 card left', () => {
 			['b4', 'p1', 'p1', 'r1'],
 		], {
 			play_stacks: [4, 4, 5, 3, 5],
+			discarded: [
+				'r2', 'r3',
+				'y2', 'y3',
+				'g2', 'g3', 'g4',
+				'b2', 'b3',
+				'p2', 'p3', 'p4'
+			],	// Missing: r1, y1, r4, y4
 			init: (game) => {
 				const { common, state } = game;
 
@@ -47,10 +54,10 @@ describe('simple endgames with 1 card left', () => {
 
 				const d_slot1 = state.hands[PLAYER.DONALD][0];
 				common.updateThoughts(d_slot1, update_func(common, d_slot1, 'b4'));
-
-				game.state.cardsLeft = 1;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		const { action } = solve_game(game, PLAYER.ALICE);
 		assert.ok(action.type === ACTION.RANK || action.type === ACTION.COLOUR, `expected clue, selected ${logObjectiveAction(game.state, action)}`);
@@ -64,6 +71,13 @@ describe('simple endgames with 1 card left', () => {
 			['y4', 'p1', 'p1', 'y5'],
 		], {
 			play_stacks: [5, 3, 4, 5, 5],
+			discarded: [
+				'r2', 'r3',
+				'y2', 'y3',
+				'g2', 'g3',
+				'b2', 'b3',
+				'p2', 'p3', 'p4'
+			],	// Missing: y1, y1, r4, g4, b4
 			init: (game) => {
 				const { common, state } = game;
 				const [b_slot1, b_slot2] = [0, 1].map(i => state.hands[PLAYER.BOB][i]);
@@ -73,23 +87,30 @@ describe('simple endgames with 1 card left', () => {
 				const [d_slot1, d_slot4] = [0, 3].map(i => state.hands[PLAYER.DONALD][i]);
 				common.updateThoughts(d_slot1, update_func(common, d_slot1, 'y4'));
 				common.updateThoughts(d_slot4, update_func(common, d_slot4, 'y5'));
-
-				game.state.cardsLeft = 1;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		const { action } = solve_game(game, PLAYER.ALICE);
 		assert.ok(action.type === ACTION.RANK || action.type === ACTION.COLOUR, `expected clue, selected ${logObjectiveAction(game.state, action)}`);
 	});
 
-	it('plays to start endgame', () => {
+	it('plays to start simple endgame', () => {
 		const game = setup(HGroup, [
 			['r4', 'r4', 'xx', 'xx'],
-			['b2', 'y1', 'g1', 'b5'],
-			['g1', 'b1', 'b1', 'r1'],
-			['r1', 'p1', 'p1', 'r5'],
+			['r1', 'r1', 'y1', 'b5'],
+			['g1', 'g1', 'y1', 'p1'],
+			['b1', 'b1', 'p1', 'r5'],
 		], {
 			play_stacks: [3, 5, 5, 4, 5],
+			discarded: [
+					  'r3',
+					  'y3', 'y4',
+					  'g3', 'g4',
+				'b2', 'b3', 'b4',
+				'p2', 'p3',	'p4'
+			],	// Missing: r2, y2, b2
 			init: (game) => {
 				const { common, state } = game;
 				const [a_slot1, a_slot2] = [0, 1].map(i => state.hands[PLAYER.ALICE][i]);
@@ -101,10 +122,10 @@ describe('simple endgames with 1 card left', () => {
 
 				const d_slot4 = state.hands[PLAYER.DONALD][3];
 				common.updateThoughts(d_slot4, update_func(common, d_slot4, 'r5'));
-
-				game.state.cardsLeft = 1;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		// Alice should play r4.
 		const { action } = solve_game(game, PLAYER.ALICE);
@@ -119,7 +140,13 @@ describe('simple endgames with 1 card left', () => {
 			['r1', 'y1', 'g1', 'p5'],
 		], {
 			play_stacks: [5, 5, 5, 5, 2],
-			discarded: ['p3'],
+			discarded: [
+				'r2', 'r3',
+				'y2', 'y3',
+				'g2', 'g3',
+				'b2', 'b3', 'b4',
+				'p2', 'p3',
+			],	// Missing: p1, r4, y4, g4
 			init: (game) => {
 				const { common, state } = game;
 				const a_slot1 = state.hands[PLAYER.ALICE][0];
@@ -131,10 +158,10 @@ describe('simple endgames with 1 card left', () => {
 
 				const d_slot4 = state.hands[PLAYER.DONALD][3];
 				common.updateThoughts(d_slot4, update_func(common, d_slot4, 'p5'));
-
-				game.state.cardsLeft = 1;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		// Alice should play p3.
 		const { action } = solve_game(game, PLAYER.ALICE);
@@ -150,7 +177,13 @@ describe('more complex endgames where all cards are seen', () => {
 			['g1', 'b1', 'r4', 'r1', 'g5']
 		], {
 			play_stacks: [3, 5, 4, 5, 1],
-			discarded: [],
+			discarded: [
+				'r2', 'r3',
+				'y2', 'y3', 'y4',
+				'g2', 'g3', 'g4',
+				'b2', 'b3', 'b4',
+				'p2', 'p3'
+			],	// Missing: y1, y1, p1, p1, p4
 			init: (game) => {
 				const { common, state } = game;
 				['p3', 'p4', 'r5', 'r4'].forEach((id, i) => {
@@ -164,10 +197,10 @@ describe('more complex endgames where all cards are seen', () => {
 
 				const c_slot5 = state.hands[PLAYER.CATHY][4];
 				common.updateThoughts(c_slot5, update_func(common, c_slot5, 'g5'));
-
-				game.state.cardsLeft = 4;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 4);
 
 		// Alice should play r4.
 		const { action } = solve_game(game, PLAYER.ALICE);
@@ -190,7 +223,7 @@ describe('endgame elim', () => {
 				'g1', 'g3', 'g4',
 				'b2', 'b3',
 				'p1', 'p1', 'p2', 'p3', 'p4'
-			],
+			],	// Missing: r4, r5, y3, g4, b1
 			starting: PLAYER.CATHY,
 			clue_tokens: 0,
 			init: (game) => {
@@ -202,14 +235,14 @@ describe('endgame elim', () => {
 				preClue(game, game.state.hands[PLAYER.BOB][3], [{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }]);
 
 				// Cathy's y5 is colour clued.
-				preClue(game, game.state.hands[PLAYER.CATHY][2], [{ type: CLUE.COLOUR, value: COLOUR.YELLOW, giver: PLAYER.ALICE }]);
+				preClue(game, game.state.hands[PLAYER.CATHY][1], [{ type: CLUE.COLOUR, value: COLOUR.YELLOW, giver: PLAYER.ALICE }]);
 
 				// Donald's y4 is rank clued.
 				preClue(game, game.state.hands[PLAYER.DONALD][3], [{ type: CLUE.RANK, value: 4, giver: PLAYER.ALICE }]);
-
-				game.state.cardsLeft = 1;
 			}
 		});
+
+		assert.equal(game.state.cardsLeft, 1);
 
 		// Cathy draws the last card, starting the final round.
 		takeTurn(game, 'Cathy discards r2', 'y3');
@@ -237,7 +270,13 @@ describe('partial endgames', () => {
 			['b1', 'r1', 'g1', 'y1', 'r5']
 		], {
 			play_stacks: [2, 4, 5, 5, 5],
-			discarded: ['r3', 'r4'],
+			discarded: [
+				'r2', 'r3',
+				'y2', 'y3',
+				'g2', 'g3',
+				'b2', 'b3', 'b4',
+				'p2', 'p3', 'p4'
+			],	// Missing: p1, p1, r4, y4, g4, y5
 			clue_tokens: 0,
 			init: (game) => {
 				const { state } = game;
@@ -250,13 +289,13 @@ describe('partial endgames', () => {
 
 				const c_slot5 = state.hands[PLAYER.CATHY][4];
 				preClue(game, c_slot5, [{ type: CLUE.RANK, value: 5, giver: PLAYER.ALICE }, { type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.ALICE }]);
-
-				game.state.cardsLeft = 2;
 			}
 		});
 
+		assert.equal(game.state.cardsLeft, 2);
+
 		// Alice should play r3.
-		const { action, winrate } = solve_game(game, PLAYER.ALICE, ENDGAME_SOLVING_FUNCS.HGroup.find_clues);
+		const { action, winrate } = solve_game(game, PLAYER.ALICE, ENDGAME_SOLVING_FUNCS.HGroup.find_clues, () => [], false);
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
 
 		// We win if Bob draws y5, and lose if Bob doesn't. There are 6 locations that y5 could be.

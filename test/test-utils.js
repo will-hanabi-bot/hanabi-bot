@@ -1,7 +1,7 @@
 import { CLUE, MAX_H_LEVEL } from '../src/constants.js';
 import { CARD_STATUS } from '../src/basics/Card.js';
 import { State } from '../src/basics/State.js';
-import { find_possibilities } from '../src/variants.js';
+import { cardTouched, find_possibilities } from '../src/variants.js';
 import * as Utils from '../src/tools/util.js';
 
 import { logAction, logCard, logClue } from '../src/tools/log.js';
@@ -81,23 +81,48 @@ export function expandShortCard(short) {
 }
 
 /**
- * Initializes the game according to the options provided.
- * @param {Game} game
- * @param {Partial<SetupOptions>} options
+ * @template {Game} A
+ * @param {{new(...args: any[]): A}} GameClass
+ * @param {string[][]} hands
+ * @param {Partial<SetupOptions>} test_options
+ * @returns {A}
  */
-function init_game(game, options) {
+export function setup(GameClass, hands, test_options = {}) {
+	const playerNames = names.slice(0, hands.length);
+	const variant = test_options.variant ?? VARIANTS.NO_VARIANT;
+	Utils.globalModify({ variant, playerNames, cache: new Map() });
+
+	const _state = new State(playerNames, test_options.ourPlayerIndex ?? PLAYER.ALICE, variant, {});
+	testShortForms = ['x', ...variant.shortForms];
+	const [minLevel, maxLevel] = [test_options?.level?.min ?? 1, test_options?.level?.max ?? MAX_H_LEVEL];
+	let game = new GameClass(-1, _state, false, undefined, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
+	game.catchup = true;
+
+	let orderCounter = 0;
+
+	// Draw all the hands
+	for (let playerIndex = 0; playerIndex < hands.length; playerIndex++) {
+		const hand = hands[playerIndex];
+		for (const short of hand.toReversed()) {
+			const { suitIndex, rank } = expandShortCard(short);
+
+			game = game.handle_action({ type: 'draw', order: orderCounter, playerIndex, suitIndex, rank });
+			orderCounter++;
+		}
+	}
+
 	const { common, me, state } = game;
 
-	if (options.play_stacks) {
-		state.play_stacks = options.play_stacks.slice();
+	if (test_options.play_stacks) {
+		state.play_stacks = test_options.play_stacks.slice();
 		for (let i = 0; i < state.numPlayers; i++)
-			game.players[i].hypo_stacks = options.play_stacks.slice();
+			game.players[i].hypo_stacks = test_options.play_stacks.slice();
 
-		common.hypo_stacks = options.play_stacks.slice();
+		common.hypo_stacks = test_options.play_stacks.slice();
 	}
 
 	// Initialize discard stacks
-	for (const short of options.discarded ?? []) {
+	for (const short of test_options.discarded ?? []) {
 		const identity = expandShortCard(short);
 		const { suitIndex, rank } = identity;
 
@@ -118,46 +143,14 @@ function init_game(game, options) {
 		}
 	}
 
-	state.currentPlayerIndex = options.starting ?? 0;
-	state.clue_tokens = options.clue_tokens ?? 8;
-	state.strikes = options.strikes ?? 0;
+	state.cardsLeft -= state.score + (test_options.discarded?.length ?? 0);
 
-	if (options.init)
-		options.init(game);
-}
+	state.currentPlayerIndex = test_options.starting ?? 0;
+	state.clue_tokens = test_options.clue_tokens ?? 8;
+	state.strikes = test_options.strikes ?? 0;
 
-/**
- * @template {Game} A
- * @param {{new(...args: any[]): A}} GameClass
- * @param {string[][]} hands
- * @param {Partial<SetupOptions>} test_options
- * @returns {A}
- */
-export function setup(GameClass, hands, test_options = {}) {
-	const playerNames = names.slice(0, hands.length);
-	const variant = test_options.variant ?? VARIANTS.NO_VARIANT;
-	Utils.globalModify({ variant, playerNames, cache: new Map() });
-
-	const state = new State(playerNames, test_options.ourPlayerIndex ?? PLAYER.ALICE, variant, {});
-	testShortForms = ['x', ...variant.shortForms];
-	const [minLevel, maxLevel] = [test_options?.level?.min ?? 1, test_options?.level?.max ?? MAX_H_LEVEL];
-	let game = new GameClass(-1, state, false, undefined, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
-	game.catchup = true;
-
-	let orderCounter = 0;
-
-	// Draw all the hands
-	for (let playerIndex = 0; playerIndex < hands.length; playerIndex++) {
-		const hand = hands[playerIndex];
-		for (const short of hand.toReversed()) {
-			const { suitIndex, rank } = expandShortCard(short);
-
-			game = game.handle_action({ type: 'draw', order: orderCounter, playerIndex, suitIndex, rank });
-			orderCounter++;
-		}
-	}
-
-	init_game(game, test_options);
+	if (test_options.init)
+		test_options.init(game);
 
 	let newCommon = game.common.card_elim(game.state);
 
@@ -377,6 +370,17 @@ const updateC = produceC(update);
  */
 export function preClue(game, order, clues, fully_known = false) {
 	const { common, state } = game;
+
+	const id = state.deck[order].identity();
+	if (id !== undefined) {
+		const non_touching = clues.find(clue => !cardTouched(id, state.variant, clue));
+
+		if (non_touching !== undefined) {
+			const target = state.hands.findIndex(h => h.includes(order));
+			throw new Error(`Clue ${logClue({ target, ...non_touching })} doesn't touch ${logCard(id)} (order ${order})!`);
+		}
+	}
+
 	state.deck[order] = updateC(state.deck[order], clues);
 
 	const possibilities = state.base_ids.union(fully_known ?

@@ -334,4 +334,16 @@ export class State {
 	clueTouched(orders, clue) {
 		return orders.filter(o => this.deck[o].identity() !== undefined && cardTouched(this.deck[o], this.variant, clue));
 	}
+
+	/**
+	 * @param {string} short
+	 */
+	expandShort(short) {
+		const suitIndex = this.variant.shortForms.indexOf(short[0]);
+
+		if (suitIndex === -2)
+			throw new Error(`Identity ${short} doesn't exist in selected variant, test written incorrectly?`);
+
+		return { suitIndex, rank: Number(short[1]) || -1 };
+	}
 }

@@ -422,7 +422,7 @@ export async function take_action(game) {
 	}
 
 	// Attempt to solve endgame
-	if (state.inEndgame() && state.maxScore - state.score < 2*state.variant.suits.length) {
+	if (state.inEndgame() && state.maxScore - state.score <= state.variant.suits.length + 1) {
 		logger.highlight('purple', 'Attempting to solve endgame...');
 
 		const workerData = { game: Utils.toJSON(game), playerTurn: state.ourPlayerIndex, conv: 'HGroup', logLevel: logger.level };
