@@ -47,7 +47,7 @@ export class Bot {
 		this.game = this.game.handle_action(action);
 
 		for (const { cmd, arg } of this.game.queued_cmds) 
-			this.sendCmd(cmd, arg);
+			this.sendCmd(cmd, { tableID: this.tableID, ...arg });
 
 		this.game.queued_cmds = [];
 
@@ -62,7 +62,7 @@ export class Bot {
 
 			if (this.game.in_progress) {
 				if (!this.manual)
-					setTimeout(async () => this.sendCmd('action', await suggested_action), this.game.state.options.speedrun ? 0 : 2000);
+					setTimeout(async () => this.sendCmd('action', { tableID: this.tableID, ...await suggested_action }), this.game.state.options.speedrun ? 0 : 2000);
 			}
 			// Replaying a turn
 			else {
@@ -118,7 +118,7 @@ export class Bot {
 				const state = new State(playerNames, ourPlayerIndex, variant, options);
 
 				// Initialize game state using convention set
-				this.game = new CONVENTIONS[this.settings.convention](tableID, state, true, undefined, this.settings.level);
+				this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
 
 				Utils.globalModify({ variant, playerNames, cache: new Map() });
 
@@ -232,7 +232,7 @@ export class Bot {
 		}
 		// Readds the bot to a game (format: /rejoin)
 		else if (data.msg.startsWith('/rejoin')) {
-			if (this.game?.tableID) {
+			if (this.tableID !== undefined) {
 				this.sendPM(data.who, 'Could not rejoin, as the bot is already in a game.');
 				return;
 			}
@@ -246,7 +246,7 @@ export class Bot {
 		}
 		// Kicks the bot from a game (format: /leave)
 		else if (data.msg.startsWith('/leave')) {
-			if (this.game?.tableID === undefined) {
+			if (this.tableID === undefined) {
 				this.sendPM(data.who, 'Could not leave, as the bot is not currently in a room.');
 				return;
 			}
@@ -260,22 +260,22 @@ export class Bot {
 		}
 		// Starts the game (format: /start)
 		else if (data.msg.startsWith('/start')) {
-			this.sendCmd('tableStart', { tableID: this.game.tableID });
+			this.sendCmd('tableStart', { tableID: this.tableID });
 		}
 		// Restarts a game (format: /restart)
 		else if (data.msg.startsWith('/restart')) {
-			this.sendCmd('tableRestart', { tableID: this.game.tableID, hidePregame: true });
+			this.sendCmd('tableRestart', { tableID: this.tableID, hidePregame: true });
 		}
 		// Remakes a table (format: /remake)
 		else if (data.msg.startsWith('/remake')) {
-			this.sendCmd('tableRestart', { tableID: this.game.tableID, hidePregame: false });
+			this.sendCmd('tableRestart', { tableID: this.tableID, hidePregame: false });
 		}
 		// Displays or modifies the current settings (format: /settings [convention = 'HGroup'] [level = 1])
 		else if (data.msg.startsWith('/settings')) {
-			this.assignSettings(data, this.game.tableID === undefined);
+			this.assignSettings(data, this.tableID === undefined);
 		}
 		else if (data.msg.startsWith('/terminate')) {
-			this.sendCmd('tableTerminate', { tableID: this.game.tableID });
+			this.sendCmd('tableTerminate', { tableID: this.tableID });
 		}
 		else if (data.msg.startsWith('/version')) {
 			this.sendPM(data.who, `v${BOT_VERSION}`);
@@ -286,9 +286,9 @@ export class Bot {
 	}
 
 	leaveRoom() {
-		this.sendCmd(this.gameStarted ? 'tableUnattend' : 'tableLeave', { tableID: this.game.tableID });
-		this.game.tableID = undefined;
-		this.game.in_progress = false;
+		this.sendCmd(this.gameStarted ? 'tableUnattend' : 'tableLeave', { tableID: this.tableID });
+		this.tableID = undefined;
+		this.game = undefined;
 		this.gameStarted = false;
 	}
 

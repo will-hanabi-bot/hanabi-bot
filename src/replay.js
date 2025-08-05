@@ -83,7 +83,7 @@ async function main() {
 		throw new Error(`Convention ${convention} is not supported.`);
 
 	const state = new State(players, ourPlayerIndex, variant, options);
-	const game = new conventions[/** @type {keyof typeof conventions} */(convention)](Number(id), state, false, undefined, Number(level ?? 1));
+	const game = new conventions[/** @type {keyof typeof conventions} */(convention)](state, false, undefined, Number(level ?? 1));
 	game.catchup = true;
 
 	const bot = { game };

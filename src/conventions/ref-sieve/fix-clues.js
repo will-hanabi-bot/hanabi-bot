@@ -27,7 +27,7 @@ export function find_fix_clue(game) {
 	logger.info(`fix needed on [${fix_needed.map(o => logCard(state.deck[o]))}]`);
 
 	const best_clue = Utils.maxOn(state.allValidClues(partner), clue => {
-		const action = /** @type {ClueAction} */ (Utils.performToAction(state, Utils.clueToAction(clue, -1), state.ourPlayerIndex, state.deck));
+		const action = /** @type {ClueAction} */ (Utils.performToAction(state, Utils.clueToPerform(clue), state.ourPlayerIndex, state.deck));
 		const hypo_game = game.simulate_clue(action);
 		const value = get_result(game, hypo_game, action);
 

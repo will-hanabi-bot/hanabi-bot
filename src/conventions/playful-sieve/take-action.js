@@ -24,7 +24,7 @@ import * as Utils from '../../tools/util.js';
  * @returns {Promise<PerformAction>}
  */
 export async function take_action(game) {
-	const { common, me, state, tableID } = game;
+	const { common, me, state } = game;
 	const partner = state.nextPlayerIndex(state.ourPlayerIndex);
 	const partner_hand = state.hands[partner];
 
@@ -76,7 +76,7 @@ export async function take_action(game) {
 
 	const fix_clue = find_fix_clue(game);
 
-	const locked_discard_action = { tableID, type: ACTION.DISCARD, target: me.lockedDiscard(state, state.ourHand) };
+	const locked_discard_action = { type: ACTION.DISCARD, target: me.lockedDiscard(state, state.ourHand) };
 
 	// Stalling situation
 	if (me.thinksLocked(state, state.ourPlayerIndex)) {
@@ -90,10 +90,10 @@ export async function take_action(game) {
 
 		// Chop is delayed playable
 		if (!isTrash(state, me, chop_card, chop) && me.hypo_stacks[chop_card.suitIndex] + 1 === chop_card.rank)
-			return Utils.clueToAction({ type: CLUE.COLOUR, value: chop_card.suitIndex, target: partner }, tableID);
+			return Utils.clueToPerform({ type: CLUE.COLOUR, value: chop_card.suitIndex, target: partner });
 
 		if (fix_clue !== undefined)
-			return Utils.clueToAction(fix_clue, tableID);
+			return Utils.clueToPerform(fix_clue);
 
 		// Can't give colour clues touching chop
 		const valid_clues = state.allValidClues(partner).filter(clue =>
@@ -102,13 +102,13 @@ export async function take_action(game) {
 		const best_clue = Utils.maxOn(valid_clues, (clue) => clue_value(game, clue), 0);
 
 		if (best_clue !== undefined)
-			return Utils.clueToAction(best_clue, tableID);
+			return Utils.clueToPerform(best_clue);
 		else
 			return locked_discard_action;
 	}
 
 	if (fix_clue !== undefined && state.clue_tokens > 0)
-		return Utils.clueToAction(fix_clue, tableID);
+		return Utils.clueToPerform(fix_clue);
 
 	logger.info('fix clue?', fix_clue ? logClue(fix_clue) : undefined);
 
@@ -132,14 +132,14 @@ export async function take_action(game) {
 
 		// TODO: If in endgame, check if a clue needs to be given before playing.
 		if (playable_orders.length > 0)
-			return { tableID, type: ACTION.PLAY, target: playable_priorities[priority][0] };
+			return { type: ACTION.PLAY, target: playable_priorities[priority][0] };
 
 		if (state.clue_tokens !== 8 && !state.inEndgame()) {
 			if (discards.length > 0)
-				return { tableID, type: ACTION.DISCARD, target: discards[0] };
+				return { type: ACTION.DISCARD, target: discards[0] };
 
 			if (trash_orders.length > 0)
-				return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+				return { type: ACTION.DISCARD, target: trash_orders[0] };
 
 			const last_action = game.last_actions[partner];
 			if (state.clue_tokens === 0 || (state.clue_tokens === 1 && (last_action.type === 'discard' || (last_action.type === 'play' && state.deck[last_action.order].rank === 5))))
@@ -167,7 +167,7 @@ export async function take_action(game) {
 
 				if (unlocked_order) {
 					if (me.thoughts[unlocked_order].matches({ suitIndex: identity.suitIndex, rank: identity.rank + 1 }))
-						return { tableID, type: ACTION.PLAY, target: order };
+						return { type: ACTION.PLAY, target: order };
 				}
 				else {
 					safe_playables.push(order);
@@ -176,10 +176,10 @@ export async function take_action(game) {
 		}
 
 		if (discards.length > 0)
-			return { tableID, type: ACTION.DISCARD, target: discards[0] };
+			return { type: ACTION.DISCARD, target: discards[0] };
 
 		if (trash_orders.length > 0)
-			return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+			return { type: ACTION.DISCARD, target: trash_orders[0] };
 
 		if (safe_playables.length > 0) {
 			// Play playable that leads to closest card
@@ -195,7 +195,7 @@ export async function take_action(game) {
 				return rank - partner_lowest_ranks[suitIndex];
 			});
 
-			return { tableID, type: ACTION.PLAY, target };
+			return { type: ACTION.PLAY, target };
 		}
 
 		return locked_discard_action;
@@ -207,11 +207,11 @@ export async function take_action(game) {
 		const connecting_playable = playable_orders.find(o => me.thoughts[o].identity({ infer: true })?.suitIndex === chop_card.suitIndex);
 
 		if (connecting_playable !== undefined)
-			return { tableID, type: ACTION.PLAY, target: connecting_playable };
+			return { type: ACTION.PLAY, target: connecting_playable };
 	}
 
 	if (sarcastic_chop)
-		return { tableID, type: ACTION.DISCARD, target: sarcastic_chop };
+		return { type: ACTION.DISCARD, target: sarcastic_chop };
 
 	const playable_sarcastic = discards.find(o => {
 		const id = me.thoughts[o].identity({ infer: true });
@@ -219,7 +219,7 @@ export async function take_action(game) {
 	});
 
 	if (playable_sarcastic !== undefined && state.clue_tokens !== 8)
-		return { tableID, type: ACTION.DISCARD, target: playable_sarcastic };
+		return { type: ACTION.DISCARD, target: playable_sarcastic };
 
 	const direct_connections = playable_orders.filter(order => {
 		const id = me.thoughts[order].identity({ infer: true });
@@ -227,7 +227,7 @@ export async function take_action(game) {
 	});
 
 	if (direct_connections.length > 0)
-		return { tableID, type: ACTION.PLAY, target: direct_connections[0] };
+		return { type: ACTION.PLAY, target: direct_connections[0] };
 
 	if (state.clue_tokens === 0)
 		return locked_discard_action;
@@ -257,13 +257,13 @@ export async function take_action(game) {
 
 	// 1 playable + 1 new_touched + 1 elim is enough
 	if (best_clue_value >= 2)
-		return Utils.clueToAction(best_clue, tableID);
+		return Utils.clueToPerform(best_clue);
 
 	// Best clue is too low value, lock
 	if (best_clue_value <= 0.25 && lock_clue !== undefined)
-		return Utils.clueToAction(lock_clue, tableID);
+		return Utils.clueToPerform(lock_clue);
 
-	return Utils.clueToAction(best_clue, tableID);
+	return Utils.clueToPerform(best_clue);
 }
 
 /**

@@ -215,7 +215,7 @@ export function find_clue_givers(game, clue, giver) {
  * @returns {Promise<PerformAction>}
  */
 export async function take_action(game) {
-	const { common, state, me, tableID } = game;
+	const { common, state, me } = game;
 	const nextPlayerIndex = state.nextPlayerIndex(state.ourPlayerIndex);
 
 	// Look for playables, trash and important discards in own hand
@@ -270,7 +270,7 @@ export async function take_action(game) {
 
 		if (status === CARD_STATUS.BLUFFED || status === CARD_STATUS.MAYBE_BLUFFED || status === CARD_STATUS.F_MAYBE_BLUFF) {
 			logger.info('playing into potential bluff');
-			return { tableID, type: ACTION.PLAY, target: best_playable_order };
+			return { type: ACTION.PLAY, target: best_playable_order };
 		}
 	}
 
@@ -280,7 +280,7 @@ export async function take_action(game) {
 
 	if (playable_orders.length > 0 && priority === 0 && chop_hidden_f()) {
 		logger.info('must play into hidden component that may be discarded!');
-		return { tableID, type: ACTION.PLAY, target: best_playable_order };
+		return { type: ACTION.PLAY, target: best_playable_order };
 	}
 
 	const { play_clues, save_clues, fix_clues, stall_clues } = find_clues(game);
@@ -288,7 +288,7 @@ export async function take_action(game) {
 	// ALways give a save clue after a Generation Discard to avoid desync
 	if (state.discard_state === 'gen' && save_clues[nextPlayerIndex]?.safe) {
 		logger.info('giving save clue after generation!');
-		return Utils.clueToAction(save_clues[nextPlayerIndex], tableID);
+		return Utils.clueToPerform(save_clues[nextPlayerIndex]);
 	}
 
 	const urgent_actions = find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities, is_finessed ? best_playable_order : -1);
@@ -322,7 +322,7 @@ export async function take_action(game) {
 		if (gen_required) {
 			// Play a 5 if we have one
 			if (playable_priorities[3].length > 0)
-				return { tableID, type: ACTION.PLAY, target: playable_priorities[3][0] };
+				return { type: ACTION.PLAY, target: playable_priorities[3][0] };
 
 			const gen_action = () => {
 				const nextChop = common.chop(state.hands[nextPlayerIndex]);
@@ -334,11 +334,11 @@ export async function take_action(game) {
 
 					const next_connecting = find_unlock(game, nextPlayerIndex);
 					if (next_connecting !== undefined)
-						return { tableID, type: ACTION.PLAY, target: next_connecting };
+						return { type: ACTION.PLAY, target: next_connecting };
 				}
 
 				logger.highlight('yellow', `performing generation discard for ${state.playerNames[nextNextPlayerIndex]}`);
-				return { tableID, type: ACTION.DISCARD, target: discardable };
+				return { type: ACTION.DISCARD, target: discardable };
 			};
 
 			const action = gen_action();
@@ -453,10 +453,10 @@ export async function take_action(game) {
 				const stall_clue = best_play_clue ?? best_stall_clue(stall_clues, 4) ?? any_clue(state);
 
 				if (stall_clue !== undefined)
-					return Utils.clueToAction(stall_clue, tableID);
+					return Utils.clueToPerform(stall_clue);
 			}
 
-			return { tableID, type: action.type, target: action.target };
+			return { type: action.type, target: action.target };
 		}
 	}
 
@@ -491,7 +491,7 @@ export async function take_action(game) {
 			playable_orders.find(o => me.thoughts[o].inferred.every(i => state.isCritical(i))) ??
 			playable_orders[0];
 
-		return { tableID, type: ACTION.PLAY, target: best_playable };
+		return { type: ACTION.PLAY, target: best_playable };
 	}
 
 	// Consider finesses while finessed if we are only waited on to play one card,
@@ -506,11 +506,11 @@ export async function take_action(game) {
 
 	// Get a high value play clue involving next player (otherwise, next player can give it)
 	if (consider_finesse && best_play_clue?.result.finesses.length > 0 && (best_play_clue.target == nextPlayerIndex || best_play_clue.result.finesses.some(f => f.playerIndex === nextPlayerIndex)))
-		return Utils.clueToAction(best_play_clue, tableID);
+		return Utils.clueToPerform(best_play_clue);
 
 	// If we have a finesse and no urgent high value clues to give, play into the finesse.
 	if (playable_orders.length > 0 && priority === 0 && !playable_trash.includes(best_playable_order))
-		return { tableID, type: ACTION.PLAY, target: best_playable_order };
+		return { type: ACTION.PLAY, target: best_playable_order };
 
 	// Blind play a missing card in the endgame
 	if (state.cardsLeft === 0 && state.strikes < 2) {
@@ -523,7 +523,7 @@ export async function take_action(game) {
 
 			if (me.thoughts[slot1].possible.has(identity)) {
 				logger.highlight('yellow', 'trying to play slot 1 as', logCard(identity));
-				return { tableID, type: ACTION.PLAY, target: slot1 };
+				return { type: ACTION.PLAY, target: slot1 };
 			}
 		}
 	}
@@ -545,9 +545,9 @@ export async function take_action(game) {
 			if (!duplicates.every(c => c.inferred.every(p => p.matches(identity) || state.isBasicTrash(p)))) {
 				// If playing reveals duplicates are trash, playing is better for tempo
 				if (duplicates.every(c => c.possible.every(p => p.matches(identity) || state.isBasicTrash(p))))
-					return { tableID, type: ACTION.PLAY, target: order };
+					return { type: ACTION.PLAY, target: order };
 
-				return { tableID, type: ACTION.DISCARD, target: order };
+				return { type: ACTION.DISCARD, target: order };
 			}
 		}
 	}
@@ -572,14 +572,14 @@ export async function take_action(game) {
 
 			if (gd_target !== undefined) {
 				logger.info('performing gd on', state.playerNames[i]);
-				return { tableID, type: ACTION.DISCARD, target: gd_target };
+				return { type: ACTION.DISCARD, target: gd_target };
 			}
 		}
 	}
 
 	// Playing a connecting card or playing a 5
 	if (best_playable_order !== undefined && priority <= 3)
-		return { tableID, type: ACTION.PLAY, target: best_playable_order };
+		return { type: ACTION.PLAY, target: best_playable_order };
 
 	// Attempt a Baton Discard
 	if (game.level >= LEVEL.SPECIAL_DISCARDS && state.pace >= 2 * state.numPlayers) {
@@ -597,14 +597,14 @@ export async function take_action(game) {
 
 			if (baton_target !== undefined) {
 				logger.info('performing baton on', state.playerNames[i]);
-				return { tableID, type: ACTION.DISCARD, target: baton_target };
+				return { type: ACTION.DISCARD, target: baton_target };
 			}
 		}
 	}
 
 	// Discard known trash at high pace, low clues
 	if (best_playable_order === undefined && trash_orders.length > 0 && state.pace > state.numPlayers * 2 && state.clue_tokens <= 2)
-		return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+		return { type: ACTION.DISCARD, target: trash_orders[0] };
 
 	// Shout Discard on a valuable card that moves chop to trash
 	const next_chop = me.chop(state.hands[nextPlayerIndex]);
@@ -620,7 +620,7 @@ export async function take_action(game) {
 
 		if (cardValue(state, me, state.deck[next_chop], next_chop) >= 1 && new_chop_value === 0) {
 			logger.highlight('yellow', `performing shout discard on ${logCard(state.deck[next_chop])}`);
-			return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+			return { type: ACTION.DISCARD, target: trash_orders[0] };
 		}
 	}
 
@@ -640,7 +640,7 @@ export async function take_action(game) {
 
 		if (best_tempo_clue !== undefined) {
 			logger.highlight('yellow', `performing tccm on valuable card moving chop to trash ${logClue(best_tempo_clue)}`);
-			return Utils.clueToAction(best_tempo_clue, tableID);
+			return Utils.clueToPerform(best_tempo_clue);
 		}
 	}
 
@@ -648,11 +648,11 @@ export async function take_action(game) {
 
 	// Play clue in 2 players while partner is not loaded and not selfish
 	if (state.numPlayers === 2 && state.clue_tokens > 0 && play_clue_2p && !me.thinksLoaded(state, nextPlayerIndex) && not_selfish(play_clue_2p, state.ourPlayerIndex))
-		return Utils.clueToAction(play_clue_2p, tableID);
+		return Utils.clueToPerform(play_clue_2p);
 
 	// Playable card with any priority
 	if (best_playable_order !== undefined)
-		return { tableID, type: ACTION.PLAY, target: best_playable_order };
+		return { type: ACTION.PLAY, target: best_playable_order };
 
 	const common_severity = stall_severity(state, common, state.ourPlayerIndex);
 	const actual_severity = stall_severity(state, me, state.ourPlayerIndex);
@@ -662,7 +662,7 @@ export async function take_action(game) {
 			// Give play clue (at correct priority level)
 			if (i === (state.clue_tokens > 1 ? actionPrioritySize + 1 : actionPrioritySize * 2) && best_play_clue !== undefined) {
 				if (best_clue_value >= minimum_clue_value(state))
-					return Utils.clueToAction(best_play_clue, tableID);
+					return Utils.clueToPerform(best_play_clue);
 				else
 					logger.info('clue too low value', logClue(best_play_clue), best_clue_value);
 			}
@@ -675,7 +675,7 @@ export async function take_action(game) {
 
 	// Any play clue in 2 players
 	if (state.numPlayers === 2 && state.clue_tokens > 0 && (best_play_clue || stall_clues[1].length > 0))
-		return Utils.clueToAction(best_play_clue ?? Utils.maxOn(stall_clues[1], clue => find_clue_value(clue.result)), tableID);
+		return Utils.clueToPerform(best_play_clue ?? Utils.maxOn(stall_clues[1], clue => find_clue_value(clue.result)));
 
 	// Either there are no clue tokens or the best play clue doesn't meet MCVP
 
@@ -687,13 +687,13 @@ export async function take_action(game) {
 			const { misplay, order } = positional;
 
 			if (misplay || state.clue_tokens < 8)
-				return { tableID, type: misplay ? ACTION.PLAY : ACTION.DISCARD, target: order };
+				return { type: misplay ? ACTION.PLAY : ACTION.DISCARD, target: order };
 		}
 	}
 
 	// Discard known trash (no pace requirement)
 	if (trash_orders.length > 0 && !state.inEndgame() && state.clue_tokens < 8)
-		return { tableID, type: ACTION.DISCARD, target: trash_orders[0] };
+		return { type: ACTION.DISCARD, target: trash_orders[0] };
 
 	// Early save
 	if (state.clue_tokens > 0 && urgent_actions[actionPrioritySize * 2].length > 0)
@@ -712,7 +712,7 @@ export async function take_action(game) {
 
 		// Give play clue even if possibly duping or someone else has a better chop
 		if (valid_play_clue && find_clue_value({ ...best_play_clue.result, avoidable_dupe: 0 }) >= minimum_clue_value(state))
-			return Utils.clueToAction(best_play_clue, tableID);
+			return Utils.clueToPerform(best_play_clue);
 
 		if (state.pace == void_players.length) {
 			const playerIndex = (state.ourPlayerIndex + 1) % state.numPlayers;
@@ -720,7 +720,7 @@ export async function take_action(game) {
 			const endgameStall = stall_clues[1][0] ?? stall_clues[5].find(clue => (state.deck[clue.result.focus].rank <= common.hypo_stacks[state.deck[clue.result.focus].suitIndex]+1 || state.isBasicTrash(state.deck[clue.result.focus]))) ?? valid_clues[0];
 
 			if (endgameStall !== undefined)
-				return Utils.clueToAction(endgameStall, tableID);
+				return Utils.clueToPerform(endgameStall);
 			else
 				return take_discard(game, state.ourPlayerIndex, trash_orders);
 		}
@@ -729,19 +729,19 @@ export async function take_action(game) {
 		// 8 clues, must stall
 		if (state.clue_tokens === 8) {
 			if (validStall)
-				return Utils.clueToAction(validStall, tableID);
+				return Utils.clueToPerform(validStall);
 
 			const anyStall = any_clue(state);
 			if (anyStall !== undefined)
-				return Utils.clueToAction(anyStall, tableID);
+				return Utils.clueToPerform(anyStall);
 
 			// Bomb discardable slot, or slot 1
 			const target = discardable ?? state.ourHand[0];
-			return { tableID, type: ACTION.PLAY, target };
+			return { type: ACTION.PLAY, target };
 		}
 
 		if (validStall)
-			return Utils.clueToAction(validStall, tableID);
+			return Utils.clueToPerform(validStall);
 
 		logger.info('no valid stall! severity', common_severity);
 	}
@@ -772,11 +772,11 @@ function any_clue(state) {
  * @param {number[]} trash_orders
  */
 function take_discard(game, playerIndex, trash_orders) {
-	const { common, state, tableID } = game;
+	const { common, state } = game;
 	const hand = state.hands[playerIndex];
 
 	// Discarding known trash is preferable to chop
 	const discard = trash_orders[0] ?? common.chop(hand) ?? common.lockedDiscard(state, hand);
 
-	return { tableID, type: ACTION.DISCARD, target: discard };
+	return { type: ACTION.DISCARD, target: discard };
 }

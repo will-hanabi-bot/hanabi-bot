@@ -65,14 +65,11 @@ export class Game {
 	queued_cmds = [];
 
 	/**
-	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
 	 * @param {{ state: State, players: Player[], common: Player }} base
 	 */
-	constructor(tableID, state, in_progress, base = undefined) {
-		/** @type {number} */
-		this.tableID = tableID;
+	constructor(state, in_progress, base = undefined) {
 		this.state = state;
 		this.in_progress = in_progress;
 
@@ -127,7 +124,7 @@ export class Game {
 	 * @returns {this}
 	 */
 	createBlank() {
-		const newGame = new /** @type {any} */ (this.constructor)(this.tableID, this.base.state.minimalCopy(), this.in_progress, this.base);
+		const newGame = new /** @type {any} */ (this.constructor)(this.base.state.minimalCopy(), this.in_progress, this.base);
 		newGame.notes = this.notes;
 		newGame.rewinds = this.rewinds;
 		newGame.base = this.base;
@@ -153,7 +150,7 @@ export class Game {
 	 * @returns {this}
 	 */
 	minimalCopy() {
-		const newGame = new /** @type {any} */ (this.constructor)(this.tableID, this.state.minimalCopy(), this.in_progress);
+		const newGame = new /** @type {any} */ (this.constructor)(this.state.minimalCopy(), this.in_progress);
 
 		if (this.copyDepth > 100)
 			throw new Error('Maximum recursive depth reached.');
@@ -262,7 +259,7 @@ export class Game {
 					draft[order].full += `t${state.turn_count}: ${note}`;
 
 					if (!this.catchup && this.in_progress)
-						this.queued_cmds.push({ cmd: 'note', arg: { tableID: this.tableID, order, note: draft[order].full } });
+						this.queued_cmds.push({ cmd: 'note', arg: {order, note: draft[order].full } });
 				}
 			}
 		});

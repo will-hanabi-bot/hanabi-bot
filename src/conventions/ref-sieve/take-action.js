@@ -68,7 +68,7 @@ export function find_all_discards(game, playerIndex) {
  * @returns {Promise<PerformAction>}
  */
 export async function take_action(game) {
-	const { common, me, state, tableID } = game;
+	const { common, me, state } = game;
 
 	// Look for playables, trash and important discards in own hand
 	let playable_orders = me.thinksPlayables(state, state.ourPlayerIndex);
@@ -131,14 +131,14 @@ export async function take_action(game) {
 		const fix_clue = find_fix_clue(game);
 
 		if (fix_clue !== undefined)
-			return Utils.clueToAction(fix_clue, tableID);
+			return Utils.clueToPerform(fix_clue);
 	}
 
 	const all_clues = state.clue_tokens === 0 ? [] : Array.from(Utils.rangeI(0, state.numPlayers)
 		.filter(i => i !== state.ourPlayerIndex)
 		.flatMap(i => state.allValidClues(i))
 		.map(clue => {
-			const perform = Utils.clueToAction(clue, tableID);
+			const perform = Utils.clueToPerform(clue);
 			return { perform, action: Utils.performToAction(state, perform, state.ourPlayerIndex, state.deck) };
 		}));
 
@@ -146,7 +146,7 @@ export async function take_action(game) {
 	const all_plays = playable_orders.map(order => {
 		const { suitIndex = -1, rank = -1 } = me.thoughts[order].identity({ infer: true }) ?? {};
 		return {
-			perform: { type: ACTION.PLAY, target: order, tableID },
+			perform: { type: ACTION.PLAY, target: order },
 			action: { type: 'play', suitIndex, rank, order, playerIndex: state.ourPlayerIndex }
 		};
 	});
@@ -157,7 +157,7 @@ export async function take_action(game) {
 	const all_discards = cant_discard ? [] : trash_orders.concat(discards).map(order => {
 		const { suitIndex = -1, rank = -1 } = me.thoughts[order].identity({ infer: true }) ?? {};
 		return {
-			perform: { type: ACTION.DISCARD, target: order, tableID },
+			perform: { type: ACTION.DISCARD, target: order },
 			action: { type: 'discard', suitIndex, rank, order, playerIndex: state.ourPlayerIndex, intentional: discards.includes(order), failed: false }
 		};
 	});
@@ -168,13 +168,13 @@ export async function take_action(game) {
 		const chop = state.ourHand[0];
 
 		all_actions.push({
-			perform: { type: ACTION.DISCARD, target: chop, tableID },
+			perform: { type: ACTION.DISCARD, target: chop },
 			action: { type: 'discard', suitIndex: -1, rank: -1, order: chop, playerIndex: state.ourPlayerIndex, failed: false }
 		});
 	}
 
 	if (all_actions.length === 0) {
-		return { type: ACTION.DISCARD, target: me.lockedDiscard(state, state.ourHand), tableID };
+		return { type: ACTION.DISCARD, target: me.lockedDiscard(state, state.ourHand) };
 	}
 	else if (state.inEndgame() && state.maxScore - state.score < 2*state.variant.suits.length) {
 		logger.highlight('purple', 'Attempting to solve endgame...');
@@ -208,7 +208,7 @@ export async function take_action(game) {
 					return stall_clue;
 				}
 			}
-			return { ...action, tableID };
+			return action;
 		}
 	}
 

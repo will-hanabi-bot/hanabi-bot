@@ -95,7 +95,7 @@ export function setup(GameClass, hands, test_options = {}) {
 	const _state = new State(playerNames, test_options.ourPlayerIndex ?? PLAYER.ALICE, variant, {});
 	testShortForms = ['x', ...variant.shortForms];
 	const [minLevel, maxLevel] = [test_options?.level?.min ?? 1, test_options?.level?.max ?? MAX_H_LEVEL];
-	let game = new GameClass(-1, _state, false, undefined, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
+	let game = new GameClass(_state, false, undefined, Math.min(Math.max(minLevel, DEFAULT_LEVEL), maxLevel));
 	game.catchup = true;
 
 	let orderCounter = 0;

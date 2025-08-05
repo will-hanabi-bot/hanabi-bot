@@ -56,13 +56,12 @@ export default class RefSieve extends Game {
 	moveHistory = [];
 
 	/**
-	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
 	 * @param {{ state: State, players: RS_Player[], common: RS_Player }} base
 	 */
-	constructor(tableID, state, in_progress, base = undefined) {
-		super(tableID, state, in_progress);
+	constructor(state, in_progress, base = undefined) {
+		super(state, in_progress);
 
 		this.players = base?.players.map(p => p.clone()) ?? this.players.map(p =>
 			new RS_Player(p.playerIndex, p.all_possible, p.all_inferred, p.hypo_stacks, p.hypo_plays, p.hypo_map, p.thoughts, p.links, p.play_links, p.unknown_plays, p.waiting_connections, p.elims));
@@ -75,7 +74,7 @@ export default class RefSieve extends Game {
 
 	/** @param {RefSieve} json */
 	static fromJSON(json) {
-		const res = new RefSieve(json.tableID, State.fromJSON(json.state), json.in_progress);
+		const res = new RefSieve(State.fromJSON(json.state), json.in_progress);
 
 		for (const property of Object.getOwnPropertyNames(res)) {
 			if (typeof res[property] === 'function')

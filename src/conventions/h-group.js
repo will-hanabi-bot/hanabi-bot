@@ -65,14 +65,13 @@ export default class HGroup extends Game {
 	stalled_5 = false;
 
 	/**
-	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
 	 * @param {{ state: State, players: HGroup_Player[], common: HGroup_Player }} base
 	 * @param {number} [level] 	The convention level (defaults to 1).
 	 */
-	constructor(tableID, state, in_progress, base = undefined, level = 1) {
-		super(tableID, state, in_progress);
+	constructor(state, in_progress, base = undefined, level = 1) {
+		super(state, in_progress);
 
 		this.players = base?.players.map(p => p.clone()) ?? this.players.map(p =>
 			new HGroup_Player(p.playerIndex, p.all_possible, p.all_inferred, p.hypo_stacks, p.hypo_plays, p.hypo_map, p.thoughts, p.links, p.play_links, p.unknown_plays, p.waiting_connections, p.elims));
@@ -90,7 +89,7 @@ export default class HGroup extends Game {
 
 	/** @param {HGroup} json */
 	static fromJSON(json) {
-		const res = new HGroup(json.tableID, State.fromJSON(json.state), json.in_progress);
+		const res = new HGroup(State.fromJSON(json.state), json.in_progress);
 
 		for (const property of Object.getOwnPropertyNames(res)) {
 			if (typeof res[property] === 'function')

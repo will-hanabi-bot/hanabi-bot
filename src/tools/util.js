@@ -279,12 +279,11 @@ export function objDiff(obj1, obj2, ignore = [], path = []) {
 /**
  * Transforms a CLUE into an ACTION.
  * @param  {Clue} clue
- * @param  {number} tableID
  * @returns {PerformAction}
  */
-export function clueToAction(clue, tableID) {
+export function clueToPerform(clue) {
 	const { type, value, target } = clue;
-	return { tableID, type: /** @type {ACTION[keyof ACTION]} */ (type + 2), value, target };
+	return { type: /** @type {ACTION[keyof ACTION]} */ (type + 2), value, target };
 }
 
 /**

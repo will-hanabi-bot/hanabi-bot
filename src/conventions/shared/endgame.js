@@ -373,7 +373,7 @@ function possible_actions(game, playerTurn, find_clues, find_discards, remaining
 		const clues = find_clues(game, playerTurn);
 
 		for (const clue of clues) {
-			const action = Object.assign(Utils.clueToAction(clue, -1), { playerIndex: playerTurn });
+			const action = { ...Utils.clueToPerform(clue), playerIndex: playerTurn };
 			attempted_clue = true;
 
 			actions.push({ action, winnable_draws: [] });

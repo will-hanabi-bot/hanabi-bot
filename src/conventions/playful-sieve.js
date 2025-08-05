@@ -47,13 +47,12 @@ export default class PlayfulSieve extends Game {
 	locked_shifts = [];
 
 	/**
-	 * @param {number} tableID
 	 * @param {State} state
 	 * @param {boolean} in_progress
 	 * @param {{ state: State, players: Player[], common: Player }} base
 	 */
-	constructor(tableID, state, in_progress, base = undefined) {
-		super(tableID, state, in_progress, base);
+	constructor(state, in_progress, base = undefined) {
+		super(state, in_progress, base);
 	}
 
 	createBlank() {

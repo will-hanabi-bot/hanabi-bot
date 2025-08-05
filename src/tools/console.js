@@ -97,7 +97,7 @@ export function initConsole(bot) {
 				logger.info();
 				const parts = command.join('').split(' ');
 
-				const { game } = bot;
+				const { game, tableID } = bot;
 
 				if (game === undefined) {
 					switch (parts[0]) {
@@ -134,7 +134,7 @@ export function initConsole(bot) {
 						break;
 					}
 					case 'unattend':
-						bot.sendCmd('tableUnattend', { tableID: game.tableID });
+						bot.sendCmd('tableUnattend', { tableID });
 						break;
 					case 'chat':
 						bot.handle_chat({ msg: parts[1], who: bot.self.username, room: `table`, recipient: bot.self.username });
@@ -147,7 +147,7 @@ export function initConsole(bot) {
 							break;
 						}
 
-						bot.sendCmd('action', { tableID: game.tableID, type: ACTION.PLAY, target: state.ourHand[slot - 1] });
+						bot.sendCmd('action', { tableID, type: ACTION.PLAY, target: state.ourHand[slot - 1] });
 						break;
 					}
 					case 'discard': {
@@ -158,14 +158,14 @@ export function initConsole(bot) {
 							break;
 						}
 
-						bot.sendCmd('action', { tableID: game.tableID, type: ACTION.DISCARD, target: state.ourHand[slot - 1] });
+						bot.sendCmd('action', { tableID, type: ACTION.DISCARD, target: state.ourHand[slot - 1] });
 						break;
 					}
 					case 'clue': {
 						const target = state.playerNames.findIndex(p => p === parts[1]);
 						const type = parts[2] === 'rank' ? ACTION.RANK : ACTION.COLOUR;
 						const value = Number(parts[3]);
-						bot.sendCmd('action', { tableID: game.tableID, type, target, value });
+						bot.sendCmd('action', { tableID, type, target, value });
 						break;
 					}
 					default:

@@ -78,7 +78,6 @@ export type GameOverAction = {
 export type Action = StatusAction | TurnAction | ClueAction | DrawAction | DiscardAction | PlayAction | GameOverAction | IdentifyAction | IgnoreAction | FinesseAction;
 
 export type PerformAction = {
-	tableID: number,
 	type: typeof ACTION[keyof typeof ACTION],
 	target: number,
 	value?: number

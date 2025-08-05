@@ -210,7 +210,7 @@ export function find_gd(game, target) {
  * @param {number} [finessed_order]
  */
 export function find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities, finessed_order = -1) {
-	const { common, me, state, tableID } = game;
+	const { common, me, state } = game;
 	const prioritySize = Object.keys(PRIORITY).length;
 	const urgent_actions = /** @type {PerformAction[][]} */ (Array.from({ length: prioritySize * 2 + 1 }, _ => []));
 	const urgent_clues = /** @type {Clue[][]} */ (Array.from({ length: prioritySize * 2 + 1 }, _ => []));
@@ -238,7 +238,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 
 				const stacks = state.play_stacks.with(id.suitIndex, id.rank);
 				if (state.hands[target].some(order => stacks[state.deck[order].suitIndex] + 1 === state.deck[order].rank && anxiety_targetable(game, target, order))) {
-					urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: o });
+					urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ type: ACTION.PLAY, target: o });
 					anxiety = true;
 					break;
 				}
@@ -249,7 +249,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 
 			const unlock_order = find_unlock(game, target);
 			if (unlock_order !== undefined && (finessed_order === -1 || finessed_order == unlock_order)) {
-				urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ tableID, type: ACTION.PLAY, target: unlock_order });
+				urgent_actions[PRIORITY.UNLOCK + nextPriority].push({ type: ACTION.PLAY, target: unlock_order });
 				continue;
 			}
 
@@ -336,7 +336,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
 
 		// Prefer other actions over clues
 		for (const clue of clues)
-			urgent_actions[i].push(Utils.clueToAction(clue, tableID));
+			urgent_actions[i].push(Utils.clueToPerform(clue));
 	}
 
 	return urgent_actions;
@@ -356,7 +356,7 @@ export function find_urgent_actions(game, play_clues, save_clues, fix_clues, sta
  * @returns {{ urgency: number, action?: PerformAction, clue?: Clue }}
  */
 function save_urgency(game, save, nextPriority, potential_cluers, early_expected_clue, play_clues, fix_clues, stall_clues, playable_priorities, finessed_card) {
-	const { common, me, state, tableID } = game;
+	const { common, me, state } = game;
 	const { target } = save;
 	const hand = state.hands[target];
 	const prioritySize = Object.keys(PRIORITY).length;
@@ -369,13 +369,13 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 	// Although this is only optimal for the next player, it is often a "good enough" action for future players.
 	const unlock_order = find_unlock(game, target);
 	if (unlock_order !== undefined && (!finessed_card || finessed_card.order == unlock_order))
-		return { urgency: PRIORITY.UNLOCK + nextPriority, action: { tableID, type: ACTION.PLAY, target: unlock_order }};
+		return { urgency: PRIORITY.UNLOCK + nextPriority, action: { type: ACTION.PLAY, target: unlock_order }};
 
 	if (!state.inEndgame() && game.level >= LEVEL.SPECIAL_DISCARDS) {
 		const gd_target = find_gd(game, target);
 
 		if (gd_target !== undefined)
-			return { urgency: PRIORITY.UNLOCK + nextPriority, action: { tableID, type: ACTION.DISCARD, target: gd_target } };
+			return { urgency: PRIORITY.UNLOCK + nextPriority, action: { type: ACTION.DISCARD, target: gd_target } };
 	}
 
 	const list = state.clueTouched(hand, save);
@@ -403,7 +403,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 			if (old_chop_value >= new_chop_value) {
 				return {
 					urgency: PRIORITY.ONLY_SAVE + nextPriority,
-					action: { tableID, type: ACTION.PLAY, target: ordered_1s[distance] }
+					action: { type: ACTION.PLAY, target: ordered_1s[distance] }
 				};
 			}
 		}
@@ -421,7 +421,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 			state.deck[o].clued && me.thoughts[o].inferred.every(i => state.isBasicTrash(i)));
 
 		if (trash.length > 0)
-			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { tableID, type: ACTION.DISCARD, target: trash[0] } };
+			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { type: ACTION.DISCARD, target: trash[0] } };
 
 		// As a last resort, only scream discard if it is playable or critical.
 		const save_card = state.deck[game.players[target].chop(state.hands[target])];
@@ -434,7 +434,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 			chop !== undefined;
 
 		if (valid_scream)
-			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { tableID, type: ACTION.DISCARD, target: chop } };
+			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { type: ACTION.DISCARD, target: chop } };
 	}
 
 	if (state.clue_tokens === 0)

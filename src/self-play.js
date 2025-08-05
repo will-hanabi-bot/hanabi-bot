@@ -125,7 +125,7 @@ async function simulate_game(playerNames, deck, convention, level, variant) {
 	Utils.globalModify({ variant, playerNames, cache: new Map() });
 
 	let games = playerNames.map((_, index) => {
-		const game = new conventions[convention](-1, new State(playerNames, index, variant, {}), false, undefined, level);
+		const game = new conventions[convention](new State(playerNames, index, variant, {}), false, undefined, level);
 		game.catchup = true;
 		return game;
 	});
