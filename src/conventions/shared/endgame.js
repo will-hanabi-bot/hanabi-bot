@@ -114,13 +114,13 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 			const order = unknown_own[ids.length];
 			const thought = me.thoughts[order];
 
-			const impossible = !state.deck[order].matches(id, { assume: true }) || state.isBasicTrash(id) ?
-				!thought.possibilities.has(id) :
-				!thought.possibilities.some(i => state.isBasicTrash(i)) &&
+			const impossible = !state.deck[order].matches(id, { assume: true }) ||
+				!thought.possible.has(id) ||
+				(state.isBasicTrash(id) && !thought.possible.some(i => state.isBasicTrash(i)) &&
 					// We cannot assign a trash id if it is linked and all other orders are already trash
 					(!linked_orders.has(order) || me.links.every(l =>
 						!l.orders.includes(order) ||
-						l.orders.every(o => o == order || Utils.range(0, ids.length).some(i => o == unknown_own[i] && state.isBasicTrash(ids[i])))));
+						l.orders.every(o => o == order || Utils.range(0, ids.length).some(i => o == unknown_own[i] && state.isBasicTrash(ids[i]))))));
 
 			if (impossible)
 				return acc;
@@ -238,6 +238,9 @@ export function solve_game(game, playerTurn, find_clues = () => [], find_discard
 		winrate.multiply(1000).subtract(index).toDecimal
 	);
 
+	logger.on();
+	logger.highlight('purple', `endgame winnable! found action ${logObjectiveAction(state, JSON.parse(action))} with winrate ${winrate.toString()}`);
+
 	return { action: JSON.parse(action), winrate };
 }
 
@@ -297,7 +300,7 @@ function find_remaining_identities(game) {
 	const remaining_ids = [];
 
 	for (let suitIndex = 0; suitIndex < state.variant.suits.length; suitIndex++) {
-		for (let rank = 1; rank <= state.max_ranks[suitIndex]; rank++) {
+		for (let rank = 1; rank <= 5; rank++) {
 			const id = { suitIndex, rank };
 			const total = state.cardCount(id);
 			const missing = total - state.baseCount(id) - (seen_ids[logCard(id)] ?? 0);
