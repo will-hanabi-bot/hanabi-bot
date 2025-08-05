@@ -179,8 +179,8 @@ export function get_clue_interp(game, clue, giver, options) {
 		return;
 	}
 
-	// Do not expect others to clue cards that could be clued in our hand
-	if ((hypothetical && giver !== state.ourPlayerIndex) && state.ourHand.some(o => ((card = game.me.thoughts[o]) => card.touched && card.inferred.has(focused_card))()))
+	// Do not expect others to clue cards that could be clued in our hand (unless we're determining if there's a non-stall clue to give)
+	if (!stall && (hypothetical && giver !== state.ourPlayerIndex) && state.ourHand.some(o => ((card = game.me.thoughts[o]) => card.touched && card.inferred.has(focused_card))()))
 		return;
 
 	if (giver === state.ourPlayerIndex && me.links.some(link => link.identities.some(i => state.deck[focus].matches(i)))) {
