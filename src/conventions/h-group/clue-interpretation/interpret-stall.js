@@ -155,7 +155,7 @@ function other_expected_clue(game, prev_game, giver, max_stall, original_clue) {
 	const excludeClue = (clue) =>
 		thinks_stall.size === 0 || (clue.target === original_clue.target && clue.type === original_clue.type && clue.value === original_clue.value);
 
-	for (const { clue, res } of find_expected_clue(prev_game, giver, satisfied, excludeClue)) {
+	for (const { clue, res } of find_expected_clue(prev_game, giver, satisfied, excludeClue, { stall: true })) {
 		logger.highlight('yellow', `expected ${logClue(clue)}, not interpreting stall`);
 
 		const new_wcs = res.hypo_game.common.waiting_connections.filter(wc => wc.turn === state.turn_count && wc.connections.every(conn =>

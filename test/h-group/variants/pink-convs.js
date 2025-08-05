@@ -421,7 +421,7 @@ describe('pink choice tempo clues', () => {
 		takeTurn(game, 'Bob clues 4 to Alice (slots 3,4,5)');
 
 		// Cathy might be finessed for i1.
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1', 'i2']);
 
 		takeTurn(game, 'Cathy clues green to Alice (slot 1)');
 

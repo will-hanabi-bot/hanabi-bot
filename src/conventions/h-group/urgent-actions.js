@@ -430,7 +430,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 		const screamed_player = game.players[target].simulateCM([save_card.order]);
 
 		const valid_scream = (state.isCritical(save_card) || me.hypo_stacks[save_card.suitIndex] + 1 === save_card.rank) &&
-			(state.clue_tokens === 0 || (state.clue_tokens === 1 && screamed_player.thinksLocked(state, target))) &&
+			(state.clue_tokens === 0 || (state.clue_tokens === 1 && screamed_player.thinksLocked(state, target)) && state.isCritical(save_card)) &&
 			chop !== undefined;
 
 		if (valid_scream)

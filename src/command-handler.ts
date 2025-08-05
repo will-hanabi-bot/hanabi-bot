@@ -26,6 +26,7 @@ export class Bot {
 	game: Game | undefined;
 	settings: Settings = { convention: 'HGroup', level: 1 };
 	last_sender: string | undefined;
+	commander: string | undefined;
 
 	self: Self;
 	tableID: number | undefined;
@@ -261,6 +262,7 @@ export class Bot {
 		// Starts the game (format: /start)
 		else if (data.msg.startsWith('/start')) {
 			this.sendCmd('tableStart', { tableID: this.tableID });
+			this.commander = data.who;
 		}
 		// Restarts a game (format: /restart)
 		else if (data.msg.startsWith('/restart')) {
@@ -275,7 +277,12 @@ export class Bot {
 			this.assignSettings(data, this.tableID === undefined);
 		}
 		else if (data.msg.startsWith('/terminate')) {
+			if (this.commander !== undefined && data.who !== this.commander) {
+				this.sendPM(data.who, `Only ${this.commander} can terminate the game, as they were the one who started it.`);
+				return;
+			}
 			this.sendCmd('tableTerminate', { tableID: this.tableID });
+			this.commander = undefined;
 		}
 		else if (data.msg.startsWith('/version')) {
 			this.sendPM(data.who, `v${BOT_VERSION}`);

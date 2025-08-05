@@ -555,10 +555,13 @@ export function interpret_clue(game, action) {
 		return game;
 	}
 
-	if (distribution_clue(game, action, common.thoughts[focus].order)) {
-		const { inferred } = common.thoughts[focus];
+	const distribution_ids = distribution_clue(game, action, common.thoughts[focus].order);
+
+	if (distribution_ids !== undefined) {
+		const { possible } = common.thoughts[focus];
 		common.updateThoughts(focus, (draft) => {
-			draft.inferred = inferred.intersect(inferred.filter(i => !state.isBasicTrash(i)));
+			draft.inferred = possible.intersect(distribution_ids);
+			draft.info_lock = possible.intersect(distribution_ids);
 			draft.certain_finessed = true;
 			draft.reset = false;
 		});

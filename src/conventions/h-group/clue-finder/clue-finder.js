@@ -56,9 +56,11 @@ export function save_clue_value(game, hypo_game, save_clue, all_clues) {
 			chop_moved.some(o => card.matches(state.deck[o]) && order > o);		// Saving 2 of the same card
 	});
 
-	// Direct clue is possible
-	if (hypo_game.lastMove === CLUE_INTERP.CM_TRASH &&
-		all_clues.some(clue => chop_moved.every(cm => saved_trash.includes(cm) || cardTouched(state.deck[cm], state.variant, clue))))
+	const cm_when_direct_possible = hypo_game.lastMove === CLUE_INTERP.CM_TRASH && all_clues.some(clue =>
+		chop_moved.every(cm => (saved_trash.includes(cm) || cardTouched(state.deck[cm], state.variant, clue)) &&
+			clue.result.bad_touch.length === 0));
+
+	if (cm_when_direct_possible)
 		return -10;
 
 	// Chop is trash, can give clue later
@@ -121,11 +123,12 @@ function basic_expectations(game, clue, { hypo_game, result, interp, save_clue }
  * @param {number} giver
  * @param {(game: Game, clue: Clue, res: { hypo_game?: Game, result?: ClueResult, interp?: typeof CLUE_INTERP[keyof typeof CLUE_INTERP], save_clue?: SaveClue }) => boolean} satisfied
  * @param {(clue: Clue) => boolean} excludeClue
+ * @param {ClueFindingOptions} [opts]
  * @yields {{ clue: Clue, res: { hypo_game: Game, result: ClueResult, interp: typeof CLUE_INTERP[keyof typeof CLUE_INTERP], save_clue: SaveClue }}}
  */
-export function* find_expected_clue(game, giver, satisfied, excludeClue) {
+export function* find_expected_clue(game, giver, satisfied, excludeClue, opts = {}) {
 	const { state } = game;
-	const options = { giver, hypothetical: true, noFix: true, noRecurse: true };
+	const options = { giver, hypothetical: true, noFix: true, noRecurse: true, ...opts };
 
 	for (let target = 0; target < state.numPlayers; target++) {
 		if (target === giver || target === state.ourPlayerIndex)
@@ -154,7 +157,7 @@ export function* find_expected_clue(game, giver, satisfied, excludeClue) {
 export function get_clue_interp(game, clue, giver, options) {
 	const { common, me, state } = game;
 	const { target } = clue;
-	const { hypothetical = giver !== state.ourPlayerIndex, noRecurse = false } = options;
+	const { hypothetical = giver !== state.ourPlayerIndex, noRecurse = false, stall = false } = options;
 
 	const hand = state.hands[target];
 	const giver_player = game.players[giver];
@@ -333,6 +336,7 @@ export function get_clue_interp(game, clue, giver, options) {
  * @property {boolean} [hypothetical]
  * @property {boolean} [noFix]
  * @property {boolean} [noRecurse]
+ * @property {boolean} [stall]
  */
 export function find_clues(game, options = {}) {
 	const { common, me, state } = game;

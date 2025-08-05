@@ -79,8 +79,10 @@ export function bad_touch_result(game, hypo_game, hypo_player, giver, target) {
 		if (!card.newly_clued)
 			continue;
 
-		// Known trash from empathy
-		if (hypo_player.thoughts[order].possible.every(p => isTrash(state, hypo_player, p, order, { infer: true }))) {
+		const known_trash = (hypo_player.thoughts[order].trash && hypo_player.thoughts[order].possible.some(i => !state.isCritical(i))) ||
+			hypo_player.thoughts[order].possible.every(p => isTrash(state, hypo_player, p, order, { infer: true }));
+
+		if (known_trash) {
 			trash.push(order);
 			continue;
 		}

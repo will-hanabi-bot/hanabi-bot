@@ -317,12 +317,12 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 					bluffed = true;
 
 				// Even if a finesse is possible, it might not be a finesse (unless the card is critical)
-				if (rank === next_rank && !state.isCritical(identity))
-					focus_possible.push({ suitIndex, rank, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
+				if ((rank === next_rank || positional) && !state.isCritical(identity))
+					focus_possible.push({ ...identity, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
 			}
-			else if (type === 'playable' && layered && rank === next_rank && !state.isCritical(identity)) {
+			else if (type === 'playable' && layered && (rank === next_rank || positional) && !state.isCritical(identity)) {
 				// Might not be layered finesse
-				focus_possible.push({ suitIndex, rank, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
+				focus_possible.push({ ...identity, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
 			}
 
 			connections = connections.concat(connecting);

@@ -195,6 +195,24 @@ describe('shout discard chop moves', () => {
 		// Alice should 5 Stall on Bob.
 		ExAsserts.objHasProperties(action, { type: ACTION.RANK, target: PLAYER.BOB, value: 5 });
 	});
+
+	it(`doesn't mistake a sdcm for a gen discard`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'r2', 'g4', 'p1', 'p1'],
+			['g1', 'b3', 'r2', 'y3', 'r4']
+		], {
+			level: { min: 7 },
+			clue_tokens: 1,
+			starting: PLAYER.BOB
+		});
+
+		takeTurn(game, 'Bob clues green to Cathy');
+		takeTurn(game, 'Cathy discards r4', 'y3');
+
+		// Our slot 5 should be chop moved, since p1 is not a valid gen target.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+	});
 });
 
 describe('generation discards', () => {

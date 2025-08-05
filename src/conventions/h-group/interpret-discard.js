@@ -290,7 +290,7 @@ export function interpret_discard(game, action) {
 				}
 			}
 			else if (interp === DISCARD_INTERP.GENERATION) {
-				logger.info(`interpreting ${interp}!`);
+				logger.info(`interpreting gen!`);
 				state.discard_state = interp;
 			}
 
@@ -470,5 +470,5 @@ function check_sdcm(game, action, before_trash, old_chop) {
 	if (next2Chop === undefined || nextPlayerIndex2 === state.ourPlayerIndex || common.thinksLoaded(state, nextPlayerIndex2))
 		return res;
 
-	return (state.clue_tokens === 1 && common.chopValue(state, nextPlayerIndex2) >= 4) ? GENERATION : res;
+	return (state.clue_tokens === 1 && game.players[playerIndex].chopValue(state, nextPlayerIndex2) >= 4) ? GENERATION : res;
 }

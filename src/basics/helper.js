@@ -245,36 +245,38 @@ export function connectable_simple(game, start, target, identity) {
 }
 
 /**
- * Returns whether a clue was a distribution clue.
+ * Returns the possible ids of a distribution clue, otherwise undefined.
  * @param {Game} game
  * @param {ClueAction} action
  * @param {number} focus
  */
 export function distribution_clue(game, action, focus) {
 	const { common, me, state } = game;
-	const { list, target } = action;
+	const { clue, list, target } = action;
 	const focus_thoughts = common.thoughts[focus];
 
 	if ((!state.inEndgame() && state.maxScore - state.score > state.variant.suits.length) || !list.some(o => state.deck[o].newly_clued))
-		return false;
+		return undefined;
 
 	const id = focus_thoughts.identity({ infer: true });
 	if (id !== undefined && state.isBasicTrash(id))
-		return false;
+		return undefined;
 
-	let all_trash = true, possibly_useful = false;
+	let possibly_useful = state.base_ids;
 
-	for (const p of focus_thoughts.possible) {
+	const possibilities = clue.type === CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank === clue.value) : focus_thoughts.possible;
+
+	for (const p of possibilities) {
 		if (state.isBasicTrash(p))
 			continue;
 
 		const duplicated = state.hands.some((hand, i) => i !== target && hand.some(o => common.thoughts[o].touched && me.thoughts[o].matches(p), { infer: true }));
 
 		if (duplicated)
-			possibly_useful = true;
+			possibly_useful = possibly_useful.union(p);
 		else
-			all_trash = false;
+			return undefined;
 	}
 
-	return all_trash && possibly_useful;
+	return possibly_useful.length > 0 ? possibly_useful : undefined;
 }
