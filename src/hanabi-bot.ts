@@ -3,7 +3,7 @@ import * as https from 'https';
 import { Bot } from './command-handler.ts';
 import { initConsole } from './tools/console.js';
 import * as Utils from './tools/util.js';
-import { HANABI_HOSTNAME } from './constants.js';
+import { HANABI_HOSTNAME, HANABI_PORT } from './constants.js';
 
 /**
  * Logs in to hanab.live and returns the session cookie to authenticate future requests.
@@ -20,7 +20,7 @@ function connect(bot_index = '') {
 
 	const options = {
 		hostname: HANABI_HOSTNAME,
-		port: 443,
+		port: HANABI_PORT,
 		path: '/login',
 		method: 'POST',
 		headers: {

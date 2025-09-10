@@ -33,6 +33,10 @@ If you're interested in understanding how the bot works, I've written [some docu
         - If no observer index is provided, the hand will be logged from the common knowledge perspective.
     - `state <attribute>` will display the internal value of the state's attribute (i.e. `state[attribute]`).
 
+## Targetting local server
+- Export the server hostname 'http://localhost' as `HANABI_HOSTNAME`.
+- If you want to target a port other than 443, export the server port as 'HANABI_PORT'.
+
 ## Supported commands
 Send a PM to the bot on hanab.live (`/pm <HANABI_USERNAME> <message>`) to interact with it.
 - `/join [password]` to join your current lobby. The bot will remain in your table until it is kicked with `/leave`.
