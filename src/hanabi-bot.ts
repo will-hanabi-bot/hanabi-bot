@@ -32,7 +32,7 @@ function connect(bot_index = '') {
 
 	return new Promise<string>((resolve, reject) => {
 		// Send login request to hanab.live
-		const protocol = HANABI_PORT === 334 ? https : http;
+		const protocol = SSL_ENABLED ? https : http;
 		const req = protocol.request(options, (res) => {
 			console.log(`Request status code: ${res.statusCode}`);
 
