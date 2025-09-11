@@ -33,9 +33,9 @@ If you're interested in understanding how the bot works, I've written [some docu
         - If no observer index is provided, the hand will be logged from the common knowledge perspective.
     - `state <attribute>` will display the internal value of the state's attribute (i.e. `state[attribute]`).
 
-## Targetting local server
-- Export the server hostname 'http://localhost' as `HANABI_HOSTNAME`.
-- If you want to target a port other than 443, export the server port as 'HANABI_PORT'.
+## Targetting a local server
+- Export the server hostname 'localhost' as `HANABI_HOSTNAME`.
+- In most cases you will probably run the local server on a port other than 443 (default on hanab.live). To get the bot to connect using a different port, export 'HANABI_PORT'.
 
 ## Supported commands
 Send a PM to the bot on hanab.live (`/pm <HANABI_USERNAME> <message>`) to interact with it.
