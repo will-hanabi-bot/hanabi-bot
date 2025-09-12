@@ -71,10 +71,8 @@ async function main() {
 
 	// Establish websocket
 	const protocol = SSL_ENABLED ? 'wss' : 'ws';
-	console.log(HANABI_PORT, CUSTOM_PORT);
 	const port = CUSTOM_PORT ? ':' + HANABI_PORT : '';
 	const wsUrl = `${protocol}://${HANABI_HOSTNAME}${port}/ws`;
-	console.log(wsUrl);
 	const ws = new WebSocket(wsUrl, { headers: { Cookie: cookie } });
 
 	const bot = new Bot(ws, manual !== undefined);
