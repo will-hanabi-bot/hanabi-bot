@@ -42,5 +42,8 @@ export const ENDGAME_SOLVING_FUNCS = {
 };
 
 export const HANABI_HOSTNAME = process.env['HANABI_HOSTNAME'] || 'hanab.live';
-export const HANABI_PORT = parseInt(process.env['HANABI_PORT']) || 443;
-export const SSL_ENABLED = 443 === HANABI_PORT;
+export const SSL_ENABLED = !process.env['SSL_ENABLED'] 
+                         ? true 
+                         : 'true' === process.env['SSL_ENABLED']
+export const HANABI_PORT = parseInt(process.env['HANABI_PORT']) || (SSL_ENABLED ? 443 : 80);
+export const CUSTOM_PORT = 443 !== HANABI_PORT && 80 !== HANABI_PORT;

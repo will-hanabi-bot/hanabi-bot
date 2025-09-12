@@ -4,7 +4,7 @@ import * as http from 'http';
 import { Bot } from './command-handler.ts';
 import { initConsole } from './tools/console.js';
 import * as Utils from './tools/util.js';
-import { HANABI_HOSTNAME, HANABI_PORT, SSL_ENABLED } from './constants.js';
+import { CUSTOM_PORT, HANABI_HOSTNAME, HANABI_PORT, SSL_ENABLED } from './constants.js';
 
 /**
  * Logs in to hanab.live and returns the session cookie to authenticate future requests.
@@ -30,6 +30,7 @@ function connect(bot_index = '') {
 		}
 	};
 
+	console.log(options);
 	return new Promise<string>((resolve, reject) => {
 		// Send login request to hanab.live
 		const protocol = SSL_ENABLED ? https : http;
@@ -69,10 +70,11 @@ async function main() {
 	const cookie = await connect(index);
 
 	// Establish websocket
-	const wsUrl = (() => {
-		if (SSL_ENABLED) return `wss://${HANABI_HOSTNAME}/ws`;
-		else return `ws://${HANABI_HOSTNAME}:${HANABI_PORT}/ws`;
-	})();
+	const protocol = SSL_ENABLED ? 'wss' : 'ws';
+	console.log(HANABI_PORT, CUSTOM_PORT);
+	const port = CUSTOM_PORT ? ':' + HANABI_PORT : '';
+	const wsUrl = `${protocol}://${HANABI_HOSTNAME}${port}/ws`;
+	console.log(wsUrl);
 	const ws = new WebSocket(wsUrl, { headers: { Cookie: cookie } });
 
 	const bot = new Bot(ws, manual !== undefined);
