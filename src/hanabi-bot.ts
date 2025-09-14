@@ -30,7 +30,6 @@ function connect(bot_index = '') {
 		}
 	};
 
-	console.log(options);
 	return new Promise<string>((resolve, reject) => {
 		// Send login request to hanab.live
 		const protocol = SSL_ENABLED ? https : http;
