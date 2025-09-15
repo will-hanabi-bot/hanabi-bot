@@ -3,3 +3,6 @@ seeds/
 .env
 .DS_Store
 *.0x/
+
+# Vim persistent undo file
+*.un~
