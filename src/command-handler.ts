@@ -185,6 +185,23 @@ export class Bot {
 				this.self = data as Self;
 		}
 	}
+	    private suppressWarningForwarding(warning: string): boolean {
+        const normalized = warning.trim().toLowerCase();
+        if (normalized.includes("you can not send a note in a replay"))
+            return true;
+        if (
+            normalized.includes(
+                "you cannot perform a game action in a shared replay"
+            )
+        )
+            return true;
+        if (
+            normalized.includes("table") &&
+            normalized.includes("does not exist")
+        )
+            return true;
+        return false;
+    }
 
 	handle_chat(data: ChatMessage) {
 		const within_room = data.recipient === '' && data.room.startsWith('table');
