@@ -223,7 +223,7 @@ export function resolve_card_retained(game, waiting_connection) {
 					return { remove: false };
 				}
 			}
-			else if (type === 'prompt') {
+			else { //if (type === 'prompt') {
 				logger.warn(`${state.playerNames[reacting]} played into something else, continuing to wait`);
 				return { remove: false };
 			}

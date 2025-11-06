@@ -11,8 +11,8 @@
   },
   "scripts": {
     "start": "node --experimental-strip-types --env-file=.env src/hanabi-bot.ts",
-    "replay": "node --env-file=.env src/replay.js",
-    "self-play": "node --env-file=.env src/self-play.js",
+    "replay": "node --experimental-strip-types --env-file=.env src/replay.js",
+    "self-play": "node --experimental-strip-types --env-file=.env src/self-play.js",
     "lint": "eslint .",
     "test": "node --test"
   },

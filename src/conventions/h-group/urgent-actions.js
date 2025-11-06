@@ -186,7 +186,8 @@ export function find_gd(game, target) {
 	const connected = /** @type {number[]} */([]);
 
 	let finesse = common.find_finesse(state, target);
-	const playables = common.thinksPlayables(state, state.ourPlayerIndex);
+	// Uncertain cards might not be that id, so be conservative and don't GD them.
+	const playables = common.thinksPlayables(state, state.ourPlayerIndex).filter(o => !common.thoughts[o].uncertain);
 
 	while (finesse !== undefined && state.isPlayable(state.deck[finesse])) {
 		const match = playables.find(c => me.thoughts[c].matches(state.deck[finesse], { infer: true }));

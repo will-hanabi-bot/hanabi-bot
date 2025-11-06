@@ -265,7 +265,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 			return;
 		}
 
-		const possibly_bluff = !options.assumeTruth && valid_bluff(game, action, finesse_card, reacting, connected, true);
+		const possibly_bluff = !options.assumeTruth && valid_bluff(game, action, finesse_card, identity, reacting, connected, true);
 
 		if (finesse_card.matches(identity)) {
 			// At level 1, only forward finesses are allowed.
@@ -279,7 +279,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 
 		// Finessed card is delayed playable
 		if (!options.noLayer && game.level >= LEVEL.INTERMEDIATE_FINESSES && state.play_stacks[finesse_card.suitIndex] + 1 === finesse_card.rank) {
-			const bluff = !options.assumeTruth && valid_bluff(game, action, finesse_card, reacting, connected);
+			const bluff = !options.assumeTruth && valid_bluff(game, action, finesse_card, identity, reacting, connected);
 
 			if (giver === state.ourPlayerIndex) {
 				if (bluff) {

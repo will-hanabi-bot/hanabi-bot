@@ -255,7 +255,7 @@ describe('stalling', () => {
 	it(`doesn't give non-valuable tempo clues to a fully-clued player that is loaded`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['b4', 'b5', 'b2', 'b4', 'b1'],
+			['b4', 'b5', 'b2', 'b2', 'b1'],
 			['y3', 'r4', 'g3', 'r1', 'r4']
 		], {
 			level: { min: 9 },

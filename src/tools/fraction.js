@@ -15,7 +15,7 @@ function find_gcd(a, b, depth = 0) {
  * @param {number} b
  */
 function find_lcm(a, b) {
-	return a * b / find_gcd(a, b);
+	return (a * b) / find_gcd(a, b);
 }
 
 export class Fraction {

@@ -267,7 +267,7 @@ export function interpret_clue(game, action) {
 				Math.max(...newly_touched.map(o => newGame.common.refer('left', hand, o))) :
 				determine_focus(newGame, action, { push: false });
 
-			if (distribution_clue(newGame, action, newGame.common.thoughts[intent].order)) {
+			if (distribution_clue(newGame, action, intent)) {
 				const { inferred } = newGame.common.thoughts[intent];
 
 				let patches;

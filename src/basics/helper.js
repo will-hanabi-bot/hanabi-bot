@@ -123,7 +123,8 @@ export function checkFix(game, oldThoughts, clueAction) {
 	if (all_resets.size > 0) {
 		const reset_order = Array.from(all_resets).find(order =>
 			!newCommon.thoughts[order].rewinded &&
-			newCommon.thoughts[order].possible.length === 1 && newCommon.dependentConnections(order).length > 0);
+			newCommon.thoughts[order].possible.length === 1 &&
+			newCommon.dependentConnections(order).length > 0);
 
 		// There is a waiting connection that depends on this card
 		if (reset_order !== undefined) {

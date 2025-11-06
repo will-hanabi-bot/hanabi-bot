@@ -32,20 +32,20 @@ export function colour_save(game, identity, action, focus, loaded) {
 	const { suitIndex, rank } = identity;
 	const { clue, list, target } = action;
 	const focus_thoughts = common.thoughts[focus];
+	const suit = state.variant.suits[suitIndex]
 
 	// Skip if the card would not be touched.
-	if (!cardTouched({ suitIndex, rank }, game.state.variant, clue) || !focus_thoughts.possible.has({ suitIndex, rank }))
+	if (!cardTouched(identity, state.variant, clue) || !focus_thoughts.possible.has(identity))
 		return false;
 
 	// Skip 5 possibility if the focused card does not include a brownish variant. (ex. No Variant games or a negative Brown card)
 	// OR if the clue given is not black.
-	if (rank === 5 && state.variant.suits[suitIndex] !== 'Black' && !/Brown|Muddy|Cocoa/.test(state.variant.suits[suitIndex]))
+	if (rank === 5 && suit !== 'Black' && !/Brown|Muddy|Cocoa/.test(suit))
 		return false;
 
 	// Determine if possible save on k2, k5 with colour
-	if (state.variant.suits[suitIndex] === 'Black' && (rank === 2 || rank === 5)) {
-		const fill_ins = state.hands[target].filter(o => ((c = state.deck[o]) =>
-			list.includes(o) &&
+	if (suit === 'Black' && (rank === 2 || rank === 5)) {
+		const fill_ins = list.filter(o => ((c = state.deck[o]) =>
 			(c.newly_clued || c.clues.some((clue, i) => ((last_clue = c.clues.at(-1)) =>
 				i !== c.clues.length - 1 && !(last_clue.type === clue.type && last_clue.value === clue.value))())))()).length;
 
@@ -57,10 +57,10 @@ export function colour_save(game, identity, action, focus, loaded) {
 	}
 
 	// Don't consider loaded save with brown
-	if (/Brown|Muddy|Cocoa/.test(state.variant.suits[suitIndex]) && loaded)
+	if (/Brown|Muddy|Cocoa/.test(suit) && loaded)
 		return false;
 
-	if (state.includesVariant(/Dark Rainbow|Dark Prism/) && /Dark Rainbow|Dark Prism/.test(state.variant.suits[suitIndex])) {
+	if (state.includesVariant(/Dark Rainbow|Dark Prism/) && /Dark Rainbow|Dark Prism/.test(suit)) {
 		const completed_suit = common.hypo_stacks[suitIndex] === state.max_ranks[suitIndex];
 		const saved_crit = state.hands[target].some(o => ((c = state.deck[o]) =>
 			state.isCritical(c) && c.newly_clued && c.rank !== 5 && !/Dark Rainbow|Dark Prism/.test(state.variant.suits[c.suitIndex]))());
@@ -73,15 +73,15 @@ export function colour_save(game, identity, action, focus, loaded) {
 
 	// Don't save muddy or cocoa rainbow cards with anything other than red, unless it is a critical muddy 2, 3, or 4
 	// If there is a dark color, save with that instead of red.
-	if (state.includesVariant(/Muddy/) && /Muddy/.test(state.variant.suits[suitIndex]) && clue.value !== muddy_save_color &&
-	    !(state.isCritical({ suitIndex, rank }) && [2,3,4].includes(rank)))
+	if (state.includesVariant(/Muddy/) && /Muddy/.test(suit) && clue.value !== muddy_save_color &&
+	    !(state.isCritical(identity) && [2,3,4].includes(rank)))
 		return false;
 
-	if (state.includesVariant(/Cocoa/) && /Cocoa/.test(state.variant.suits[suitIndex]) && clue.value !== muddy_save_color)
+	if (state.includesVariant(/Cocoa/) && /Cocoa/.test(suit) && clue.value !== muddy_save_color)
 		return false;
 
 	// Check if identity is critical or a brown 2
-	return state.isCritical({ suitIndex, rank }) || (/Brown|Muddy/.test(state.variant.suits[suitIndex]) && rank === 2);
+	return state.isCritical(identity) || (/Brown|Muddy/.test(suit) && rank === 2);
 }
 
 /**

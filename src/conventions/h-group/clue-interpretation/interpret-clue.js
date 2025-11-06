@@ -643,7 +643,7 @@ export function interpret_clue(game, action) {
 
 	// Card matches an inference and not a save/stall
 	// If we know the identity of the card, one of the matched inferences must also be correct before we can give this clue.
-	if (matched_inferences.length >= 1 && matched_inferences.find(p => focused_card.matches(p))) {
+	if (matched_inferences.some(p => focused_card.matches(p))) {
 		if (giver === state.ourPlayerIndex) {
 			const simplest_symmetric_connections = occams_razor(game, focus_possible.filter(p => !p.illegal), target, focus);
 
@@ -681,8 +681,8 @@ export function interpret_clue(game, action) {
 
 		// We are the clue target, so we need to consider all the (sensible) possibilities of the card
 		if (target === state.ourPlayerIndex) {
-			all_connections = all_connections.concat(focus_possible.filter(fp =>
-				!isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true })));
+			all_connections = focus_possible.filter(fp =>
+				!isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
 
 			for (const id of common.thoughts[focus].inferred) {
 				if (isTrash(state, game.players[giver], id, focus, { infer: true, ignoreCM: true }) ||

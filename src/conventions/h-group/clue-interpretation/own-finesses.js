@@ -405,7 +405,7 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 	const reacting = state.ourPlayerIndex;
 
 	const bluffable_ids = (actual_card.identity() ? [actual_card.identity()] : card.inferred.filter(id => state.isPlayable(id)))
-		.filter(id => valid_bluff(game, action, id, reacting, connected));
+		.filter(id => valid_bluff(game, action, id, identity, reacting, connected));
 	const possibly_bluff = !assumeTruth && bluffable_ids.length > 0 && card.possible.has(identity);
 
 	if (card.rewinded) {

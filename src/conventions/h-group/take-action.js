@@ -314,6 +314,7 @@ export async function take_action(game) {
 		const nextNextPlayerIndex = state.nextPlayerIndex(nextPlayerIndex);
 
 		const gen_required = me.chopValue(state, nextNextPlayerIndex) >= 4 &&
+			!common.thinksLoaded(state, nextNextPlayerIndex) &&
 			!common.thinksLocked(state, nextNextPlayerIndex) &&
 			!connectable_simple(game, state.ourPlayerIndex, nextNextPlayerIndex) &&
 			find_unlock(game, nextNextPlayerIndex) === undefined;

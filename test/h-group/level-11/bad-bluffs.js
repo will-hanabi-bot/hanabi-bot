@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, setup, takeTurn } from '../../test-utils.js';
+import { COLOUR, PLAYER, setup, takeTurn, VARIANTS } from '../../test-utils.js';
 import * as ExAsserts from '../../extra-asserts.js';
 import HGroup from '../../../src/conventions/h-group.js';
 import { CLUE } from '../../../src/constants.js';
@@ -139,6 +139,31 @@ describe('bad bluffs', () => {
 		// With g1, r2 already queued, we cannot bluff the y1 with (2/blue/purple to Cathy).
 		assert.ok(!play_clues[PLAYER.CATHY].some(clue => (clue.type == CLUE.RANK && clue.value == 2) ||
 			(clue.type == CLUE.COLOUR && (clue.value == COLOUR.BLUE || clue.value == COLOUR.PURPLE))));
+	});
+
+	it(`doesn't bluff a previously-finessed player`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y2', 'y1', 'g1', 'b5', 'r4'],
+			['g2', 'r2', 'r3', 'y5', 'y4'],
+		], {
+			level: { min: 11 },
+			variant: VARIANTS.PINK,
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 2 to Bob');		// Self-finesse
+		takeTurn(game, 'Alice clues 2 to Cathy');	// Stacking g1 on top
+		takeTurn(game, 'Bob plays y1', 'i1');
+
+		takeTurn(game, 'Cathy clues 5 to Alice (slot 5)');
+
+		const { play_clues } = find_clues(game);
+
+		// With g1 queued, we can't bluff using r3.
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue =>
+			(clue.type == CLUE.RANK && clue.value == 3) ||
+			(clue.type == CLUE.COLOUR && clue.value == COLOUR.RED)));
 	});
 
 	it(`doesn't bluff on top of a possibly-layered gentleman's discard`, () => {

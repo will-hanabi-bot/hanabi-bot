@@ -50,26 +50,27 @@ export function inference_rank(state, suitIndex, connections) {
  * Returns whether playing an identity would be a valid bluff.
  * @param {Game} game
  * @param {ClueAction} action
- * @param {Identity} identity
+ * @param {Identity} blind
+ * @param {Identity} truth
  * @param {number} reacting
  * @param {number[]} connected
  * @param {boolean} symmetric
  */
-export function valid_bluff(game, action, identity, reacting, connected, symmetric = false) {
+export function valid_bluff(game, action, blind, truth, reacting, connected, symmetric = false) {
 	const { state } = game;
-	const nextCard = { suitIndex: identity.suitIndex, rank: identity.rank + 1 };
+	const nextCard = { suitIndex: blind.suitIndex, rank: blind.rank + 1 };
 	const { giver, target, clue } = action;
 
 	return game.level >= LEVEL.BLUFFS &&
 		state.nextPlayerIndex(giver) === reacting &&					// must be bluff seat
 		connected.length === 1 &&											// must not be delayed
 		(symmetric || (clue.type === CLUE.RANK && clue.value !== nextCard.rank) ||
-			identity.rank === state.base_ids.maxStackRank ||
+			blind.rank === state.base_ids.maxStackRank ||
 			!game.common.thoughts[connected[0]].possible.has(nextCard)) &&	// must disconnect
 		!(clue.type === CLUE.COLOUR && reacting === target) &&				// must not be self-colour bluff
 		!state.hands[reacting].some(o => {								// must not be confused with an existing finesse (or possibly-layered gd)
 			const card = game.players[reacting].thoughts[o];
-			return (card.blind_playing || (card.status === CARD_STATUS.GD && card.maybe_layered)) && card.possible.has(identity);
+			return (card.blind_playing || (card.status === CARD_STATUS.GD && card.maybe_layered)) && card.possible.has(truth);
 		});
 }
 

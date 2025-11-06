@@ -169,7 +169,7 @@ function inference_corrected(game, order, _target) {
 function duplication_known(game, order, _target) {
 	const { common, state } = game;
 	const card = common.thoughts[order];
-	return card.possible.length === 1 && isSaved(state, common, card, order);
+	return card.possible.length === 1 && isSaved(state, common, state.deck[order], order);
 }
 
 /**

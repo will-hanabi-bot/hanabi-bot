@@ -175,7 +175,7 @@ describe('reverse finesse', () => {
 		takeTurn(game, 'Cathy clues red to Alice (slot 1)');
 
 		// Bob's r1 is definitely finessed.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].uncertain, false);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].uncertain, false);
 
 		// Alice knows that her card is r2.
 		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][0]], ['r2']);
@@ -406,7 +406,7 @@ describe('self-finesse', () => {
 		takeTurn(game, 'Cathy clues 5 to Bob');		// 5 Stall
 		takeTurn(game, 'Donald clues 5 to Bob');	// r3, r4, r5 finesse (but could look like g5 direct)
 
-		// Assume Donald is not making a mistake, and we have g5. Then Bob will know to play into the finesse.
+		// Assume Donald is not making a mistake, and we have b5. Then Bob will know to play into the finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][0]], ['r3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].status, CARD_STATUS.FINESSED);
 	});
@@ -526,7 +526,7 @@ describe('direct clues', () => {
 
 		const { common, state } = game;
 
-		// While ALice's slot 2 could be y3, it could also be g3 (reverse finesse on Bob + self-finesse).
+		// While Alice's slot 2 could be y3, it could also be g3 (reverse finesse on Bob + self-finesse).
 		ExAsserts.cardHasInferences(common.thoughts[state.hands[PLAYER.ALICE][1]], ['y3', 'g3']);
 	});
 
