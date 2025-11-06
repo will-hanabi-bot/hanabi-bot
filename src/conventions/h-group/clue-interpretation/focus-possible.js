@@ -32,7 +32,7 @@ export function colour_save(game, identity, action, focus, loaded) {
 	const { suitIndex, rank } = identity;
 	const { clue, list, target } = action;
 	const focus_thoughts = common.thoughts[focus];
-	const suit = state.variant.suits[suitIndex]
+	const suit = state.variant.suits[suitIndex];
 
 	// Skip if the card would not be touched.
 	if (!cardTouched(identity, state.variant, clue) || !focus_thoughts.possible.has(identity))
