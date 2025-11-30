@@ -242,7 +242,8 @@ export class Player {
 				return false;
 
 			const known_playable = () =>
-				card.possible.every(p => state.isBasicTrash(p) || state.isPlayable(p)) && card.possible.some(p => state.isPlayable(p));
+				(card.possible.every(p => state.isBasicTrash(p) || state.isPlayable(p)) && card.possible.some(p => state.isPlayable(p))) ||
+				(card.focused && card.info_lock?.every(p => state.isBasicTrash(p) || state.isPlayable(p)) && card.info_lock?.some(p => state.isPlayable(p)));
 
 			const conflicting_conn = () => {
 				/** @type {WaitingConnection[]} */

@@ -462,7 +462,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 	const all_play_clues = play_clues.flat();
 
 	// Save clue reveals a play
-	if (hypo_common.thinksPlayables(hypo_state, target).length > 0)
+	if (common.thinksPlayables(state, target).length === 0 && hypo_common.thinksPlayables(hypo_state, target).length > 0)
 		all_play_clues.push({ ...save, result: get_result(game, hypo_game, action ) });
 
 	// Try to give a play clue involving them

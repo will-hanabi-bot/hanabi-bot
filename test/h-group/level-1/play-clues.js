@@ -272,7 +272,7 @@ describe('counting playables', () => {
 		assert.equal(trash.length, 1);
 	});
 
-	it('correctly counts the number of playables when connecting on unknown plays', () => {
+	it('correctly counts the number of playables when connecting on unknown plays 1', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'g1', 'p5', 'r2', 'y2'],
