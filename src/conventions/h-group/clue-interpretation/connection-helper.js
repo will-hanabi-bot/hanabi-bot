@@ -82,7 +82,7 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
  */
 export function is_intermediate_bluff_target(game, action, identity) {
 	const { state } = game;
-	const { giver, target, clue } = action;
+	const { clue } = action;
 
 	// TODO: Support critical card saves using state.isCritical
 	return identity.rank === 3 ||

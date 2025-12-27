@@ -1,10 +1,9 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, VARIANTS, preClue, setup, takeTurn } from '../test-utils.js';
+import { PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
-import { ACTION, CLUE } from '../../src/constants.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
 
 import logger from '../../src/tools/logger.js';
