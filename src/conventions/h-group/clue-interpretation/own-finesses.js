@@ -4,7 +4,7 @@ import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { rainbowMismatch } from '../hanabi-logic.js';
 import { find_connecting, find_known_connecting } from './connecting-cards.js';
 import { cardTouched, find_possibilities } from '../../../variants.js';
-import { valid_bluff } from './connection-helper.js';
+import { is_intermediate_bluff_target, valid_bluff } from './connection-helper.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection } from '../../../tools/log.js';
@@ -300,6 +300,11 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 
 	if (hypo_state.play_stacks[suitIndex] + 1 !== rank) {
 		if (game.level >= LEVEL.BLUFFS && !assumeTruth && bluffed) {
+			if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && is_intermediate_bluff_target(hypo_game, action, identity)) {
+				logger.highlight('yellow', `intermediate bluff connection for ${logCard(identity)}`);
+				return connections;
+			}
+
 			logger.highlight('yellow', `bluff connection failed (stacked up to ${hypo_state.play_stacks[suitIndex] + 1}), retrying with true finesse`);
 
 			try {

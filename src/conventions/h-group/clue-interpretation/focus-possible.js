@@ -1,5 +1,5 @@
 import { CLUE } from '../../../constants.js';
-import { CLUE_INTERP } from '../h-constants.js';
+import { CLUE_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { rankLooksPlayable } from '../hanabi-logic.js';
 import { find_connecting } from './connecting-cards.js';
@@ -175,6 +175,24 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 
 		// Our card could be the final rank that we can't find
 		focus_possible.push({ suitIndex, rank: next_rank, save: false, connections, interp: CLUE_INTERP.PLAY });
+	}
+	if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length === 1 && connections[0].bluff) {
+		// Consider two-away 3 bluffs
+		if (next_identity.rank + 1 == 3) {
+			const bluff_identity = { suitIndex, rank: 3 };
+			logger.info('found connections:', logConnections(connections, bluff_identity));
+			// Our card could be a bluffed 3
+			focus_possible.push({ suitIndex: bluff_identity.suitIndex, rank: bluff_identity.rank, save: false, connections, interp: CLUE_INTERP.PLAY });
+		}
+		// Consider any critical colour bluff
+		if (next_identity.rank < 4) {
+			const bluff_identity = { suitIndex, rank: 4 };
+			if (state.isCritical(bluff_identity)) {
+				logger.info('found connections:', logConnections(connections, bluff_identity));
+				// Our card could be a bluffed critical 4
+				focus_possible.push({ suitIndex: bluff_identity.suitIndex, rank: bluff_identity.rank, save: false, connections, interp: CLUE_INTERP.PLAY });
+			}
+		}
 	}
 
 	// Save clue on chop

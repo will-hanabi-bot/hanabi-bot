@@ -754,7 +754,20 @@ export function interpret_clue(game, action) {
 						all_connections.push({ connections: connections.slice(0, i), suitIndex, rank: next_rank, interp: CLUE_INTERP.PLAY });
 					}
 				}
-				all_connections.push({ connections, suitIndex, rank: inference_rank(state, suitIndex, connections), interp: CLUE_INTERP.PLAY });
+				const inferred_identity = { suitIndex, rank: inference_rank(state, suitIndex, connections) };
+				all_connections.push({ connections, suitIndex: inferred_identity.suitIndex, rank: inferred_identity.rank, interp: CLUE_INTERP.PLAY });
+
+				// Consider intermediate bluff possibilities
+				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length === 1 && connections[0].bluff) {
+					// Could be a 2 away from playable 3.
+					if (inferred_identity.rank == 2) {
+						all_connections.push({ connections, suitIndex, rank: 3, interp: CLUE_INTERP.PLAY });
+					}
+					// Consider critical card bluffs.
+					if (inferred_identity.rank < 4 && action.clue.type === CLUE.COLOUR && state.isCritical({ suitIndex, rank: 4 })) {
+						all_connections.push({ connections, suitIndex, rank: 4, interp: CLUE_INTERP.PLAY });
+					}
+				}
 			}
 			catch (error) {
 				if (error instanceof IllegalInterpretation)
