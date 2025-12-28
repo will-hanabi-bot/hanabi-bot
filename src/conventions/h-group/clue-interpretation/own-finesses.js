@@ -300,9 +300,10 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 
 	if (hypo_state.play_stacks[suitIndex] + 1 !== rank) {
 		if (game.level >= LEVEL.BLUFFS && !assumeTruth && bluffed) {
-			if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && is_intermediate_bluff_target(hypo_game, action, identity)) {
+			if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length > 0 && is_intermediate_bluff_target(hypo_game, action, identity)) {
 				logger.highlight('yellow', `intermediate bluff connection for ${logCard(identity)}`);
-				return connections;
+				connections[0].bluff = true;
+				return [connections[0]];
 			}
 
 			logger.highlight('yellow', `bluff connection failed (stacked up to ${hypo_state.play_stacks[suitIndex] + 1}), retrying with true finesse`);
