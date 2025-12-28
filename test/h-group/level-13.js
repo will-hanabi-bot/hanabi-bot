@@ -10,7 +10,7 @@ import logger from '../../src/tools/logger.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
-describe('bluff clues', () => {
+describe('intermediate bluff clues', () => {
 	it(`understands a known 3 bluff`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -25,10 +25,34 @@ describe('bluff clues', () => {
 
 		// Despite knowing that it can't be b1, the bluff is still recognized.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y1', 'g1', 'b1', 'p1']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b1', 'b2', 'b3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.BLUFFED);
 
 		// Alice knows it can't be b1.
 		ExAsserts.cardHasInferences(game.players[PLAYER.ALICE].thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y1', 'g1', 'p1']);
+
+		// Everyone knows Bob has it narrowed down to b2 or b3 after the play.
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b2', 'b3']);
+	});
+
+	it(`understands an unknown 3 bluff`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r3', 'y2', 'g2', 'g2', 'b3'],
+			['p4', 'b4', 'r2', 'b1', 'y3'],
+		], {
+			level: { min: 13 },
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues blue to Bob');
+
+		// A possible bluff is recognized.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
+
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b2', 'b3']);
 	});
 
 	it('understands giving a 3 bluff', () => {
@@ -97,6 +121,28 @@ describe('bluff clues', () => {
 
 		// After Bob plays into the bluff, Cathy knows it was a bluffed r2, r3 or r4
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r2', 'r3', 'r4']);
+	});
+
+	it(`still understands a 3 finesse when the play connects`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r3', 'y2', 'g2', 'g2', 'b3'],
+			['p4', 'b1', 'b1', 'b4', 'y3'],
+		], {
+			level: { min: 13 },
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues blue to Bob');
+
+		// A possible bluff is recognized.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
+
+		takeTurn(game, 'Alice plays b1 (slot 1)');
+
+		// After playing a connecting card, it knows it must be a finesse.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['b2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b3']);
 	});
 
 
