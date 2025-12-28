@@ -461,15 +461,15 @@ export function isSimpler(me, fp1, fp2, playerIndex) {
 
 	// Both have first unknown connection on self
 
-	const [truth1, truth2] = [fconns1, fconns2].map(conns => conns.every(conn => me.thoughts[conn.order].rewinded || !conn.bluff));
-
-	if (truth1 !== truth2)
-		return truth1 ? -1 : 1;
-
 	const [finesses1, finesses2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.reacting === playerIndex && conn.type === 'finesse').length);
 
 	if (finesses1 !== finesses2)
 		return finesses1 - finesses2;
+
+	const [truth1, truth2] = [fconns1, fconns2].map(conns => conns.every(conn => me.thoughts[conn.order].rewinded || !conn.bluff));
+
+	if (truth1 !== truth2)
+		return truth1 ? -1 : 1;
 
 	const [prompts1, prompts2] = [fconns1, fconns2].map(conns => conns.filter(conn => conn.reacting === playerIndex && conn.type === 'prompt').length);
 

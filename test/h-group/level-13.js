@@ -74,6 +74,50 @@ describe('intermediate bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['r3', 'y3', 'g3', 'b3', 'p3']);
 	});
 
+	it(`understands an unknown hard self 3 bluff`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r3', 'y2', 'g2', 'g4', 'b4'],
+			['p4', 'b4', 'r2', 'b1', 'y3'],
+		], {
+			level: { min: 13 },
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Alice (slot 2)');
+
+		// Assume a bluff over two blind finesse plays.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.BLUFFED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+
+		// Since we assume a bluff, we don't know which 3 it is.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+	});
+
+	it(`understands an unknown hard 3 bluff`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r3', 'y2', 'g2', 'g4', 'b3'],
+			['p4', 'b4', 'r2', 'b1', 'y3'],
+		], {
+			level: { min: 13 },
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 3 to Bob');
+
+		// Assume a bluff over two blind finesse plays.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.BLUFFED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+
+		takeTurn(game, 'Alice plays b1 (slot 1)');
+
+		// Since we assume a bluff, we don't know which 3 it is.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+	});
+
 	it('understands giving a 3 bluff', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
