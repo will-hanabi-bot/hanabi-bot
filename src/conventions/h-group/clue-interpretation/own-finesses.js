@@ -424,7 +424,8 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 	const reacting = state.ourPlayerIndex;
 
 	const bluffable_ids = get_bluffable_ids(game, action, (actual_card.identity() ? [actual_card.identity()] : card.inferred.filter(id => state.isPlayable(id))), finesse, reacting);
-	const possibly_bluff = !assumeTruth && connected.length == 1 && bluffable_ids.length > 0 && card.possible.has(identity);
+	const possibly_bluff = !assumeTruth && connected.length == 1 && bluffable_ids.length > 0 && card.possible.has(identity) &&
+		(!actual_card.identity() || bluffable_ids.includes(actual_card.identity()));
 
 	if (card.rewinded) {
 		if (game.level < LEVEL.INTERMEDIATE_FINESSES)
@@ -432,8 +433,7 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 
 		if (actual_card.suitIndex !== identity.suitIndex && state.isPlayable(actual_card)) {
 			// If the card was not one of the bluff ids, then we should interpret as a finesse.
-			const actual_bluff = possibly_bluff && bluffable_ids.includes(actual_card);
-			const connections = /** @type {Connection[]} */ ([{ type: 'finesse', reacting, order: finesse, hidden: true, self: true, bluff: actual_bluff, identities: [actual_card.raw()] }]);
+			const connections = /** @type {Connection[]} */ ([{ type: 'finesse', reacting, order: finesse, hidden: true, self: true, bluff: possibly_bluff, identities: [actual_card.raw()] }]);
 
 			const new_state = state.shallowCopy();
 			new_state.play_stacks = state.play_stacks.with(actual_card.suitIndex, actual_card.rank);

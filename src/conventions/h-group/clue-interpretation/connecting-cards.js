@@ -265,7 +265,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
 			return;
 		}
 
-		const possibly_bluff = !options.assumeTruth && valid_bluff(game, action, finesse_card, identity, reacting, connected, true);
+		const possibly_bluff = !options.assumeTruth && valid_bluff(game, action, finesse_card, identity, reacting, connected);
 
 		if (finesse_card.matches(identity)) {
 			// At level 1, only forward finesses are allowed.

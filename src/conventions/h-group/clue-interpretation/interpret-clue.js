@@ -768,7 +768,7 @@ export function interpret_clue(game, action) {
 				all_connections.push({ connections, suitIndex: inferred_identity.suitIndex, rank: inferred_identity.rank, interp: CLUE_INTERP.PLAY });
 
 				// Consider intermediate bluff possibilities
-				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && (connections[0].bluff || (connections[0].possibly_bluff && connections[0].certain === false))) {
+				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && (connections[0].bluff || connections[0].possibly_bluff)) {
 					const order = connections[0].order;
 					const bluffable_focus_ids = [
 						{ suitIndex, rank: 3 },
