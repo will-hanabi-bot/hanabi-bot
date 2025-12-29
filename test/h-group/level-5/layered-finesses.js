@@ -247,7 +247,7 @@ describe('layered finesse', () => {
 			['b1', 'b4', 'y2', 'r5', 'r4'],
 			['g1', 'r1', 'b5', 'g4', 'b4']
 		], {
-			level: { min: 5 },
+			level: { min: 5, max: 10 },
 			clue_tokens: 7,
 			starting: PLAYER.CATHY
 		});
@@ -270,7 +270,7 @@ describe('layered finesse', () => {
 			['p2', 'y1', 'b5', 'g4'],
 			['g1', 'r4', 'b4', 'g3']
 		], {
-			level: { min: 5 },
+			level: { min: 5, max: 10 },
 			starting: PLAYER.DONALD
 		});
 

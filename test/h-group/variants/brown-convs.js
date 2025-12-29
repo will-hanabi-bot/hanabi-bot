@@ -77,7 +77,8 @@ describe('focus connections', () => {
 			starting: PLAYER.BOB,
 			play_stacks: [0, 0, 0, 0, 2],
 			discarded: ['n3'],
-			variant: VARIANTS.BROWN
+			variant: VARIANTS.BROWN,
+			clue_tokens: 2, // Make sure Alice doesn't have clues to give.
 		});
 
 		takeTurn(game, 'Bob clues brown to Alice (slot 2,3,4)');

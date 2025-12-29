@@ -143,7 +143,7 @@ describe('reverse finesse', () => {
 			['r4', 'g1', 'y2', 'g4', 'b4'],
 			['r1', 'g3', 'b3', 'r5', 'm3']
 		], {
-			level: { min: 2 },
+			level: { min: 2, max: 10 },
 			play_stacks: [0, 0, 1, 0, 0],
 			starting: PLAYER.CATHY,
 			variant: VARIANTS.RAINBOW
@@ -232,8 +232,8 @@ describe('self-finesse', () => {
 
 		const { common, state } = game;
 
-		// Cathy's slot 1 should be finessed, Alice's slot 1 should not.
-		assert.equal(common.thoughts[state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
+		// Cathy's slot 1 should be finessed (maybe bluffed), Alice's slot 1 should not.
+		assert.equal(common.thoughts[state.hands[PLAYER.CATHY][0]].status, game.level >= 11 ? CARD_STATUS.MAYBE_BLUFFED : CARD_STATUS.FINESSED);
 		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 

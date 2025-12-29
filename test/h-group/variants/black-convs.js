@@ -129,7 +129,7 @@ describe('save clue interpretation', () => {
 		takeTurn(game, 'Cathy clues black to Bob');
 
 		// Alice should be finessed for k1.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, game.level >= 11 ? CARD_STATUS.F_MAYBE_BLUFF : CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['k1']);
 	});
 });

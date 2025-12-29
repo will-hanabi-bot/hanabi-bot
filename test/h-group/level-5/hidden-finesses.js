@@ -160,7 +160,8 @@ describe('hidden finesse', () => {
 
 		], {
 			level: { min: 5 },
-			starting: PLAYER.DONALD
+			starting: PLAYER.DONALD,
+			clue_tokens: 2 // Make sure all clue tokens are used up so Alice can't give a good clue instead of playing.
 		});
 
 		takeTurn(game, 'Donald clues 1 to Alice (slots 2,4)');

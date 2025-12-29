@@ -48,7 +48,7 @@ describe('stalling', () => {
 
 		// Can't be a locked hand stall, because getting b1 is available.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['g1']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, game.level >= 11 ? CARD_STATUS.F_MAYBE_BLUFF : CARD_STATUS.FINESSED);
 	});
 
 	it('understands a finesse when there are better clues available 2', () => {
@@ -70,7 +70,7 @@ describe('stalling', () => {
 
 		// Can't be a hard burn, because filling in r5 is available.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, game.level >= 11 ? CARD_STATUS.F_MAYBE_BLUFF : CARD_STATUS.FINESSED);
 	});
 
 	it('understands a tempo clue when there are better clues available', () => {
