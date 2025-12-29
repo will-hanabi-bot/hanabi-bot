@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { PLAYER, setup, takeTurn } from '../test-utils.js';
+import { PLAYER, setup, takeTurn, VARIANTS } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
@@ -164,6 +164,29 @@ describe('intermediate bluff clues', () => {
 
 		// After playing a connecting card, it knows it must be a bluff.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['b2', 'b3', 'b4']);
+	});
+
+	it(`understands an unknown critical colour bluff (black suit)`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r3', 'y2', 'g2', 'k4', 'g3'],
+			['b4', 'b1', 'b3', 'b1', 'y3'],
+		], {
+			level: { min: 13 },
+			starting: PLAYER.CATHY,
+			variant: VARIANTS.BLACK
+		});
+
+		takeTurn(game, 'Cathy clues black to Bob');
+
+		// A possible bluff is recognized.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y1', 'g1', 'b1', 'k1']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
+
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+
+		// After playing a connecting card, it knows it must be a bluff.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['k2', 'k3', 'k4']);
 	});
 
 	it(`understands a critical number finesse`, () => {

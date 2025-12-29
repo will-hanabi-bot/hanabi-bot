@@ -7,7 +7,7 @@ import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections } from '../../../tools/log.js';
 import { isTrash } from '../../../basics/hanabi-util.js';
 import { LEVEL } from '../h-constants.js';
-import { cardCount, variantRegexes } from '../../../variants.js';
+import { variantRegexes } from '../../../variants.js';
 import { colour_save, rank_save } from './focus-possible.js';
 
 /**
@@ -87,7 +87,7 @@ export function is_intermediate_bluff_target(game, action, identity) {
 	// TODO: Support critical card saves using state.isCritical
 	return identity.rank === 3 ||
 		// Critical non-unique cards can be used as a bluff target by color:
-		(clue.type === CLUE.COLOUR && identity.rank < 5 && cardCount(state.variant, identity) > 1 && state.isCritical(identity));
+		(clue.type === CLUE.COLOUR && identity.rank == 4 && state.isCritical(identity));
 }
 
 /**
