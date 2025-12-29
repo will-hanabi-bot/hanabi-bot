@@ -48,11 +48,13 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Cathy clues blue to Bob');
 
-		// A possible bluff is recognized.
+		// A potential bluff is recognized.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
 
 		takeTurn(game, 'Alice plays y1 (slot 1)');
+		// After playing a non-connected card, we know it must be a bluff.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b2', 'b3']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});
 
 	it(`understands an unknown 3 bluff by number`, () => {
@@ -67,8 +69,8 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Cathy clues 3 to Bob');
 
-		// A possible bluff is recognized.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
+		// A possible bluff is recognized. It can only be a bluff because we don't see the b2.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.BLUFFED);
 
 		takeTurn(game, 'Alice plays y1 (slot 1)');
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['r3', 'y3', 'g3', 'b3', 'p3']);
@@ -225,6 +227,7 @@ describe('intermediate bluff clues', () => {
 
 		// After playing a connecting card, it knows it must be a finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['b2']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b3']);
 	});
 

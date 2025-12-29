@@ -768,7 +768,7 @@ export function interpret_clue(game, action) {
 				all_connections.push({ connections, suitIndex: inferred_identity.suitIndex, rank: inferred_identity.rank, interp: CLUE_INTERP.PLAY });
 
 				// Consider intermediate bluff possibilities
-				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && (connections[0].bluff || connections[0].possibly_bluff)) {
+				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && (connections[0].bluff || (connections[0].possibly_bluff && connections[0].certain === false))) {
 					const card = game.common.thoughts[connections[0].order];
 					const bluffable_ids = card.possible.filter(id => state.isPlayable(id))
 						.filter(id => valid_bluff(game, action, id, id, connections[0].reacting, [connections[0].order], true));
