@@ -4,7 +4,7 @@ import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { rainbowMismatch } from '../hanabi-logic.js';
 import { find_connecting, find_known_connecting } from './connecting-cards.js';
 import { cardTouched, find_possibilities } from '../../../variants.js';
-import { is_intermediate_bluff_target, valid_bluff } from './connection-helper.js';
+import { get_bluffable_ids, is_intermediate_bluff_target, valid_bluff } from './connection-helper.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection } from '../../../tools/log.js';
@@ -241,7 +241,7 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 	const connections = /** @type {Connection[]} */ ([]);
 	const already_connected = [focus];
 
-	const intermediate_bluff_target = is_intermediate_bluff_target(game, action, identity);
+	const intermediate_bluff_target = is_intermediate_bluff_target(game, action, identity, focus);
 
 	let finesses = 0;
 	let direct = looksDirect;
@@ -423,16 +423,16 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 	const actual_card = state.deck[finesse];
 	const reacting = state.ourPlayerIndex;
 
-	const bluffable_ids = (actual_card.identity() ? [actual_card.identity()] : card.inferred.filter(id => state.isPlayable(id)))
-		.filter(id => valid_bluff(game, action, id, identity, reacting, connected));
-	const possibly_bluff = !assumeTruth && bluffable_ids.length > 0 && card.possible.has(identity);
+	const bluffable_ids = get_bluffable_ids(game, action, finesse, reacting);
+	const possibly_bluff = !assumeTruth && connected.length == 1 && bluffable_ids.length > 0 && card.possible.has(identity);
 
 	if (card.rewinded) {
 		if (game.level < LEVEL.INTERMEDIATE_FINESSES)
 			throw new IllegalInterpretation(`blocked layered finesse at level ${game.level}`);
 
 		if (actual_card.suitIndex !== identity.suitIndex && state.isPlayable(actual_card)) {
-			const connections = /** @type {Connection[]} */ ([{ type: 'finesse', reacting, order: finesse, hidden: true, self: true, bluff: possibly_bluff, identities: [actual_card.raw()] }]);
+			const actual_bluff = possibly_bluff && bluffable_ids.includes(actual_card);
+			const connections = /** @type {Connection[]} */ ([{ type: 'finesse', reacting, order: finesse, hidden: true, self: true, bluff: actual_bluff, identities: [actual_card.raw()] }]);
 
 			const new_state = state.shallowCopy();
 			new_state.play_stacks = state.play_stacks.with(actual_card.suitIndex, actual_card.rank);

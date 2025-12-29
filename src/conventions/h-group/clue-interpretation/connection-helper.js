@@ -79,15 +79,27 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
  * @param {Game} game
  * @param {ClueAction} action
  * @param {Identity} identity
+ * @param {number} focus
  */
-export function is_intermediate_bluff_target(game, action, identity) {
+export function is_intermediate_bluff_target(game, action, identity, focus) {
 	const { state } = game;
 	const { clue } = action;
-
-	// TODO: Support critical card saves using state.isCritical
-	return identity.rank === 3 ||
+	return game.level >= LEVEL.INTERMEDIATE_BLUFFS && identity.rank === 3 ||
 		// Critical non-unique cards can be used as a bluff target by color:
-		(clue.type === CLUE.COLOUR && identity.rank == 4 && state.isCritical(identity));
+		(clue.type === CLUE.COLOUR && identity.rank == 4 && game.common.thoughts[focus].newly_clued && state.isCritical(identity));
+}
+
+/**
+ * Returns possible bluffed card identities for a given clue.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {number} order
+ * @param {number} reacting
+ */
+export function get_bluffable_ids(game, action, order, reacting) {
+	const { common, state } = game;
+	return common.thoughts[order].possible.filter(id => state.isPlayable(id))
+		.filter(id => valid_bluff(game, action, id, id, reacting, [order], true));
 }
 
 /**

@@ -168,6 +168,29 @@ describe('intermediate bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['b2', 'b3', 'b4']);
 	});
 
+	it(`understands a critical colour finesse when already clued`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y2', 'b4', 'r3', 'p4'],
+			['b3', 'g4', 'p2', 'y4'],
+			['p5', 'b1', 'b1', 'y3'],
+		], {
+			level: { min: 13 },
+			discarded: ['b4', 'p4'],
+			starting: PLAYER.CATHY
+		});
+
+		// Critical save.
+		takeTurn(game, 'Cathy clues 4 to Bob');
+
+		takeTurn(game, 'Donald clues blue to Bob');
+		// Since the critical card was not newly touched, this must be a finesse.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b1']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['b2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['b3']);
+	});
+
 	it(`understands an unknown critical colour bluff (black suit)`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],

@@ -176,10 +176,7 @@ describe('bluff clues', () => {
 			['b4', 'r1', 'y1', 'g5', 'g3'],
 			['p1', 'r4', 'b5', 'b2', 'y3'],
 		], {
-			level: {
-				min: 11,
-				max: 12, /* At level 13 a 3 bluff makes r3 possible */
-			},
+			level: { min: 11 },
 			starting: PLAYER.BOB
 		});
 

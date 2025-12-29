@@ -9,6 +9,7 @@ import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnections } from '../../../tools/log.js';
+import { is_intermediate_bluff_target } from './connection-helper.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -177,21 +178,14 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 		focus_possible.push({ suitIndex, rank: next_rank, save: false, connections, interp: CLUE_INTERP.PLAY });
 	}
 	if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length === 1 && connections[0].bluff) {
-		// Consider two-away 3 bluffs
-		if (next_identity.rank + 1 == 3) {
-			const bluff_identity = { suitIndex, rank: 3 };
-			logger.info('found connections:', logConnections(connections, bluff_identity));
-			// Our card could be a bluffed 3
-			focus_possible.push({ suitIndex: bluff_identity.suitIndex, rank: bluff_identity.rank, save: false, connections, interp: CLUE_INTERP.PLAY });
-		}
-		// Consider any critical colour bluff
-		if (next_identity.rank < 4) {
-			const bluff_identity = { suitIndex, rank: 4 };
-			if (state.isCritical(bluff_identity)) {
-				logger.info('found connections:', logConnections(connections, bluff_identity));
-				// Our card could be a bluffed critical 4
-				focus_possible.push({ suitIndex: bluff_identity.suitIndex, rank: bluff_identity.rank, save: false, connections, interp: CLUE_INTERP.PLAY });
-			}
+		// Consider 3 bluffs or critical 4 colour bluffs.
+		const possible_intermediate_bluffs = [
+			{ suitIndex, rank: 3 },
+			{ suitIndex, rank: 4 },
+		].filter(id => next_identity.rank < id.rank && is_intermediate_bluff_target(game, action, id, focus));
+		for (const intermediate_bluff of possible_intermediate_bluffs) {
+			logger.info('found connections:', logConnections(connections, intermediate_bluff));
+			focus_possible.push({ ...intermediate_bluff, save: false, connections, interp: CLUE_INTERP.PLAY });
 		}
 	}
 
