@@ -423,7 +423,7 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 	const actual_card = state.deck[finesse];
 	const reacting = state.ourPlayerIndex;
 
-	const bluffable_ids = get_bluffable_ids(game, action, finesse, reacting);
+	const bluffable_ids = get_bluffable_ids(game, action, (actual_card.identity() ? [actual_card.identity()] : card.inferred.filter(id => state.isPlayable(id))), finesse, reacting);
 	const possibly_bluff = !assumeTruth && connected.length == 1 && bluffable_ids.length > 0 && card.possible.has(identity);
 
 	if (card.rewinded) {
@@ -431,6 +431,7 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 			throw new IllegalInterpretation(`blocked layered finesse at level ${game.level}`);
 
 		if (actual_card.suitIndex !== identity.suitIndex && state.isPlayable(actual_card)) {
+			// If the card was not one of the bluff ids, then we should interpret as a finesse.
 			const actual_bluff = possibly_bluff && bluffable_ids.includes(actual_card);
 			const connections = /** @type {Connection[]} */ ([{ type: 'finesse', reacting, order: finesse, hidden: true, self: true, bluff: actual_bluff, identities: [actual_card.raw()] }]);
 

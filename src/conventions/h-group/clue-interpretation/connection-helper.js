@@ -1,5 +1,5 @@
 import { CLUE } from '../../../constants.js';
-import { CARD_STATUS } from '../../../basics/Card.js';
+import { BasicCard, CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 
@@ -93,13 +93,14 @@ export function is_intermediate_bluff_target(game, action, identity, focus) {
  * Returns possible bluffed card identities for a given clue.
  * @param {Game} game
  * @param {ClueAction} action
+ * @param {BasicCard[]} possible
  * @param {number} order
  * @param {number} reacting
  */
-export function get_bluffable_ids(game, action, order, reacting) {
-	const { common, state } = game;
-	return common.thoughts[order].possible.filter(id => state.isPlayable(id))
-		.filter(id => valid_bluff(game, action, id, id, reacting, [order], true));
+export function get_bluffable_ids(game, action, possible, order, reacting) {
+	const { state } = game;
+	return possible.filter(id => state.isPlayable(id))
+		.filter(id => valid_bluff(game, action, id, {suitIndex: id.suitIndex, rank: state.play_stacks[id.suitIndex] + 1}, reacting, [order], true));
 }
 
 /**
