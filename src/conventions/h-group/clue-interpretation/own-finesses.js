@@ -4,7 +4,7 @@ import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { rainbowMismatch } from '../hanabi-logic.js';
 import { find_connecting, find_known_connecting } from './connecting-cards.js';
 import { cardTouched, find_possibilities } from '../../../variants.js';
-import { get_bluffable_ids, is_intermediate_bluff_target, valid_bluff } from './connection-helper.js';
+import { get_bluffable_ids, is_intermediate_bluff_target } from './connection-helper.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection } from '../../../tools/log.js';
