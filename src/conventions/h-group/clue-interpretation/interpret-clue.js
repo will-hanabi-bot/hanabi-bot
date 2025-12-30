@@ -727,7 +727,7 @@ export function interpret_clue(game, action) {
 						const order = connections[0].order;
 						all_connections.push({
 							connections: [{...connections[0], bluff: true, possibly_bluff: false,
-								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred.filter(id => state.isPlayable(id)), order, connections[0].reacting)}],
+								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, order, connections[0].reacting)}],
 							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
 						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, id));
 					}

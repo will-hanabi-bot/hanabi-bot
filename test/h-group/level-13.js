@@ -57,7 +57,7 @@ describe('intermediate bluff clues', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});
 
-	it(`understands an unknown 3 bluff by number`, () => {
+	it(`understands an unknown 3 bluff by rank`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r3', 'y2', 'g2', 'g2', 'b3'],
@@ -164,7 +164,7 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Alice plays y1 (slot 1)');
 
-		// After playing a connecting card, it knows it must be a bluff.
+		// After playing a connecting card, we know it must be a bluff.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['b2', 'b3', 'b4']);
 	});
 
@@ -210,11 +210,11 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Alice plays y1 (slot 1)');
 
-		// After playing a connecting card, it knows it must be a bluff.
+		// After playing a non-connecting card, we know it must be a bluff.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['k2', 'k3', 'k4']);
 	});
 
-	it(`understands a critical number finesse`, () => {
+	it(`understands a critical rank finesse`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r3', 'y2', 'g2', 'b4', 'g3'],
@@ -227,7 +227,7 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Cathy clues 4 to Bob');
 
-		// A critical bluff cannot be given by colour. This must be a finesse.
+		// A critical bluff cannot be given by rank. This must be a finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['b1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
@@ -273,13 +273,13 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Alice plays b1 (slot 1)');
 
-		// After playing a connecting card, it knows it must be a finesse.
+		// After playing a connecting card, we know it must be a finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['b2']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['b3']);
 	});
 
-	it(`still understands a 3 finesse by number when the play connects`, () => {
+	it(`still understands a 3 finesse by rank when the play connects`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['b3', 'y2', 'g2', 'g2', 'r3'],
@@ -319,7 +319,7 @@ describe('intermediate bluff clues', () => {
 
 		takeTurn(game, 'Alice plays g1 (slot 1)');
 
-		// After playing a connecting card, a finesse is assumed.
+		// After playing a non-connecting card, we know it is a bluff.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['r3', 'y3', 'g3', 'b3', 'p3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
 	});

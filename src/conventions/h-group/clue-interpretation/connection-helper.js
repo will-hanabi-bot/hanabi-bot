@@ -93,14 +93,14 @@ export function is_intermediate_bluff_target(game, action, identity, focus) {
  * Returns possible bluffed card identities for a given clue.
  * @param {Game} game
  * @param {ClueAction} action
- * @param {BasicCard[]} possible
+ * @param {BasicCard[] | IdentitySet} inferred
  * @param {number} order
  * @param {number} reacting
  */
-export function get_bluffable_ids(game, action, possible, order, reacting) {
+export function get_bluffable_ids(game, action, inferred, order, reacting) {
 	const { state } = game;
-	return possible.filter(id => state.isPlayable(id))
-		.filter(id => valid_bluff(game, action, id, {suitIndex: id.suitIndex, rank: state.play_stacks[id.suitIndex] + 1}, reacting, [order], true));
+	return inferred.filter(id => state.isPlayable(id) &&
+		valid_bluff(game, action, id, {suitIndex: id.suitIndex, rank: state.play_stacks[id.suitIndex] + 1}, reacting, [order], true));
 }
 
 /**
