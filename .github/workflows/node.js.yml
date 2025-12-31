@@ -24,3 +24,7 @@ jobs:
     - run: npm ci
     - run: npm run lint
     - run: npm test
+    - name: Run npm test with max level
+      env:
+        HANABI_LEVEL: 99
+      run: npm test
