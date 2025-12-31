@@ -277,7 +277,7 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 				if (direct && !hidden && reacting !== target && clue.type !== CLUE.COLOUR)
 					direct = false;
 
-				if (intermediate_bluff_target && (possibly_bluff || bluff) && !assumeTruth)
+				if (connections.length === 1 && intermediate_bluff_target && (possibly_bluff || bluff) && !assumeTruth)
 					possible_intermediate_bluff = true;
 
 				if (bluff)
@@ -423,7 +423,7 @@ function find_self_finesse(game, action, identity, connected, ignoreOrders, fine
 	const actual_card = state.deck[finesse];
 	const reacting = state.ourPlayerIndex;
 
-	const bluffable_ids = get_bluffable_ids(game, action, (actual_card.identity() ? [actual_card.identity()] : card.inferred), finesse, reacting);
+	const bluffable_ids = get_bluffable_ids(game, action, (actual_card.identity() ? [actual_card.identity()] : card.inferred), connected, reacting);
 	const possibly_bluff = !assumeTruth && connected.length == 1 && bluffable_ids.length > 0 && card.possible.has(identity) &&
 		(!actual_card.identity() || bluffable_ids.includes(actual_card.identity()));
 

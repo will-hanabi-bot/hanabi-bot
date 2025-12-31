@@ -94,13 +94,13 @@ export function is_intermediate_bluff_target(game, action, identity, focus) {
  * @param {Game} game
  * @param {ClueAction} action
  * @param {BasicCard[] | IdentitySet} inferred
- * @param {number} order
+ * @param {number[]} connected
  * @param {number} reacting
  */
-export function get_bluffable_ids(game, action, inferred, order, reacting) {
+export function get_bluffable_ids(game, action, inferred, connected, reacting) {
 	const { state } = game;
 	return inferred.filter(id => state.isPlayable(id) &&
-		valid_bluff(game, action, id, {suitIndex: id.suitIndex, rank: state.play_stacks[id.suitIndex] + 1}, reacting, [order], true));
+		valid_bluff(game, action, id, {suitIndex: id.suitIndex, rank: state.play_stacks[id.suitIndex]}, reacting, connected, false));
 }
 
 /**

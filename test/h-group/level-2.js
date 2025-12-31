@@ -151,9 +151,9 @@ describe('reverse finesse', () => {
 
 		takeTurn(game, 'Cathy clues 2 to Alice (slots 1,2)');
 		takeTurn(game, 'Alice plays g2 (slot 1)');
-		takeTurn(game, 'Bob clues red to Alice (slots 2,5)');		// slot 5 is !2, so this is either r1, m1 or r3
+		takeTurn(game, 'Bob clues red to Alice (slots 2,5)');		// slot 5 is !2, so this is either r1, m1, r3 or m3 (3-bluff)
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r1', 'r3', 'm1']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], game.level >= 13 ? ['r1', 'r3', 'm1', 'm3'] : ['r1', 'r3', 'm1']);
 
 		takeTurn(game, 'Cathy plays r1', 'b1');
 
@@ -233,7 +233,7 @@ describe('self-finesse', () => {
 		const { common, state } = game;
 
 		// Cathy's slot 1 should be finessed (maybe bluffed), Alice's slot 1 should not.
-		assert.equal(common.thoughts[state.hands[PLAYER.CATHY][0]].status, game.level >= 11 ? CARD_STATUS.MAYBE_BLUFFED : CARD_STATUS.FINESSED);
+		assert.equal(common.thoughts[state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
 		assert.equal(common.thoughts[state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 

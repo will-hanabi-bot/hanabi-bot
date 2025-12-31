@@ -187,17 +187,17 @@ describe('bluff clues', () => {
 
 		takeTurn(game, 'Cathy plays p1', 'p2');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], game.level >= 13 ? ['r2', 'r3'] : ['r2']);
 
 		takeTurn(game, 'Alice discards g4 (slot 5)');
 		takeTurn(game, 'Bob clues red to Alice (slots 1,5)');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'r3']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], game.level >= 13 ? ['r1', 'r2', 'r3'] : ['r1', 'r3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays p2', 'p3');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], game.level >= 13 ? ['r2', 'r3'] : ['r3']);
 	});
 
 	it('infers the identity of bluffed prompts', () => {

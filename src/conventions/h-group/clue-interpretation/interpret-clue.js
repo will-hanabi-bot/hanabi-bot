@@ -723,11 +723,11 @@ export function interpret_clue(game, action) {
 					all_connections.push({ connections, suitIndex: id.suitIndex, rank, interp: CLUE_INTERP.PLAY });
 
 					// Consider possible intermediate bluff connections.
-					if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length > 0 && (connections[0].possibly_bluff || connections[0].bluff) && is_intermediate_bluff_target(game, action, id, focus)) {
+					if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length > 0 && connections[0].type === 'finesse' && (connections[0].possibly_bluff || connections[0].bluff) && is_intermediate_bluff_target(game, action, id, focus)) {
 						const order = connections[0].order;
 						all_connections.push({
 							connections: [{...connections[0], bluff: true, possibly_bluff: false,
-								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, order, connections[0].reacting)}],
+								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, [focus], connections[0].reacting)}],
 							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
 						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, id));
 					}
@@ -768,7 +768,7 @@ export function interpret_clue(game, action) {
 				all_connections.push({ connections, suitIndex: inferred_identity.suitIndex, rank: inferred_identity.rank, interp: CLUE_INTERP.PLAY });
 
 				// Consider intermediate bluff possibilities
-				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && (connections[0].bluff || connections[0].possibly_bluff)) {
+				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && connections[0].type === 'finesse' && (connections[0].bluff || connections[0].possibly_bluff)) {
 					const order = connections[0].order;
 					const bluffable_focus_ids = [
 						{ suitIndex, rank: 3 },
@@ -779,7 +779,7 @@ export function interpret_clue(game, action) {
 					for (const id of bluffable_focus_ids) {
 						all_connections.push({
 							connections: [{...connections[0], bluff: true,
-								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred.filter(id => state.isPlayable(id)), order, connections[0].reacting)}],
+								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred.filter(id => state.isPlayable(id)), [focus], connections[0].reacting)}],
 							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
 						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, focused_card) );
 					}

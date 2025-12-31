@@ -20,7 +20,10 @@ describe('layered finesse', () => {
 			['r4', 'r4', 'g4', 'r5', 'b4'],
 			['g1', 'y1', 'r2', 'y3', 'p3']
 		], {
-			level: { min: 5 },
+			level: {
+				min: 5,
+				max: 12, // At level 13, the 3 clue becomes a possible bluff.
+			},
 			clue_tokens: 7,
 			starting: PLAYER.BOB
 		});

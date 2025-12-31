@@ -188,14 +188,14 @@ describe('hidden finesse', () => {
 	it('correctly realizes a layered finesse', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['r2', 'r2', 'y4', 'g2'],
-			['p4', 'g4', 'p3', 'y4'],
+			['r4', 'r2', 'y4', 'g2'],
+			['p4', 'g4', 'p4', 'y4'],
 			['p3', 'g4', 'g2', 'b2']
 
 		], {
 			level: { min: 5 },
 			play_stacks: [0, 2, 0, 0, 0],
-			starting: PLAYER.DONALD
+			starting: PLAYER.DONALD,
 		});
 
 		takeTurn(game, 'Donald clues 1 to Alice (slot 4)');
@@ -267,7 +267,10 @@ describe('hidden finesse', () => {
 			['r1', 'y1', 'r1', 'y2', 'b5'],
 			['r1', 'b4', 'p4', 'y3', 'r2']
 		], {
-			level: { min: 5 },
+			level: {
+				min: 5,
+				max: 12, // At level 13, the clue only bluffs out the r1 either way.
+			},
 			starting: PLAYER.BOB
 		});
 

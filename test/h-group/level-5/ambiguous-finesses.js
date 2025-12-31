@@ -27,7 +27,7 @@ describe('ambiguous finesse', () => {
 		takeTurn(game, 'Cathy clues green to Bob');
 
 		// Donald's g1 should be finessed (maybe bluffed).
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].status, game.level >= 11 ? CARD_STATUS.MAYBE_BLUFFED : CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].status, CARD_STATUS.FINESSED);
 
 		takeTurn(game, 'Donald discards p4', 'r1');
 
@@ -194,7 +194,7 @@ describe('ambiguous finesse', () => {
 
 		// ALice's slot 1 should be finessed as r2.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r2']);
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, game.level >= 10 ? CARD_STATUS.GD : CARD_STATUS.FINESSED);
 	});
 });
 
