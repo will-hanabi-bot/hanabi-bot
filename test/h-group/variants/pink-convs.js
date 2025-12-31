@@ -566,7 +566,7 @@ describe('pink fixes', () => {
 			['r3', 'y3', 'r4', 'y4', 'i2'],
 			['g4', 'i4', 'g3', 'b3', 'b4']
 		], {
-			level: { min: 3 },
+			level: { min: 3, max: 10 },
 			clue_tokens: 7,
 			starting: PLAYER.BOB,
 			variant: VARIANTS.PINK,
