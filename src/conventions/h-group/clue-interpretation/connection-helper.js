@@ -264,12 +264,14 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 	for (const { connections } of simplest_poss) {
 		if (connections.length == 0)
 			continue;
-		const previous_order = connections[0].order;
-		const order_map = next_connection[previous_order] = next_connection[previous_order] || new Map();
-		const reacting = connections.length > 1 ? connections[1].reacting : target;
-		const order = connections.length > 1 ? connections[1].order : focus;
-		const reacting_order = order_map[reacting] = order_map[reacting] || new Set();
-		reacting_order.add(order);
+		for (let i = 0; i < connections.length; ++i) {
+			const previous_order = connections[i].order;
+			const order_map = next_connection[previous_order] = next_connection[previous_order] || new Map();
+			const reacting = i + 1 < connections.length ? connections[i + 1].reacting : target;
+			const order = i + 1 < connections.length ? connections[i + 1].order : focus;
+			const reacting_order = order_map[reacting] = order_map[reacting] || new Set();
+			reacting_order.add(order);
+		}
 	}
 
 	for (const { connections, suitIndex, rank, save } of simplest_poss) {
@@ -282,17 +284,16 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 
 		const hypo_stacks = common.hypo_stacks.slice();
 
-		let assign_connections = connections;
-
-		// If the same player could have to react by playing two different cards, we can't know what to play
-		// and shouldn't write any further notes until we receice further information.
-		if (connections.length >= 2 && next_connection[connections[0].order][connections[1].reacting].size > 1) {
-			assign_connections = [assign_connections[0]];
-			logger.info('green', 'skipping connection after ambiguous', logConnection(connections[0]));
-		}
-
-		for (const conn of assign_connections) {
+		let previous_conn = null;
+		for (const conn of connections) {
 			const { type, reacting, bluff, possibly_bluff, hidden, order, linked, identities, certain } = conn;
+			// If the same player could have to react by playing two different cards, we can't know what to play
+			// and shouldn't write any further notes until we receice further information.
+			if (previous_conn && next_connection[previous_conn.order][reacting].size > 1) {
+				logger.info('green', 'skipping connection after ambiguous', logConnection(connections[0]));
+				break;
+			}
+			previous_conn = conn;
 
 			if (type === 'playable' && connections[0].bluff && !must_bluff_playables.includes(order))
 				continue;
