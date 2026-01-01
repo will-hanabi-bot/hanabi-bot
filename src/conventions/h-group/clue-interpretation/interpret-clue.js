@@ -256,7 +256,7 @@ export function finalize_connections(state, action, focus_possibilities) {
 			first_conn.type === 'finesse' &&
 			!first_conn.bluff &&
 			(bluff_orders.length > 0 && bluff_orders.includes(first_conn.order)) &&
-			connections[1].self;
+			connections[1].self && connections[1].type == 'finesse';
 
 		if (invalid) {
 			logger.highlight('green', `removing ${connections.map(logConnection).join(' -> ')} self finesse due to possible bluff interpretation`);

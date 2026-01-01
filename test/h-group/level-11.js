@@ -357,7 +357,8 @@ describe('bluff clues', () => {
 		// Cathy plays to demonstrate the bluff.
 		takeTurn(game, 'Cathy plays p1', 'y5');
 
-		// After Cathy plays, Alice should know it was a bluff.
+		// After Cathy plays, Alice should know it was not immediately playable,
+		// but cannot know for sure that a finesse did not exist.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'g3']);
 	});
 

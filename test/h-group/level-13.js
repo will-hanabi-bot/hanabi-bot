@@ -1,12 +1,13 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { PLAYER, setup, takeTurn, VARIANTS } from '../test-utils.js';
+import { PLAYER, preClue, setup, takeTurn, VARIANTS } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
 
 import logger from '../../src/tools/logger.js';
+import { CLUE } from '../../src/constants.js';
 
 logger.setLevel(logger.LEVELS.ERROR);
 
@@ -120,6 +121,79 @@ describe('intermediate bluff clues', () => {
 
 		// Since we assume a bluff, we don't know which 3 it is.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][4]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+	});
+
+	it(`connects a finesse when a bluff is impossible`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r2', 'b3', 'b4', 'p3', 'p4'],
+			['b5', 'r3', 'r4', 'g3', 'b1'],
+		], {
+			level: { min: 13 },
+			play_stacks: [1, 0, 0, 0, 0],
+			init: (game) => {
+				// Cathy's slot 2 is clued with 3.
+				preClue(game, game.state.hands[PLAYER.CATHY][1], [{ type: CLUE.RANK, value: 3, giver: PLAYER.BOB }]);
+			}
+		});
+
+		takeTurn(game, 'Alice clues 4 to Cathy');
+		takeTurn(game, 'Bob plays r2', 'r5');
+
+		// Since r4 is not a valid bluff target, Cathy is promised r3 prompt.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r3']);
+
+		// Cathy should write [r4] on slot 3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['r4']);
+	});
+
+	it(`understands a hard bluff on others`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r2', 'b3', 'b4', 'p3', 'p4'],
+			['b5', 'r3', 'r4', 'g3', 'b1'],
+		], {
+			level: { min: 13 },
+			play_stacks: [1, 0, 0, 2, 0],
+			init: (game) => {
+				// Cathy's slot 2 is clued with 3.
+				preClue(game, game.state.hands[PLAYER.CATHY][1], [{ type: CLUE.RANK, value: 3, giver: PLAYER.BOB }]);
+			}
+		});
+
+		takeTurn(game, 'Alice clues 4 to Cathy');
+		takeTurn(game, 'Bob plays r2', 'r5');
+
+		// Since b4 would be a valid bluff target, Cathy is not promised anything about the 3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+
+		// Cathy should write [r4,b4] on slot 3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['r4', 'b4']);
+	});
+
+	it(`understands a hard bluff on us`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b5', 'b3', 'b4', 'p3', 'p4'],
+			['r2', 'y3', 'y4', 'g3', 'g4'],
+		], {
+			level: { min: 13 },
+			play_stacks: [1, 0, 0, 2, 0],
+			starting: PLAYER.BOB,
+			init: (game) => {
+				// Alice's slot 2 is clued with 3.
+				preClue(game, game.state.hands[PLAYER.ALICE][1], [{ type: CLUE.RANK, value: 3, giver: PLAYER.BOB }]);
+			}
+		});
+
+		takeTurn(game, 'Bob clues 4 to Alice (slot 3)');
+		takeTurn(game, 'Cathy plays r2', 'r5');
+
+		// Since b4 is a valid bluff target, Alice is not promised anything about the 3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3', 'g3', 'b3', 'p3']);
+
+		// Alice can have r4 (if slot 2 is r3) or b4 in slot 3.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r4', 'b4']);
 	});
 
 	it('understands giving a 3 bluff', () => {
