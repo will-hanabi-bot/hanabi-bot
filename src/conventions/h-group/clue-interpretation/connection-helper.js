@@ -1,5 +1,5 @@
 import { CLUE } from '../../../constants.js';
-import { BasicCard, CARD_STATUS } from '../../../basics/Card.js';
+import { CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 
@@ -93,7 +93,7 @@ export function is_intermediate_bluff_target(game, action, identity, focus) {
  * Returns possible bluffed card identities for a given clue.
  * @param {Game} game
  * @param {ClueAction} action
- * @param {BasicCard[] | IdentitySet} inferred
+ * @param {Identity[] | IdentitySet} inferred
  * @param {number[]} connected
  * @param {number} reacting
  */

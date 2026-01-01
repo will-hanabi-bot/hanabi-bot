@@ -773,13 +773,16 @@ export function interpret_clue(game, action) {
 					const bluffable_focus_ids = [
 						{ suitIndex, rank: 3 },
 						{ suitIndex, rank: 4 },
-					].filter(id => focused_card.rank === id.rank &&
-								(connections.length == 1 || inferred_identity.rank == id.rank) && // Either we know we were bluffed or it looks like we were playing towards this card.
-								is_intermediate_bluff_target(game, action, id, focus));
+					];
 					for (const id of bluffable_focus_ids) {
+						if (focused_card.rank !== id.rank ||
+							(connections.length !== 1 && inferred_identity.rank !== id.rank) || // Either we know we were bluffed or it looks like we were playing towards this card.
+							!is_intermediate_bluff_target(game, action, id, focus))
+							continue;
+
 						all_connections.push({
 							connections: [{...connections[0], bluff: true,
-								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred.filter(id => state.isPlayable(id)), [focus], connections[0].reacting)}],
+								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, [focus], connections[0].reacting)}],
 							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
 						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, focused_card) );
 					}
