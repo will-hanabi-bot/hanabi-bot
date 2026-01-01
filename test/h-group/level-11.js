@@ -352,14 +352,13 @@ describe('bluff clues', () => {
 		takeTurn(game, 'Bob clues 3 to Alice (slot 2)');
 
 		// Alice's slot 2 could be any of the playable 3's
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3', 'g3', 'p3']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3', 'g3']);
 
 		// Cathy plays to demonstrate the bluff.
 		takeTurn(game, 'Cathy plays p1', 'y5');
 
-		// After Cathy plays, Alice should know it was not immediately playable,
-		// but cannot know for sure that a finesse did not exist.
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'g3', 'p3']);
+		// After Cathy plays, Alice should know it was a bluff.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'g3']);
 	});
 
 	it('prioritizes playing into a bluff', async () => {

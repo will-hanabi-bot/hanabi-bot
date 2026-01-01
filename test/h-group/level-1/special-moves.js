@@ -32,7 +32,7 @@ describe('other cases', () => {
 		// Alice's slot 4 should still be any 1.
 		ExAsserts.cardHasInferences(common.thoughts[state.hands[PLAYER.ALICE][3]], ['r1', 'y1', 'g1', 'b1', 'p1']);
 
-		// Donald's r1 should be finessed (maybe bluffed).
+		// Donald's r1 should be finessed.
 		assert.equal(common.thoughts[state.hands[PLAYER.DONALD][0]].status, CARD_STATUS.FINESSED);
 	});
 

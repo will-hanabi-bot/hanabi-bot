@@ -189,7 +189,7 @@ describe('hidden finesse', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['r4', 'r2', 'y4', 'g2'],
-			['p4', 'g4', 'p4', 'y4'],
+			['p4', 'g4', 'p3', 'y4'],
 			['p3', 'g4', 'g2', 'b2']
 
 		], {

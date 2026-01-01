@@ -260,17 +260,17 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 	const must_bluff_playables = bluff_playables[0]?.filter(o => bluff_playables.every(os => os.includes(o))) ?? [];
 
 	// Tracks the next connection per reacting player after each possible first play.
-	const next_connection = new Map();
+	/** @type {Map<number, Map<number, Set<number>>>} */
+	const next_connections = new Map();
 	for (const { connections } of simplest_poss) {
-		if (connections.length == 0)
-			continue;
 		for (let i = 0; i < connections.length; ++i) {
-			const previous_order = connections[i].order;
-			const order_map = next_connection[previous_order] = next_connection[previous_order] || new Map();
-			const reacting = i + 1 < connections.length ? connections[i + 1].reacting : target;
-			const order = i + 1 < connections.length ? connections[i + 1].order : focus;
-			const reacting_order = order_map[reacting] = order_map[reacting] || new Set();
-			reacting_order.add(order);
+			const prev_order = connections[i].order;
+			const { reacting, order } = connections[i + 1] ?? { reacting: target, order: focus };
+			const order_map = next_connections.get(prev_order) ?? new Map();
+			const reacting_orders = order_map.get(reacting) ?? new Set();
+			reacting_orders.add(order);
+			order_map.set(reacting, reacting_orders);
+			next_connections.set(prev_order, order_map);
 		}
 	}
 
@@ -284,16 +284,16 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 
 		const hypo_stacks = common.hypo_stacks.slice();
 
-		let previous_conn = null;
-		for (const conn of connections) {
+		for (let i = 0; i < connections.length; i++) {
+			const conn = connections[i];
 			const { type, reacting, bluff, possibly_bluff, hidden, order, linked, identities, certain } = conn;
+
 			// If the same player could have to react by playing two different cards, we can't know what to play
-			// and shouldn't write any further notes until we receice further information.
-			if (previous_conn && next_connection[previous_conn.order][reacting].size > 1) {
+			// and shouldn't write any further notes until we receive further information.
+			if (i > 0 && next_connections.get(connections[i - 1].order).get(reacting).size > 1) {
 				logger.info('green', 'skipping connection after ambiguous', logConnection(connections[0]));
 				break;
 			}
-			previous_conn = conn;
 
 			if (type === 'playable' && connections[0].bluff && !must_bluff_playables.includes(order))
 				continue;
