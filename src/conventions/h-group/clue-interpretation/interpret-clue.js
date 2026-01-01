@@ -253,7 +253,7 @@ export function finalize_connections(state, action, focus_possibilities) {
 		// A non-bluff connection is invalid if it requires a self finesse after a potential bluff play.
 		// E.g. if we could be bluffed for a 3 in one suit, we can't assume we have the connecting 2 in another suit.
 		const invalid = connections.length >= 2 &&
-			first_conn.type === 'finesse' &&
+			first_conn.self && first_conn.type === 'finesse' &&
 			!first_conn.bluff &&
 			(bluff_orders.length > 0 && bluff_orders.includes(first_conn.order)) &&
 			connections[1].self && connections[1].type == 'finesse';
