@@ -202,7 +202,7 @@ describe('true clues', () => {
 			['g5', 'b1', 'b4', 'y3'],
 			['g4', 'p1', 'g3', 'p3']
 		], {
-			level: { min: 11 },
+			level: { min: 11, max: 12 },
 			starting: PLAYER.DONALD
 		});
 
@@ -227,7 +227,7 @@ describe('true clues', () => {
 			['g3', 'g3', 'b2', 'b1'],
 			['g1', 'r1', 'r3', 'y2']
 		], {
-			level: { min: 11 },
+			level: { min: 11, max: 12 },
 			starting: PLAYER.CATHY
 		});
 

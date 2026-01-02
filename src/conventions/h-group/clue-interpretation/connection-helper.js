@@ -75,6 +75,35 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
 }
 
 /**
+ * Returns whether the given identity is a valid target for an intermediate bluff.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {Identity} identity
+ * @param {number} focus
+ */
+export function is_intermediate_bluff_target(game, action, identity, focus) {
+	const { state } = game;
+	const { clue } = action;
+	return game.level >= LEVEL.INTERMEDIATE_BLUFFS && identity.rank === 3 ||
+		// Critical non-unique cards can be used as a bluff target by color:
+		(clue.type === CLUE.COLOUR && identity.rank == 4 && game.common.thoughts[focus].newly_clued && state.isCritical(identity));
+}
+
+/**
+ * Returns possible bluffed card identities for a given clue.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {Identity[] | IdentitySet} inferred
+ * @param {number[]} connected
+ * @param {number} reacting
+ */
+export function get_bluffable_ids(game, action, inferred, connected, reacting) {
+	const { state } = game;
+	return inferred.filter(id => state.isPlayable(id) &&
+		valid_bluff(game, action, id, {suitIndex: id.suitIndex, rank: state.play_stacks[id.suitIndex]}, reacting, connected, false));
+}
+
+/**
  * Generates symmetric connections from a list of symmetric focus possibilities.
  * @param {State} state
  * @param {SymFocusPossibility[]} sym_possibilities
@@ -230,6 +259,21 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 	const bluff_playables = bluff_fps.map(fp => fp.connections.filter(conn => conn.type === 'playable').flatMap(conn => conn.order));
 	const must_bluff_playables = bluff_playables[0]?.filter(o => bluff_playables.every(os => os.includes(o))) ?? [];
 
+	// Tracks the next connection per reacting player after each possible first play.
+	/** @type {Map<number, Map<number, Set<number>>>} */
+	const next_connections = new Map();
+	for (const { connections } of simplest_poss) {
+		for (let i = 0; i < connections.length; ++i) {
+			const prev_order = connections[i].order;
+			const { reacting, order } = connections[i + 1] ?? { reacting: target, order: focus };
+			const order_map = next_connections.get(prev_order) ?? new Map();
+			const reacting_orders = order_map.get(reacting) ?? new Set();
+			reacting_orders.add(order);
+			order_map.set(reacting, reacting_orders);
+			next_connections.set(prev_order, order_map);
+		}
+	}
+
 	for (const { connections, suitIndex, rank, save } of simplest_poss) {
 		const inference = { suitIndex, rank };
 		const matches = focused_card.matches(inference, { assume: true }) && game.players[target].thoughts[focus].possible.has(inference);
@@ -240,8 +284,16 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 
 		const hypo_stacks = common.hypo_stacks.slice();
 
-		for (const conn of connections) {
+		for (let i = 0; i < connections.length; i++) {
+			const conn = connections[i];
 			const { type, reacting, bluff, possibly_bluff, hidden, order, linked, identities, certain } = conn;
+
+			// If the same player could have to react by playing two different cards, we can't know what to play
+			// and shouldn't write any further notes until we receive further information.
+			if (i > 0 && next_connections.get(connections[i - 1].order).get(reacting).size > 1) {
+				logger.info('green', 'skipping connection after ambiguous', logConnection(connections[0]));
+				break;
+			}
 
 			if (type === 'playable' && connections[0].bluff && !must_bluff_playables.includes(order))
 				continue;

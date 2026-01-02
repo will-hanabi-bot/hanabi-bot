@@ -326,10 +326,10 @@ describe('pink prompts', () => {
 		takeTurn(game, 'Cathy clues pink to Alice (slot 4)');
 
 		// This could be a known bluff on Donald's b1.
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i1', 'i2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], game.level >= 13 ? ['i1', 'i2', 'i3'] : ['i1', 'i2']);
 
 		takeTurn(game, 'Donald plays b1', 'i4');
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['i2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], game.level >= 13 ? ['i2', 'i3'] : ['i2']);
 	});
 });
 

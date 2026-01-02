@@ -1,7 +1,8 @@
 import { CLUE } from '../../../constants.js';
-import { CLUE_INTERP } from '../h-constants.js';
+import { CLUE_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { rankLooksPlayable } from '../hanabi-logic.js';
+import { is_intermediate_bluff_target } from './connection-helper.js';
 import { find_connecting } from './connecting-cards.js';
 import { cardTouched, colourableSuits, variantRegexes } from '../../../variants.js';
 import { finalize_connections } from './interpret-clue.js';
@@ -175,6 +176,19 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 
 		// Our card could be the final rank that we can't find
 		focus_possible.push({ suitIndex, rank: next_rank, save: false, connections, interp: CLUE_INTERP.PLAY });
+	}
+	if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length === 1 && connections[0].bluff) {
+		// Consider 3 bluffs or critical 4 colour bluffs.
+		const possible_intermediate_bluffs = [
+			{ suitIndex, rank: 3 },
+			{ suitIndex, rank: 4 },
+		];
+		for (const id of possible_intermediate_bluffs) {
+			if (next_identity.rank >= id.rank || !is_intermediate_bluff_target(game, action, id, focus))
+				continue;
+			logger.info('found connections:', logConnections(connections, id));
+			focus_possible.push({ ...id, save: false, connections, interp: CLUE_INTERP.PLAY });
+		}
 	}
 
 	// Save clue on chop

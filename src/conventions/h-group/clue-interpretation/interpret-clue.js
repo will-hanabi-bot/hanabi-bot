@@ -7,7 +7,7 @@ import { stalling_situation } from './interpret-stall.js';
 import { determine_focus, getRealConnects, rankLooksPlayable, unknown_1 } from '../hanabi-logic.js';
 import { find_focus_possible } from './focus-possible.js';
 import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
-import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score } from './connection-helper.js';
+import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids } from './connection-helper.js';
 import { variantRegexes } from '../../../variants.js';
 import { remove_finesse } from '../update-wcs.js';
 import { order_1s } from '../action-helper.js';
@@ -256,7 +256,7 @@ export function finalize_connections(state, action, focus_possibilities) {
 			first_conn.type === 'finesse' &&
 			!first_conn.bluff &&
 			(bluff_orders.length > 0 && bluff_orders.includes(first_conn.order)) &&
-			connections[1].self;
+			connections[1].self && connections[1].type == 'finesse';
 
 		if (invalid) {
 			logger.highlight('green', `removing ${connections.map(logConnection).join(' -> ')} self finesse due to possible bluff interpretation`);
@@ -721,6 +721,16 @@ export function interpret_clue(game, action) {
 					}
 
 					all_connections.push({ connections, suitIndex: id.suitIndex, rank, interp: CLUE_INTERP.PLAY });
+
+					// Consider possible intermediate bluff connections.
+					if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length > 0 && connections[0].type === 'finesse' && (connections[0].possibly_bluff || connections[0].bluff) && is_intermediate_bluff_target(game, action, id, focus)) {
+						const order = connections[0].order;
+						all_connections.push({
+							connections: [{...connections[0], bluff: true, possibly_bluff: false,
+								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, [focus], connections[0].reacting)}],
+							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
+						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, id));
+					}
 				}
 				catch (error) {
 					if (error instanceof IllegalInterpretation)
@@ -754,7 +764,29 @@ export function interpret_clue(game, action) {
 						all_connections.push({ connections: connections.slice(0, i), suitIndex, rank: next_rank, interp: CLUE_INTERP.PLAY });
 					}
 				}
-				all_connections.push({ connections, suitIndex, rank: inference_rank(state, suitIndex, connections), interp: CLUE_INTERP.PLAY });
+				const inferred_identity = { suitIndex, rank: inference_rank(state, suitIndex, connections) };
+				all_connections.push({ connections, suitIndex: inferred_identity.suitIndex, rank: inferred_identity.rank, interp: CLUE_INTERP.PLAY });
+
+				// Consider intermediate bluff possibilities
+				if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length >= 1 && connections[0].type === 'finesse' && (connections[0].bluff || connections[0].possibly_bluff)) {
+					const order = connections[0].order;
+					const bluffable_focus_ids = [
+						{ suitIndex, rank: 3 },
+						{ suitIndex, rank: 4 },
+					];
+					for (const id of bluffable_focus_ids) {
+						if (focused_card.rank !== id.rank ||
+							(connections.length !== 1 && inferred_identity.rank !== id.rank) || // Either we know we were bluffed or it looks like we were playing towards this card.
+							!is_intermediate_bluff_target(game, action, id, focus))
+							continue;
+
+						all_connections.push({
+							connections: [{...connections[0], bluff: true,
+								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, [focus], connections[0].reacting)}],
+							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
+						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, focused_card) );
+					}
+				}
 			}
 			catch (error) {
 				if (error instanceof IllegalInterpretation)

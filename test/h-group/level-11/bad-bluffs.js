@@ -104,7 +104,7 @@ describe('bad bluffs', () => {
 			['p3', 'p2', 'g1', 'g4'],
 			['r1', 'r1', 'r4', 'g3']
 		], {
-			level: { min: 11 },
+			level: { min: 11, max: 12 },
 			starting: PLAYER.CATHY
 		});
 

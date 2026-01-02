@@ -442,7 +442,10 @@ describe('guide principle', () => {
 			['p4', 'y5', 'b3', 'p5'],
 			['b4', 'y2', 'p4', 'r4']
 		], {
-			level: { min: 5 },
+			level: {
+				min: 5,
+				max: 12, // If a a 3-bluff is possible, it can't be deferred. 
+			},
 			starting: PLAYER.CATHY
 		});
 
@@ -462,7 +465,10 @@ describe('guide principle', () => {
 			['y4', 'y5', 'p3', 'b5'],
 			['b4', 'y2', 'p4', 'r4']
 		], {
-			level: { min: 5 },
+			level: {
+				min: 5,
+				max: 12, // If a a 3-bluff is possible, it can't be deferred.
+			},
 			clue_tokens: 7,
 			starting: PLAYER.DONALD,
 			init: (game) => {
@@ -624,7 +630,10 @@ describe('mistake recovery', () => {
 			['g3', 'b2', 'y1', 'r5'],
 			['r3', 'r1', 'g4', 'b1']
 		], {
-			level: { min: 2 },
+			level: {
+				min: 2,
+				max: 12, // At level 13+ the 3 clue is assumed to be a bluff.
+			},
 			starting: PLAYER.DONALD
 		});
 

@@ -66,7 +66,10 @@ describe('bluff clues', () => {
 			['r3', 'y2', 'g2', 'g2', 'b2'],
 			['i1', 'b4', 'r4', 'g3', 'y3'],
 		], {
-			level: { min: 11 },
+			level: {
+				min: 11,
+				max: 12, /* At level 13 a 3 bluff makes any suit possible */
+			},
 			play_stacks: [1, 0, 0, 0, 0],
 			starting: PLAYER.BOB,
 			variant: VARIANTS.PINK
@@ -179,22 +182,22 @@ describe('bluff clues', () => {
 
 		takeTurn(game, 'Bob clues red to Alice (slot 4)');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r1', 'r2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], game.level >= 13 ? ['r1', 'r2', 'r3'] : ['r1', 'r2']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays p1', 'p2');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], game.level >= 13 ? ['r2', 'r3'] : ['r2']);
 
 		takeTurn(game, 'Alice discards g4 (slot 5)');
 		takeTurn(game, 'Bob clues red to Alice (slots 1,5)');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'r3']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], game.level >= 13 ? ['r1', 'r2', 'r3'] : ['r1', 'r3']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 
 		takeTurn(game, 'Cathy plays p2', 'p3');
 
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], game.level >= 13 ? ['r2', 'r3'] : ['r3']);
 	});
 
 	it('infers the identity of bluffed prompts', () => {
@@ -280,7 +283,10 @@ describe('bluff clues', () => {
 			['b4', 'r4', 'b1', 'b3'],
 			['g1', 'r5', 'r3', 'r1']
 		], {
-			level: { min: 11 },
+			level: {
+				min: 11,
+				max: 12, /* At level 13 a 3 bluff makes any 3 possible */
+			},
 			play_stacks: [1, 1, 0, 0, 2],
 			starting: PLAYER.DONALD
 		});
@@ -335,7 +341,10 @@ describe('bluff clues', () => {
 			['b4', 'r1', 'y1', 'g5', 'p2'],
 			['p1', 'r4', 'b5', 'b2', 'y4']
 		], {
-			level: { min: 11 },
+			level: {
+				min: 11,
+				max: 12, /* At level 13 a 3 bluff makes any suit possible */
+			},
 			play_stacks: [1, 2, 1, 0, 0],
 			starting: PLAYER.BOB
 		});
@@ -444,7 +453,10 @@ describe('bluff clues', () => {
 			['y3', 'p2', 'y1', 'r4'],
 			['g5', 'y1', 'p4', 'b5']
 		], {
-			level: { min: 11 },
+			level: {
+				min: 11,
+				max: 12, /* At level 13 a 3 bluff makes any 3 possible */
+			},
 			play_stacks: [1, 0, 0, 0, 0],
 			starting: PLAYER.CATHY,
 			init: (game) => {
@@ -474,7 +486,7 @@ describe('bluff clues', () => {
 
 		// Bob cannot receive a layered finesse as he cannot tell it apart from a bluff.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, undefined);
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['b1', 'b2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], game.level >= 13 ? ['b1', 'b2', 'b3'] : ['b1', 'b2']);
 	});
 
 	it(`prefers a bluff clue when more information is given 1`, async () => {
@@ -531,7 +543,10 @@ describe('bluff clues', () => {
 			['p2', 'b4', 'y1', 'p4', 'g4'],
 			['r3', 'p3', 'g1', 'y2', 'b3']
 		], {
-			level: { min: 11 },
+			level: {
+				min: 11,
+				max: 12, /* At level 13 a 3 bluff makes any suit possible */
+			},
 			play_stacks: [1, 1, 0, 0, 0],
 			starting: PLAYER.CATHY
 		});
@@ -602,7 +617,7 @@ describe('guide principle', () => {
 		});
 
 		takeTurn(game, 'Bob clues red to Alice (slot 2)'); // Could be a bluff
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r1', 'r2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], game.level >= 13 ? ['r1', 'r2', 'r3'] : ['r1', 'r2']);
 
 		takeTurn(game, 'Cathy clues purple to Bob'); // Cathy did not play and clued another bluff or finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r1']);
@@ -619,7 +634,7 @@ describe('guide principle', () => {
 			starting: PLAYER.BOB
 		});
 		takeTurn(game, 'Bob clues red to Alice (slot 2)'); // Could be a bluff
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r1', 'r2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], game.level >= 13 ? ['r1', 'r2', 'r3'] : ['r1', 'r2']);
 
 		// A bluff can be deferred to perform a finesse per
 		// https://hanabi.github.io/level-15#a-table-for-deferring-bluffs
