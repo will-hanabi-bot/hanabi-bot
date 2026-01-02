@@ -156,7 +156,7 @@ describe('ambiguous clues', () => {
 			starting: PLAYER.BOB
 		});
 
-		takeTurn(game, 'Bob clues blue to Cathy');			// r1, b1 layer -> b2 on us
+		takeTurn(game, 'Bob clues blue to Cathy');			// p1, b1 layer -> b2 on us
 		takeTurn(game, 'Cathy clues 5 to Alice (slot 4)');
 		takeTurn(game, 'Donald plays p1', 'b4');
 		takeTurn(game, 'Alice clues 1 to Donald');			// getting g1, but touches b1

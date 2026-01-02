@@ -478,7 +478,12 @@ export async function take_action(game) {
 					return id !== undefined && id.suitIndex === card_id.suitIndex && id.rank === play_stacks[id.suitIndex] + 1;
 				});
 
-				if (connectable) {
+				const duplicate = connectables === 0 && state.hands[playerIndex].some(o => {
+					const id = game.players[playerIndex].thoughts[o].identity({ infer: true });
+					return id !== undefined && id.suitIndex === card_id.suitIndex && id.rank === card_id.rank;
+				});
+
+				if (connectable && !duplicate) {
 					connectables++;
 					play_stacks[card_id.suitIndex]++;
 				}

@@ -173,9 +173,9 @@ export function get_clue_interp(game, clue, giver, options) {
 		return matches && focused_card.playedBefore(inference, { equal: true });
 	});
 
-	// Do not focus cards that are part of a finesse
-	if (giver_player.thoughts[focus].blind_playing || in_finesse !== undefined) {
-		logger.debug('skipping clue', logClue(clue), 'in finesse', in_finesse?.connections.map(logConnection).join(' -> '));
+	// Do not focus cards that are part of a finesse (endgame is ok)
+	if (!state.inEndgame() && (giver_player.thoughts[focus].blind_playing || in_finesse !== undefined)) {
+		logger.info('skipping clue', logClue(clue), 'in finesse', in_finesse?.connections.map(logConnection).join(' -> '));
 		return;
 	}
 
@@ -183,7 +183,8 @@ export function get_clue_interp(game, clue, giver, options) {
 	if (!stall && (hypothetical && giver !== state.ourPlayerIndex) && state.ourHand.some(o => ((card = game.me.thoughts[o]) => card.touched && card.inferred.has(focused_card))()))
 		return;
 
-	if (giver === state.ourPlayerIndex && me.links.some(link => link.identities.some(i => state.deck[focus].matches(i)))) {
+	// Do not focus cards that we are linked for (endgame is ok)
+	if (!state.inEndgame() && giver === state.ourPlayerIndex && me.links.some(link => link.identities.some(i => state.deck[focus].matches(i)))) {
 		logger.info('skipping clue', logClue(clue), 'linked');
 		return;
 	}

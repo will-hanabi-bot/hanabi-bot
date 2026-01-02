@@ -42,7 +42,7 @@ const stall_to_severity = {
  */
 function isStall(game, action, focusResult, severity, prev_game, loaded) {
 	const { common, me, state } = game;
-	const { clue, giver, list, target } = action;
+	const { clue, list, target } = action;
 	const { focus, chop } = focusResult;
 	const focus_thoughts = common.thoughts[focus];
 	const focused_card = state.deck[focus];
@@ -50,8 +50,8 @@ function isStall(game, action, focusResult, severity, prev_game, loaded) {
 	if (severity === 0)
 		return;
 
-	// We are giving a save clue, not a stall
-	if (chop && giver === state.ourPlayerIndex && (clue.type === CLUE.COLOUR ? colour_save : rank_save)(game, state.deck[focus], action, focus, loaded))
+	// Save clue, not a stall
+	if (chop && (clue.type === CLUE.COLOUR ? colour_save : rank_save)(game, state.deck[focus], action, focus, loaded))
 		return;
 
 	// Play clue, not a stall

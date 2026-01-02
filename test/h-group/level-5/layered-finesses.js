@@ -121,8 +121,8 @@ describe('layered finesse', () => {
 		});
 
 		takeTurn(game, 'Bob clues 4 to Alice (slot 4)');	// touching g4
-		takeTurn(game, 'Cathy plays g1 (slot 1)', 'p3');
-		takeTurn(game, 'Donald plays g2 (slot 1)', 'r5');
+		takeTurn(game, 'Cathy plays g1', 'p3');
+		takeTurn(game, 'Donald plays g2', 'r5');
 		takeTurn(game, 'Alice plays p1 (slot 1)');
 
 		const slot2 = game.common.thoughts[game.state.hands[PLAYER.ALICE][1]];
@@ -280,7 +280,7 @@ describe('layered finesse', () => {
 		takeTurn(game, 'Donald clues yellow to Bob');		// y2 layered finesse on us
 		takeTurn(game, 'Alice plays p1 (slot 1)');			// expecting y1 finesse
 
-		// We should connect with y1 in slot 2, not using Bob's y1 .
+		// We should connect with y1 in slot 2, not using Bob's y1.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['y1']);
 	});
 
