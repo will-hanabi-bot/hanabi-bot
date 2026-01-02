@@ -343,6 +343,13 @@ export class Bot {
 				return;
 			}
 
+			if (level > 11) {
+				reply(`This bot can currently only play up to level 11 (+ level 13). There is no support for level 12.`);
+
+				if (level < 13)
+					level = 11;
+			}
+
 			this.settings.level = Math.max(Math.min(level, MAX_H_LEVEL), 1);
 		}
 		else if (this.settings.convention === 'RefSieve') {
