@@ -334,6 +334,39 @@ function urgent_save(game, action, focus, oldCommon, old_game) {
 }
 
 /**
+ * Attempts to interpret a TCCM. Returns the interpreted game if successful, otherwise undefined.
+ * @param  {Game} game
+ * @param  {Player} oldCommon
+ * @param  {typeof CLUE_INTERP[keyof typeof CLUE_INTERP]} stall
+ * @param  {Set<number>} thinks_stall
+ * @param  {number} target
+ * @param  {number[]} list
+ * @param  {ActualCard} focused_card
+ * @return {Game}
+ */
+function try_tccm(game, oldCommon, stall, thinks_stall, target, list, focused_card) {
+	const { common, state } = game;
+	const cm_orders = interpret_tccm(game, oldCommon, target, list, focused_card);
+
+	if (cm_orders.length > 0) {
+		if (cm_orders[0] === undefined) {
+			logger.warn('not valuable tempo clue but no chop!');
+			game.interpretMove(CLUE_INTERP.NONE);
+		}
+		else if (stall === undefined || thinks_stall.size === 0) {
+			perform_cm(state, common, cm_orders);
+			game.interpretMove(CLUE_INTERP.CM_TEMPO);
+		}
+		else {
+			logger.info('stalling situation, tempo clue stall!');
+			game.interpretMove(CLUE_INTERP.STALL_TEMPO);
+		}
+		team_elim(game);
+		return game;
+	}
+}
+
+/**
  * Interprets the given clue. First tries to look for inferred connecting cards, then attempts to find prompts/finesses.
  * 
  * Impure!
@@ -578,6 +611,21 @@ export function interpret_clue(game, action) {
 		const tcm_orders = interpret_tcm(game, action, focus, oldCommon);
 
 		if (tcm_orders.length > 0) {
+			Object.assign(common, common.good_touch_elim(state).refresh_links(state).update_hypo_stacks(state));
+			// Prefer TCCM over TCM
+			const tccm_game = try_tccm(game, oldCommon, stall, thinks_stall, target, list, focused_card);
+
+			if (tccm_game !== undefined) {
+				if (game.level >= LEVEL.TEMPO_CLUES && state.numPlayers > 2) {
+					return tccm_game;
+				}
+				else {
+					// "illegal" tempo clue before lv 6?
+					game.interpretMove(CLUE_INTERP.NONE);
+					return game;
+				}
+			}
+
 			// All newly clued cards are trash
 			for (const order of list) {
 				if (!state.deck[order].newly_clued)
@@ -868,24 +916,10 @@ export function interpret_clue(game, action) {
 		game.interpretMove(CLUE_INTERP.POSITIONAL);
 	}
 	else if (game.level >= LEVEL.TEMPO_CLUES && state.numPlayers > 2) {
-		const cm_orders = interpret_tccm(game, oldCommon, target, list, focused_card);
+		const tccm_game = try_tccm(game, oldCommon, stall, thinks_stall, target, list, focused_card);
 
-		if (cm_orders.length > 0) {
-			game.moveHistory.pop();
-
-			if (cm_orders[0] === undefined) {
-				logger.warn('not valuable tempo clue but no chop!');
-				game.interpretMove(CLUE_INTERP.NONE);
-			}
-			else if (stall === undefined || thinks_stall.size === 0) {
-				perform_cm(state, common, cm_orders);
-				game.interpretMove(CLUE_INTERP.CM_TEMPO);
-			}
-			else {
-				logger.info('stalling situation, tempo clue stall!');
-				game.interpretMove(CLUE_INTERP.STALL_TEMPO);
-			}
-		}
+		if (tccm_game !== undefined)
+			tccm_game.moveHistory.splice(tccm_game.moveHistory.length - 2, 1);
 	}
 
 	// Advance connections if a speed-up clue was given

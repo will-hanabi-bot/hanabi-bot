@@ -1,10 +1,11 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { ACTION, CLUE } from '../../src/constants.js';
+import { CARD_STATUS } from '../../src/basics/Card.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 
 import logger from '../../src/tools/logger.js';
@@ -290,6 +291,37 @@ describe(`gentleman's discards`, () => {
 
 		// We should not interpret a GD on us.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
+	});
+
+	it(`understands a delayed gd`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y4', 'r3', 'y4', 'g4', 'g4'],
+			['r1', 'b4', 'b4', 'p4', 'r2']
+		], {
+			level: { min: 10 },
+			init: (game) => {
+				preClue(game, game.state.hands[PLAYER.CATHY][4], [{ type: CLUE.RANK, value: 2, giver: PLAYER.BOB }]);
+			}
+		});
+
+		takeTurn(game, 'Alice clues 3 to Bob');
+		takeTurn(game, 'Bob clues green to Alice (slot 5)');
+		takeTurn(game, 'Cathy plays r1', 'y5');
+
+		takeTurn(game, 'Alice plays g1 (slot 5)');
+		takeTurn(game, 'Bob discards r3', 'p5');
+
+		// GD for r3 in slot 1.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.GD);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
+
+		takeTurn(game, 'Cathy plays r2', 'b5');
+		takeTurn(game, 'Alice plays y1 (slot 1)');
+
+		// Layered GD revealed, r3 moved to slot 2.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.GD);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3']);
 	});
 });
 

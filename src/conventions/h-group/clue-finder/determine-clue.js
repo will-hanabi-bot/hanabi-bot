@@ -89,7 +89,7 @@ function acceptable_clue(game, hypo_game, action, result) {
 			hypo_game.common.hypo_stacks[visible_card.suitIndex] >= visible_card.rank ||
 			card.inferred.every(i => i.rank <= hypo_game.common.hypo_stacks[i.suitIndex] + 1);
 
-		if (looks_playable && !card.inferred.has(visible_card))
+		if (looks_playable && !card.inferred.has(visible_card) && game.common.thoughts[order].focused)
 			return `card ${logCard(visible_card)} ${order} looks incorrectly playable with inferences [${card.inferred.map(logCard).join(',')}]`;
 	}
 

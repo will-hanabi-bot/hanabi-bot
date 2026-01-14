@@ -355,6 +355,10 @@ export function assign_all_connections(game, simplest_poss, all_poss, action, fo
 				if (!bluff && !hidden)
 					draft.superposition = true;
 
+				// Write focus to eliminate an unsafe linked order
+				if (type === 'prompt' && state.ourHand.includes(order) && me.linkedOrders(state).has(order))
+					draft.focused = true;
+
 				const uncertain = (() => {
 					if (card.uncertain || giver === state.ourPlayerIndex || card.rewinded || certain)
 						return false;

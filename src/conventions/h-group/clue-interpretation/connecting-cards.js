@@ -55,6 +55,9 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 			if (ineligible)
 				return false;
 
+			if (playerIndex == state.ourPlayerIndex && me.linkedOrders(state).has(order))
+				return false;
+
 			const old_card = common.thoughts[order];
 			let inferences = common.thoughts[order].inferred;
 			// Remove inferences that will be proven false (i.e. after someone plays the card with such identity)
@@ -480,6 +483,13 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 		}
 
 		if (playable_conns.length > 0) {
+			const leftmost = Math.max(...playable_conns);
+			const card = common.thoughts[leftmost];
+
+			// Unsafe link: we won't play normally
+			if (me.linkedOrders(state).has(leftmost) && card.possible.some(p => state.play_stacks[p.suitIndex] + 1 < p.rank && p.rank <= state.max_ranks[p.suitIndex]))
+				return [{ type: 'prompt', reacting: state.ourPlayerIndex, order: leftmost, identities: [identity] }];
+
 			return [{
 				type: 'playable',
 				reacting: state.ourPlayerIndex,

@@ -241,7 +241,7 @@ export function interpret_discard(game, action) {
 				let transferred_to = sarcastics;
 
 				if (transferred_to.length === 0 && game.level >= LEVEL.SPECIAL_DISCARDS) {
-					if (state.isPlayable(identity)) {
+					if (state.isPlayable(identity) || game.common.hypo_plays.has(order)) {
 						transferred_to = interpret_gd(game, action, common.find_finesse.bind(common));
 						interp = DISCARD_INTERP.GENTLEMANS;
 					}

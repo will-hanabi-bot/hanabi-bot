@@ -540,7 +540,6 @@ export function good_touch_elim(state, only_self = false) {
 					// Newly eliminated
 					else if (new_inferred.length === 1 && old_card.inferred.length > 1 && !state.isBasicTrash(new_inferred.array[0]))
 						curr_identities.push(new_inferred.array[0]);
-
 				}
 			}
 		}

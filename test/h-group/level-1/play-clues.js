@@ -231,6 +231,31 @@ describe('play clue', () => {
 		// Red to Cathy is okay, since r1 is basic trash.
 		assert.ok(play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.COLOUR && clue.value === COLOUR.RED));
 	});
+
+	it('understands a play/prompt with bad touch', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p4', 'p4', 'r4', 'g4', 'g2'],
+			['y4', 'y4', 'b4', 'b4', 'g1']
+		], {
+			level: { min: 1 },
+			play_stacks: [0, 0, 2, 0, 0],
+			starting: PLAYER.BOB
+		});
+
+		takeTurn(game, "Bob clues green to Alice (slots 2,3,4,5)")
+		takeTurn(game, "Cathy clues green to Bob")
+		takeTurn(game, "Alice plays g1 (slot 5)")
+
+		takeTurn(game, "Bob plays g2", "r5")
+		takeTurn(game, "Cathy clues 5 to Alice (slot 4)")	// [xx, xx, g?, g5, g?]
+
+		// Our slot 3 should definitely be g3.
+		const alice_slot3 = game.state.hands[PLAYER.ALICE][2];
+		ExAsserts.cardHasInferences(game.common.thoughts[alice_slot3], ["g3"]);
+		assert.ok(game.me.thinksPlayables(game.state, game.state.ourPlayerIndex).includes(alice_slot3));
+		assert.ok(!game.me.linkedOrders(game.state).has(alice_slot3));
+	});
 });
 
 describe('counting playables', () => {
@@ -288,7 +313,7 @@ describe('counting playables', () => {
 		const clue = { type: CLUE.COLOUR, target: PLAYER.CATHY, value: COLOUR.GREEN };
 		const list = state.clueTouched(state.hands[PLAYER.CATHY], clue);
 		const action = /** @type {const} */({ type: 'clue', clue, list, giver: PLAYER.ALICE, target: PLAYER.CATHY });
-		const hypo_state = game.simulate_clue(action);
+		const hypo_state = game.simulate_clue(action, { enableLogs: true });
 		const { playables } = get_result(game, hypo_state, action);
 
 		// g2 should be counted as newly playable.

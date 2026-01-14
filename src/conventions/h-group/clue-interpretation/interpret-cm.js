@@ -146,8 +146,8 @@ export function interpret_tccm(game, oldCommon, target, list, focused_card) {
 		return [];
 	}
 
-	if (list.some(o => state.deck[o].newly_clued)) {
-		logger.info('touched at least 1 new card, not tccm');
+	if (list.some(o => state.deck[o].newly_clued && !common.thoughts[o].possible.every(c => isTrash(state, oldCommon, c, focused_card.order, { infer: true })))) {
+		logger.info('touched at least 1 new useful card, not tccm');
 		return [];
 	}
 

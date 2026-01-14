@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, VARIANTS, expandShortCard, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, VARIANTS, expandShortCard, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 
 import { ACTION, CLUE } from '../../src/constants.js';
@@ -244,6 +244,27 @@ describe('tempo clue chop moves', () => {
 
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { target: PLAYER.BOB, type: ACTION.RANK, value: 2 }, `Expected (2 to Bob), got ${logPerformAction(game, action)}`);
+	});
+
+	it(`interprets a tccm over a tcm`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y4', 'r4', 'b4', 'p2', 'p1'],
+			['b2', 'y5', 'g4', 'y2', 'p4'],
+		], {
+			level: { min: 6 },
+			play_stacks: [4, 0, 0, 0, 0],
+			init: (game) => {
+				preClue(game, game.state.hands[PLAYER.ALICE][4], [{ type: CLUE.RANK, value: 5, giver: PLAYER.BOB }]);
+			},
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues red to Alice (slots 2,5)');
+
+		// Slot 4 is cm'd from TCCM, but not slot 3.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 });
 
