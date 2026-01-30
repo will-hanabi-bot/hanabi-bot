@@ -137,7 +137,7 @@ describe('positional discards', () => {
 		takeTurn(game, 'Cathy discards p1', 'p4');
 
 		// Alice's slot 5 not should be called to play from a positional discard.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, undefined);
 	});
 
 	it('does not play from a normal discard', () => {
@@ -168,7 +168,7 @@ describe('positional discards', () => {
 
 		takeTurn(game, 'Cathy discards g1', 'p4');
 
-		// Alice's slot 5 not should be called to play from a positional discard.
+		// Alice's slot 3 not should be called to play from a positional discard.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 
@@ -291,8 +291,8 @@ describe('positional discards', () => {
 
 		assert.equal(game.state.cardsLeft, 2);
 
-		takeTurn(game, 'Alice clues 5 to Donald');	// bad touching i1
-		takeTurn(game, 'Bob clues red to Donald');
+		takeTurn(game, 'Alice clues 5 to Donald');
+		takeTurn(game, 'Bob clues red to Donald');	// bad touching i1
 		takeTurn(game, 'Cathy discards r1', 'r3');
 
 		// Alice's slot 2 should be gotten from the positional discard.
@@ -373,7 +373,7 @@ describe('positional misplays', () => {
 		// Alice's slot 5 should be called to play from a positional misplay.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CALLED_TO_PLAY);
 
-		// Alice should play slot 3.
+		// Alice should play slot 5.
 		const action = await game.take_action();
 		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][4] });
 	});

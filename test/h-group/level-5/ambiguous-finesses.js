@@ -15,10 +15,10 @@ logger.setLevel(logger.LEVELS.ERROR);
 describe('ambiguous finesse', () => {
 	it('understands an ambiguous finesse', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['r4', 'g2', 'g4', 'r5', 'b4'],
-			['r1', 'b3', 'r2', 'y3', 'p3'],
-			['g1', 'b4', 'y5', 'y2', 'p4'],
+			['xx', 'xx', 'xx', 'xx'],
+			['r4', 'g2', 'g4', 'r5'],
+			['r1', 'b3', 'r2', 'y3'],
+			['g1', 'b4', 'y5', 'y2'],
 		], {
 			level: { min: 5 },
 			starting: PLAYER.CATHY
@@ -29,9 +29,9 @@ describe('ambiguous finesse', () => {
 		// Donald's g1 should be finessed.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.DONALD][0]].status, CARD_STATUS.FINESSED);
 
-		takeTurn(game, 'Donald discards p4', 'r1');
+		takeTurn(game, 'Donald discards y2', 'r1');
 
-		// Alice's slot 2 should be [g1].
+		// Alice's slot 1 should be [g1].
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['g1']);
 	});
 

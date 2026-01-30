@@ -243,16 +243,16 @@ describe('play clue', () => {
 			starting: PLAYER.BOB
 		});
 
-		takeTurn(game, "Bob clues green to Alice (slots 2,3,4,5)")
-		takeTurn(game, "Cathy clues green to Bob")
-		takeTurn(game, "Alice plays g1 (slot 5)")
+		takeTurn(game, 'Bob clues green to Alice (slots 2,3,4,5)');
+		takeTurn(game, 'Cathy clues green to Bob');
+		takeTurn(game, 'Alice plays g1 (slot 5)');
 
-		takeTurn(game, "Bob plays g2", "r5")
-		takeTurn(game, "Cathy clues 5 to Alice (slot 4)")	// [xx, xx, g?, g5, g?]
+		takeTurn(game, 'Bob plays g2', 'r5');
+		takeTurn(game, 'Cathy clues 5 to Alice (slot 4)');	// [xx, xx, g?, g5, g?]
 
 		// Our slot 3 should definitely be g3.
 		const alice_slot3 = game.state.hands[PLAYER.ALICE][2];
-		ExAsserts.cardHasInferences(game.common.thoughts[alice_slot3], ["g3"]);
+		ExAsserts.cardHasInferences(game.common.thoughts[alice_slot3], ['g3']);
 		assert.ok(game.me.thinksPlayables(game.state, game.state.ourPlayerIndex).includes(alice_slot3));
 		assert.ok(!game.me.linkedOrders(game.state).has(alice_slot3));
 	});

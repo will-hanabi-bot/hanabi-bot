@@ -342,7 +342,6 @@ function urgent_save(game, action, focus, oldCommon, old_game) {
  * @param  {number} target
  * @param  {number[]} list
  * @param  {ActualCard} focused_card
- * @return {Game}
  */
 function try_tccm(game, oldCommon, stall, thinks_stall, target, list, focused_card) {
 	const { common, state } = game;

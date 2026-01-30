@@ -323,7 +323,7 @@ describe('generation discards', () => {
 			}
 		});
 
-		// Getting y2, but could be y1 (or y2, if Alice finesses).
+		// Getting i2, but could be y1 (or y2, if Alice finesses).
 		takeTurn(game, 'Donald clues yellow to Cathy');
 
 		const action = await game.take_action();
