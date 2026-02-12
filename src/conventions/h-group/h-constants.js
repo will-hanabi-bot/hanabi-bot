@@ -11,6 +11,7 @@ export const LEVEL = /** @type {const} */ ({
 	BLUFFS: 11,
 	CONTEXT: 12,
 	INTERMEDIATE_BLUFFS: 13,
+	TRASH_MOVES: 14,
 });
 
 export const ACTION_PRIORITY = /** @type {const} */ ({
@@ -55,6 +56,11 @@ export const DISCARD_INTERP = /** @type {const} */ ({
 	POS_MISPLAY: 'pos misplay',
 	GENTLEMANS: 'gd',
 	BATON: 'baton'
+});
+
+export const FOCUS_INTERP = /** @type {const} */ ({
+	NORMAL: 'normal',
+	TRASH_PUSH: 'trash push',
 });
 
 export const STALL_INDICES = /** @type {const} */ ({

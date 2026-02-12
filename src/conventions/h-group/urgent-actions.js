@@ -3,7 +3,7 @@ import { ACTION_PRIORITY as PRIORITY, LEVEL, CLUE_INTERP } from './h-constants.j
 import { get_result } from './clue-finder/determine-clue.js';
 import { playersBetween, unknown_1, valuable_tempo_clue } from './hanabi-logic.js';
 import { cardValue, save2 } from '../../basics/hanabi-util.js';
-import { find_clue_value, order_1s } from './action-helper.js';
+import { find_clue_value, order_1s, order_trash } from './action-helper.js';
 import { find_expected_clue, save_clue_value } from './clue-finder/clue-finder.js';
 import { cardTouched } from '../../variants.js';
 import { find_sarcastics } from '../shared/sarcastic.js';
@@ -405,6 +405,28 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 				return {
 					urgency: PRIORITY.ONLY_SAVE + nextPriority,
 					action: { type: ACTION.PLAY, target: ordered_1s[distance] }
+				};
+			}
+		}
+	}
+
+	// Check if Trash Order Chop Move is available.
+	if (game.level >= LEVEL.TRASH_MOVES) {
+		const ordered_trash = order_trash(game, state.ourPlayerIndex);
+		const distance = (target + state.numPlayers - state.ourPlayerIndex) % state.numPlayers;
+
+		// If we want to OCM the next player (distance 1), we need at least two unknown 1s.
+		if (ordered_trash.length > distance) {
+			// Temporarily chop move the chop card
+			const chop = me.chop(hand);
+			const old_chop_value = cardValue(state, me, state.deck[chop]);
+			const new_chop_value = me.simulateCM([chop]).chopValue(state, target);
+
+			// Make sure the old chop is equal or better than the new one
+			if (old_chop_value >= new_chop_value) {
+				return {
+					urgency: PRIORITY.ONLY_SAVE + nextPriority,
+					action: { type: ACTION.DISCARD, target: ordered_trash[distance] }
 				};
 			}
 		}

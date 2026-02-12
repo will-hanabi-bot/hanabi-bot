@@ -1,5 +1,5 @@
 import { CLUE } from '../../../constants.js';
-import { CLUE_INTERP, LEVEL } from '../h-constants.js';
+import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { rankLooksPlayable } from '../hanabi-logic.js';
 import { is_intermediate_bluff_target } from './connection-helper.js';
@@ -93,8 +93,9 @@ export function colour_save(game, identity, action, focus, loaded) {
  * @param {FocusResult} focusResult
  * @param {Set<number>} thinks_stall
  * @param {boolean} loaded
+ * @param {typeof FOCUS_INTERP[keyof typeof FOCUS_INTERP]} focus_interp
  */
-function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, loaded) {
+function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, loaded, focus_interp) {
 	const { common, state } = game;
 	const { focus, chop } = focusResult;
 	const focus_thoughts = common.thoughts[focus];
@@ -145,8 +146,14 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 				break;
 			}
 
-			if (bluff)
+			if (bluff) {
 				bluffed = true;
+
+				if (focus_interp === FOCUS_INTERP.TRASH_PUSH) {
+					logger.warn('blocked bluff on trash push');
+					break;
+				}
+			}
 
 			// Even if a finesse is possible, it might not be a finesse (unless the card is critical)
 			if (!state.isCritical(identity))
@@ -171,7 +178,7 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 	state.play_stacks = old_play_stacks;
 
 	const next_identity = { suitIndex, rank: next_rank };
-	if (cardTouched(next_identity, state.variant, action.clue) && focus_thoughts.possible.has(next_identity)) {
+	if ((focus_interp === FOCUS_INTERP.TRASH_PUSH || cardTouched(next_identity, state.variant, action.clue)) && focus_thoughts.possible.has(next_identity)) {
 		logger.info('found connections:', logConnections(connections, next_identity));
 
 		// Our card could be the final rank that we can't find
@@ -390,18 +397,22 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
  * @param {FocusResult} focusResult
  * @param {Set<number>} thinks_stall
  * @param {boolean} loaded
+ * @param {typeof FOCUS_INTERP[keyof typeof FOCUS_INTERP]} focus_interp
+ focus_interp
  */
-export function find_focus_possible(game, action, focusResult, thinks_stall, loaded) {
+export function find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp) {
 	const { common, state } = game;
 	const { clue } = action;
 	logger.debug('play/hypo/max stacks in clue interpretation:', state.play_stacks, common.hypo_stacks, state.max_ranks);
 
-	const focus_possible = clue.type === CLUE.COLOUR ?
-		state.variant.suits
-			.filter(s => Utils.combineRegex(variantRegexes.rainbowish, variantRegexes.prism).test(s))
-			.concat(colourableSuits(state.variant)[clue.value])
-			.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded)) :
-		find_rank_focus(game, clue.value, action, focusResult, thinks_stall, loaded);
+	const focus_possible = focus_interp === FOCUS_INTERP.TRASH_PUSH ?
+		state.variant.suits.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded, focus_interp)) :
+		clue.type === CLUE.COLOUR ?
+			state.variant.suits
+				.filter(s => Utils.combineRegex(variantRegexes.rainbowish, variantRegexes.prism).test(s))
+				.concat(colourableSuits(state.variant)[clue.value])
+				.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded, focus_interp)) :
+			find_rank_focus(game, clue.value, action, focusResult, thinks_stall, loaded);
 
 	// Remove play duplicates (since save overrides play)
 	const filtered_fps = focus_possible.filter((p1, index1) => {

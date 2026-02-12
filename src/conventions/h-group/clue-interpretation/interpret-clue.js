@@ -1,5 +1,5 @@
 import { CLUE } from '../../../constants.js';
-import { CLUE_INTERP, LEVEL } from '../h-constants.js';
+import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { interpret_tcm, interpret_5cm, interpret_tccm, perform_cm } from './interpret-cm.js';
@@ -21,6 +21,7 @@ import * as Utils from '../../../tools/util.js';
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections, logHand } from '../../../tools/log.js';
 import { produce } from '../../../StateProxy.js';
+import { join } from 'path';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -230,6 +231,8 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 		common.thoughts.splice(old_chop, 1, produce(common.thoughts[old_chop], (draft) => { draft.status = undefined; }));
 
 		logger.highlight('yellow', `undoing scream discard chop move on ${old_chop} due to generation!`);
+	} else if (interp === CLUE_INTERP.PLAY && !action.list.includes(focus)) {
+		common.updateThoughts(focus, (draft) => { draft.status = CARD_STATUS.FINESSED; });
 	}
 
 	common.updateThoughts(focus, (draft) => { draft.info_lock = draft.inferred.clone(); });
@@ -365,6 +368,43 @@ function try_tccm(game, oldCommon, stall, thinks_stall, target, list, focused_ca
 	}
 }
 
+
+/**
+ * Checks whether a Trash Push was performed on the target. The clue must have already been registered.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {number} focus_order
+ * @param {Player} oldCommon
+ * @returns The order of the trash pushed card.
+ */
+export function interpret_tp(game, action, focus_order, oldCommon) {
+	const { common, state } = game;
+	const { clue, target } = action;
+	const focused_card = state.deck[focus_order];
+	const focus_thoughts = common.thoughts[focus_order];
+
+	// A trash push must not save any cards - i.e. must target the chop,
+	// and there must be a card to push.
+	const chop = common.chop(state.hands[target]);
+	if (chop === undefined || !focused_card.newly_clued || !focus_thoughts.chop_when_first_clued)
+		return undefined;
+
+	if (clue.type === CLUE.RANK) {
+		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
+
+		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
+			return undefined;
+	}
+	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
+		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
+		return undefined;
+	}
+
+	logger.highlight('cyan', `trash push on ${logCard(state.deck[chop])} ${chop}`);
+
+	return chop;
+}
+
 /**
  * Interprets the given clue. First tries to look for inferred connecting cards, then attempts to find prompts/finesses.
  * 
@@ -427,9 +467,11 @@ export function interpret_clue(game, action) {
 	const loaded = common.thinksTrash(state, target).length > 0 || connectable_simple(game, state.nextPlayerIndex(giver), target);
 	logger.info('loaded?', loaded);
 
+
+	let focus_interp = FOCUS_INTERP.NORMAL;
 	const focusResult = determine_focus(game, state.hands[target], common, list, clue);
-	const { focus, chop, positional } = focusResult;
-	const focused_card = state.deck[focus];
+	let { focus, chop, positional } = focusResult;
+	let focused_card = state.deck[focus];
 
 	common.updateThoughts(focus, (draft) => { draft.focused = true; });
 	const { fix, rewinded } = apply_good_touch(game, action, oldCommon.thoughts);
@@ -682,7 +724,20 @@ export function interpret_clue(game, action) {
 		return game;
 	}
 
-	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded);
+	// Focus adjusting conventions occur just before resolving focus possibilities.
+	if (game.level >= LEVEL.TRASH_MOVES) {
+		const tp = interpret_tp(game, action, focus, oldCommon);
+
+		if (tp !== undefined) {
+			logger.info('trash push, new focus:', tp);
+			focusResult.focus = focus = tp;
+			focusResult.chop = chop = false;
+			focus_interp = FOCUS_INTERP.TRASH_PUSH;
+			focused_card = state.deck[focus];
+		}
+	}
+
+	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
 
 	const matched_inferences = focus_possible.filter(p => !p.illegal && common.thoughts[focus].inferred.has(p));
