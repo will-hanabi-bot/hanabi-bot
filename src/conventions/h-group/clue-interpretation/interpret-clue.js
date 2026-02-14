@@ -21,7 +21,6 @@ import * as Utils from '../../../tools/util.js';
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections, logHand } from '../../../tools/log.js';
 import { produce } from '../../../StateProxy.js';
-import { join } from 'path';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -470,7 +469,8 @@ export function interpret_clue(game, action) {
 
 	let focus_interp = FOCUS_INTERP.NORMAL;
 	const focusResult = determine_focus(game, state.hands[target], common, list, clue);
-	let { focus, chop, positional } = focusResult;
+	const { positional } = focusResult;
+	let { focus, chop } = focusResult;
 	let focused_card = state.deck[focus];
 
 	common.updateThoughts(focus, (draft) => { draft.focused = true; });
