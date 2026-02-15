@@ -281,9 +281,15 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 			focus_possible.some(fp => fp.suitIndex === suitIndex && fp.rank === rank))
 			continue;
 
+		let certain_trash_finesse = false;
+		const possible_trash = game.level >= LEVEL.TRASH_MOVES && focus_thoughts.possible.filter(id => state.isBasicTrash(id)) || [];
+
 		if (rank === next_rank) {
 			focus_possible.push({ suitIndex, rank, save: false, connections: [], interp: CLUE_INTERP.PLAY });
-			continue;
+
+			if (possible_trash.length === 0)
+				continue;
+			certain_trash_finesse = true;
 		}
 
 		/** @type {Connection[]} */
@@ -338,7 +344,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 					bluffed = true;
 
 				// Even if a finesse is possible, it might not be a finesse (unless the card is critical)
-				if ((rank === next_rank || positional) && !state.isCritical(identity))
+				if (!certain_trash_finesse && (rank === next_rank || positional) && !state.isCritical(identity))
 					focus_possible.push({ ...identity, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
 			}
 			else if (type === 'playable' && layered && (rank === next_rank || positional) && !state.isCritical(identity)) {
@@ -359,9 +365,19 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 		// Restore play stacks
 		state.play_stacks = old_play_stacks;
 
+		if (possible_trash.length > 0 && connections.length > 0) {
+			const tf_connections = connections.slice();
+			// The connection is only a bluff if we didn't find the expected rank playable.
+			tf_connections[0].possibly_bluff = tf_connections[0].bluff;
+			logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
+			for (const id of possible_trash)
+				focus_possible.push({ ...id, save: false, connections: tf_connections, interp: CLUE_INTERP.TRASH_FINESSE });
+			continue;
+		}
+
 		const next_identity = { suitIndex, rank: next_rank };
 		if (!positional && next_rank > rank) {
-			logger.warn(`stacked beyond clued rank ${logConnections(connections, next_identity)}, ignoring`);
+			logger.warn(`stacked beyond clued rank ${logConnections(connections, next_identity)}, ignoring finesse possibility`);
 			continue;
 		}
 

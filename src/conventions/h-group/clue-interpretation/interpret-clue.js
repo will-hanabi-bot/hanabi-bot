@@ -739,6 +739,23 @@ export function interpret_clue(game, action) {
 
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
+	const trash_finesses = focus_possible.filter(p => state.isBasicTrash(p));
+	if (trash_finesses.length > 0 && (target === state.ourPlayerIndex || !focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) &&focused_card.matches(p)))) {
+		// If a trash finesse is possible, we must assume one
+		// if possible unless / until the finessed card is not playable.
+		const { possible } = common.thoughts[focus];
+		const new_inferred = possible.intersect(trash_finesses);
+		if (new_inferred.length > 0) {
+			common.updateThoughts(focus, (draft) => {
+				draft.inferred = new_inferred;
+				draft.info_lock = new_inferred;
+				draft.trash = true;
+			});
+			// Trash chop move
+			const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
+			perform_cm(state, common, tcm_orders);
+		}
+	}
 
 	const matched_inferences = focus_possible.filter(p => !p.illegal && common.thoughts[focus].inferred.has(p));
 	const old_game = game.minimalCopy();
@@ -784,7 +801,7 @@ export function interpret_clue(game, action) {
 		// We are the clue target, so we need to consider all the (sensible) possibilities of the card
 		if (target === state.ourPlayerIndex) {
 			all_connections = focus_possible.filter(fp =>
-				!isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
+				fp.interp === CLUE_INTERP.TRASH_FINESSE || !isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
 
 			for (const id of common.thoughts[focus].inferred) {
 				if (isTrash(state, game.players[giver], id, focus, { infer: true, ignoreCM: true }) ||

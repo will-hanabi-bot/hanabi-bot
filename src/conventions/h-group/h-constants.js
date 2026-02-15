@@ -27,6 +27,7 @@ export const CLUE_INTERP = /** @type {const} */ ({
 	MISTAKE: 'mistake',
 	PLAY: 'play',
 	SAVE: 'save',
+	TRASH_FINESSE: 'trash finesse',
 	STALL_5: '5 stall',
 	STALL_TEMPO: 'tempo stall',
 	STALL_LOCKED: 'locked save',

@@ -229,12 +229,16 @@ export function logConnection(connection) {
 
 /**
  * @param {Connection[]} connections
- * @param {Identity} nextIdentity
+ * @param {Identity | Identity[]} nextIdentity
  */
 export function logConnections(connections, nextIdentity) {
-	const { rank } = nextIdentity;
+	let identities = '';
+	if (Array.isArray(nextIdentity))
+		identities = nextIdentity.map(logCard).join(',');
+	else if (nextIdentity.rank <= 5)
+		identities = logCard(nextIdentity);
 
-	return `[${connections.map(conn => logConnection(conn)).join(' -> ')} ${(rank <= 5) ? `-> ${logCard(nextIdentity)}?` : ''}]`;
+	return `[${connections.map(conn => logConnection(conn)).join(' -> ')} ${identities}]`;
 }
 
 /**

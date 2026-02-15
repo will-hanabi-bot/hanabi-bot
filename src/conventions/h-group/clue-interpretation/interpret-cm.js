@@ -23,9 +23,10 @@ import { logCard } from '../../../tools/log.js';
  * @param {ClueAction} action
  * @param {number} focus_order
  * @param {Player} oldCommon
+ * @param {boolean} assume - If true, will assume any card that could be trash is trash. Used for trash finesses.
  * @returns The orders of any chop moved cards.
  */
-export function interpret_tcm(game, action, focus_order, oldCommon) {
+export function interpret_tcm(game, action, focus_order, oldCommon, assume = false) {
 	const { common, state } = game;
 	const { clue, target } = action;
 	const focused_card = state.deck[focus_order];
@@ -34,15 +35,17 @@ export function interpret_tcm(game, action, focus_order, oldCommon) {
 	if (!focused_card.newly_clued)
 		return [];
 
-	if (clue.type === CLUE.RANK) {
-		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
+	if (!assume) {
+		if (clue.type === CLUE.RANK) {
+			const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
 
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
+			if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
+				return [];
+		}
+		else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
+			focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
 			return [];
-	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
-		return [];
+		}
 	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
