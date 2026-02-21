@@ -56,16 +56,9 @@ export function interpret_tp(game, hand, player, list, clue) {
 
 	// Check if the clued chop card could be useful. If so, this cannot be a trash push.
 	const chop_thoughts = player.thoughts[chop];
-	if (clue.type === CLUE.RANK) {
-		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
-
-		if (chop_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, common, i, chop, { infer: true })))
-			return -1;
-	}
-	else if (chop_thoughts.possible.some(c => !isTrash(state, common, c, chop, { infer: true })) ||
-		chop_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, common, i, chop, { infer: true }))) {
+	const possible = clue.type == CLUE.RANK ? chop_thoughts.possible.filter(i => i.rank == clue.value) : chop_thoughts.possible;
+	if (possible.some(i => !isTrash(state, common, i, chop, { infer: true })))
 		return -1;
-	}
 
 	return tp_focus;
 }

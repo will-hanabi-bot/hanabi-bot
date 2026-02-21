@@ -36,16 +36,9 @@ export function interpret_tcm(game, action, focus_order, oldCommon, assume = fal
 		return [];
 
 	if (!assume) {
-		if (clue.type === CLUE.RANK) {
-			const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
-
-			if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
-				return [];
-		}
-		else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
-			focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
+		const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
+		if (possible.some(i => !isTrash(state, common, i, focus_order, { infer: true })))
 			return [];
-		}
 	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
