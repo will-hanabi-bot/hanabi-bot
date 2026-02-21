@@ -64,7 +64,7 @@ export function interpret_tp(game, hand, player, list, clue) {
 	}
 	else if (chop_thoughts.possible.some(c => !isTrash(state, common, c, chop, { infer: true })) ||
 		chop_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, common, i, chop, { infer: true }))) {
-		return undefined;
+		return -1;
 	}
 
 	return tp_focus;
