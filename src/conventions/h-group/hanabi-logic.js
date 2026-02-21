@@ -1,13 +1,14 @@
 import { CLUE } from '../../constants.js';
 import { CARD_STATUS } from '../../basics/Card.js';
 import { colourableSuits, variantRegexes } from '../../variants.js';
-import { isTrash, knownAs, visibleFind } from '../../basics/hanabi-util.js';
+import { knownAs, visibleFind } from '../../basics/hanabi-util.js';
 import { order_1s } from './action-helper.js';
 import * as Utils from '../../tools/util.js';
 
 import { logCard, logClue } from '../../tools/log.js';
 import { FOCUS_INTERP, LEVEL } from './h-constants.js';
 import logger from '../../tools/logger.js';
+import { is_trash_clue } from './clue-interpretation/interpret-cm.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -33,7 +34,6 @@ import logger from '../../tools/logger.js';
  * @returns The order of the trash pushed card or -1 if no card is trash pushed.
  */
 export function interpret_tp(game, hand, player, list, clue) {
-	const { common, state } = game;
 	const chopIndex = player.chopIndex(hand);
 	if (chopIndex === -1)
 		return -1;
@@ -54,10 +54,8 @@ export function interpret_tp(game, hand, player, list, clue) {
 	if (tp_focus === -1)
 		return -1;
 
-	// Check if the clued chop card could be useful. If so, this cannot be a trash push.
-	const chop_thoughts = player.thoughts[chop];
-	const possible = clue.type == CLUE.RANK ? chop_thoughts.possible.filter(i => i.rank == clue.value) : chop_thoughts.possible;
-	if (possible.some(i => !isTrash(state, common, i, chop, { infer: true })))
+	// Check if the clued card is a trash clue.
+	if (!is_trash_clue(game, clue, chop, player))
 		return -1;
 
 	return tp_focus;
