@@ -22,20 +22,20 @@ import { logCard } from '../../../tools/log.js';
  * @param {Game} game
  * @param {BaseClue} clue
  * @param {number} focus_order
- * @param {Player} common
+ * @param {Player} oldCommon
  * @returns Whether the clued card is considered trash.
  */
-export function is_trash_clue(game, clue, focus_order, common) {
-	const { state } = game;
+export function is_trash_clue(game, clue, focus_order, oldCommon) {
+	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus_order];
 	if (clue.type === CLUE.RANK) {
 		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
 
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, common, i, focus_order, { infer: true })))
+		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
 			return false;
 	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, common, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, common, i, focus_order, { infer: true }))) {
+	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
+		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
 		return false;
 	}
 	return true;
