@@ -28,17 +28,8 @@ import { logCard } from '../../../tools/log.js';
 export function is_trash_clue(game, clue, focus_order, oldCommon) {
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus_order];
-	if (clue.type === CLUE.RANK) {
-		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
-
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
-			return false;
-	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
-		return false;
-	}
-	return true;
+	const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
+	return !possible.some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true }));
 }
 
 /**
