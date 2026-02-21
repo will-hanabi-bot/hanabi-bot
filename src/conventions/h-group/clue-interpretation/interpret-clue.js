@@ -367,43 +367,6 @@ function try_tccm(game, oldCommon, stall, thinks_stall, target, list, focused_ca
 	}
 }
 
-
-/**
- * Checks whether a Trash Push was performed on the target. The clue must have already been registered.
- * @param {Game} game
- * @param {ClueAction} action
- * @param {number} focus_order
- * @param {Player} oldCommon
- * @returns The order of the trash pushed card.
- */
-export function interpret_tp(game, action, focus_order, oldCommon) {
-	const { common, state } = game;
-	const { clue, target } = action;
-	const focused_card = state.deck[focus_order];
-	const focus_thoughts = common.thoughts[focus_order];
-
-	// A trash push must not save any cards - i.e. must target the chop,
-	// and there must be a card to push.
-	const chop = common.chop(state.hands[target]);
-	if (chop === undefined || !focused_card.newly_clued || !focus_thoughts.chop_when_first_clued)
-		return undefined;
-
-	if (clue.type === CLUE.RANK) {
-		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
-
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
-			return undefined;
-	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
-		return undefined;
-	}
-
-	logger.highlight('cyan', `trash push on ${logCard(state.deck[chop])} ${chop}`);
-
-	return chop;
-}
-
 /**
  * Interprets the given clue. First tries to look for inferred connecting cards, then attempts to find prompts/finesses.
  * 
@@ -467,11 +430,9 @@ export function interpret_clue(game, action) {
 	logger.info('loaded?', loaded);
 
 
-	let focus_interp = FOCUS_INTERP.NORMAL;
 	const focusResult = determine_focus(game, state.hands[target], common, list, clue);
-	const { positional } = focusResult;
-	let { focus, chop } = focusResult;
-	let focused_card = state.deck[focus];
+	const { positional, focus, chop, focus_interp } = focusResult;
+	const focused_card = state.deck[focus];
 
 	common.updateThoughts(focus, (draft) => { draft.focused = true; });
 	const { fix, rewinded } = apply_good_touch(game, action, oldCommon.thoughts);
@@ -480,7 +441,7 @@ export function interpret_clue(game, action) {
 	if (rewinded)
 		return game;
 
-	if (chop && !action.noRecurse) {
+	if (focus_interp !== FOCUS_INTERP.TRASH_PUSH && chop && !action.noRecurse) {
 		common.updateThoughts(focus, (draft) => { draft.chop_when_first_clued = true; });
 		action.important = !loaded && urgent_save(game, action, focus, oldCommon, prev_game);
 		if (action.important)
@@ -722,19 +683,6 @@ export function interpret_clue(game, action) {
 		game.interpretMove(CLUE_INTERP.FIX);
 		team_elim(game);
 		return game;
-	}
-
-	// Focus adjusting conventions occur just before resolving focus possibilities.
-	if (game.level >= LEVEL.TRASH_MOVES) {
-		const tp = interpret_tp(game, action, focus, oldCommon);
-
-		if (tp !== undefined) {
-			logger.info('trash push, new focus:', tp);
-			focusResult.focus = focus = tp;
-			focusResult.chop = chop = false;
-			focus_interp = FOCUS_INTERP.TRASH_PUSH;
-			focused_card = state.deck[focus];
-		}
 	}
 
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
