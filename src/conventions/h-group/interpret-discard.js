@@ -10,6 +10,7 @@ import { logCard, logConnection } from '../../tools/log.js';
 import { getRealConnects } from './hanabi-logic.js';
 import { check_ocm } from './interpret-play.js';
 import { interpret_baton, interpret_gd } from '../shared/special-discards.js';
+import { order_trash } from './action-helper.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -161,6 +162,49 @@ function resolve_discard(game, action, interp) {
 }
 
 /**
+ * @param {Game} game
+ * @param {DiscardAction} action
+ * @returns The orders of the chop moved cards.
+ */
+export function check_tocm(game, action) {
+	const { common, state } = game;
+	const { order, playerIndex } = action;
+
+	const ordered_trash = order_trash(game, playerIndex);
+	let offset = ordered_trash.findIndex(o => o === order);
+
+	if (offset === -1)
+		return [];
+
+	// If we have a known playable, the order of the TOCM is effectively one later
+	// since the expected action is a play.
+	const shout = common.thinksPlayables(state, playerIndex).length > 0;
+	if (shout)
+		offset += 1;
+
+	if (offset === 0) {
+		logger.info('discarded known trash in correct order, no tocm');
+		return [];
+	}
+
+	const target = (playerIndex + offset) % state.numPlayers;
+	if (target === playerIndex) {
+		// Just going to assume no double order chop moves in 3p
+		logger.error('double trash order chop move???');
+		return [];
+	}
+
+	const chop = common.chop(state.hands[target]);
+	if (chop === undefined) {
+		logger.warn(`attempted to interpret tocm on ${state.playerNames[target]}, but they have no chop`);
+		return [];
+	}
+
+	logger.highlight('cyan', `trash order chop move on ${state.playerNames[target]}, distance ${offset}`);
+	return [chop];
+}
+
+/**
  * Interprets (writes notes) for a discard of the given card.
  * 
  * Impure!
@@ -183,6 +227,16 @@ export function interpret_discard(game, action) {
 		if (ocm_order !== -1) {
 			common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 			game.interpretMove(PLAY_INTERP.CM_ORDER);
+		}
+	}
+
+	if (game.level >= LEVEL.TRASH_MOVES && !failed) {
+		const ocm_orders = check_tocm(game, action);
+
+		if (ocm_orders.length > 0) {
+			game.interpretMove(DISCARD_INTERP.TOCM_ORDER);
+			for (const ocm_order of ocm_orders)
+				common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 		}
 	}
 

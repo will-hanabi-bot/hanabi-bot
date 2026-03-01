@@ -2,7 +2,6 @@ import { CLUE } from '../../../constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { isTrash, knownAs } from '../../../basics/hanabi-util.js';
 import { variantRegexes } from '../../../variants.js';
-import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard } from '../../../tools/log.js';
@@ -18,32 +17,39 @@ import { logCard } from '../../../tools/log.js';
  */
 
 /**
+ * Checks whether a clue focus is trash.
+ * @param {Game} game
+ * @param {BaseClue} clue
+ * @param {number} focus_order
+ * @param {Player} oldCommon
+ * @returns Whether the clued card is considered trash.
+ */
+export function is_trash_clue(game, clue, focus_order, oldCommon) {
+	const { state, common } = game;
+	const focus_thoughts = common.thoughts[focus_order];
+	const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
+	return !possible.some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true }));
+}
+
+/**
  * Checks whether a Trash Chop Move was performed on the target. The clue must have already been registered.
  * @param {Game} game
  * @param {ClueAction} action
  * @param {number} focus_order
  * @param {Player} oldCommon
+ * @param {boolean} assume - If true, will assume any card that could be trash is trash. Used for trash finesses.
  * @returns The orders of any chop moved cards.
  */
-export function interpret_tcm(game, action, focus_order, oldCommon) {
+export function interpret_tcm(game, action, focus_order, oldCommon, assume = false) {
 	const { common, state } = game;
 	const { clue, target } = action;
 	const focused_card = state.deck[focus_order];
-	const focus_thoughts = common.thoughts[focus_order];
 
 	if (!focused_card.newly_clued)
 		return [];
 
-	if (clue.type === CLUE.RANK) {
-		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
-
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
-			return [];
-	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
+	if (!assume && !is_trash_clue(game, clue, focus_order, oldCommon))
 		return [];
-	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
 
