@@ -281,6 +281,14 @@ describe('interpreting trash finesse', () => {
 
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r1', 'y1', 'g1', 'b1', 'p1']);
+
+		// Alice should discard her slot 3 to show that the finesse is recognized.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] });
+		takeTurn(game, 'Alice discards r1 (slot 3)');
+
+		// After the discard, slot 4 is still chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
 	});
 
 	it('will interpret receiving a play when an ambiguous reverse trash finesse is visible', async () => {

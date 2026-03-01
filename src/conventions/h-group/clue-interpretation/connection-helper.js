@@ -9,7 +9,6 @@ import { isTrash } from '../../../basics/hanabi-util.js';
 import { FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { variantRegexes } from '../../../variants.js';
 import { colour_save, find_trash_push, rank_save } from './focus-possible.js';
-import { interpret_tp } from '../hanabi-logic.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game

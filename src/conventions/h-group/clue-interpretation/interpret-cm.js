@@ -2,7 +2,6 @@ import { CLUE } from '../../../constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { isTrash, knownAs } from '../../../basics/hanabi-util.js';
 import { variantRegexes } from '../../../variants.js';
-import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard } from '../../../tools/log.js';
