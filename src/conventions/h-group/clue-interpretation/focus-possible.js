@@ -387,7 +387,8 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 				// The card may still have the real identity, however, we must treat it as a trash finesse.
 				focus_possible.push({ suitIndex, rank, save: false, connections: tf_connections, interp: CLUE_INTERP.TRASH_FINESSE });
 			}
-			continue;
+			if (no_connecting_play || card_matches_last_play)
+				continue;
 		}
 
 		const next_identity = { suitIndex, rank: next_rank };
