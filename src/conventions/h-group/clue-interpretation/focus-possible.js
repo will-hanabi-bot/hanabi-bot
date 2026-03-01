@@ -1,7 +1,7 @@
 import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
-import { rankLooksPlayable } from '../hanabi-logic.js';
+import { inBetween, playersBetween, rankLooksPlayable } from '../hanabi-logic.js';
 import { is_intermediate_bluff_target } from './connection-helper.js';
 import { find_connecting } from './connecting-cards.js';
 import { cardTouched, colourableSuits, variantRegexes } from '../../../variants.js';
@@ -93,9 +93,8 @@ export function colour_save(game, identity, action, focus, loaded) {
  * @param {FocusResult} focusResult
  * @param {Set<number>} thinks_stall
  * @param {boolean} loaded
- * @param {typeof FOCUS_INTERP[keyof typeof FOCUS_INTERP]} focus_interp
  */
-function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, loaded, focus_interp) {
+function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, loaded) {
 	const { common, state } = game;
 	const { focus, chop } = focusResult;
 	const focus_thoughts = common.thoughts[focus];
@@ -146,14 +145,8 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 				break;
 			}
 
-			if (bluff) {
+			if (bluff)
 				bluffed = true;
-
-				if (focus_interp === FOCUS_INTERP.TRASH_PUSH) {
-					logger.warn('blocked bluff on trash push');
-					break;
-				}
-			}
 
 			// Even if a finesse is possible, it might not be a finesse (unless the card is critical)
 			if (!state.isCritical(identity))
@@ -178,7 +171,7 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 	state.play_stacks = old_play_stacks;
 
 	const next_identity = { suitIndex, rank: next_rank };
-	if ((focus_interp === FOCUS_INTERP.TRASH_PUSH || cardTouched(next_identity, state.variant, action.clue)) && focus_thoughts.possible.has(next_identity)) {
+	if (cardTouched(next_identity, state.variant, action.clue) && focus_thoughts.possible.has(next_identity)) {
 		logger.info('found connections:', logConnections(connections, next_identity));
 
 		// Our card could be the final rank that we can't find
@@ -369,9 +362,31 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 			const tf_connections = connections.slice();
 			// The connection is only a bluff if we didn't find the expected rank playable.
 			tf_connections[0].possibly_bluff = tf_connections[0].bluff;
-			logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
-			for (const id of possible_trash)
-				focus_possible.push({ ...id, save: false, connections: tf_connections, interp: CLUE_INTERP.TRASH_FINESSE });
+
+			// In order to recognize a rank trash finesse, either
+			// 1. The connecting plays before the target don't connect to the target, or
+			let lastPlayer = giver;
+			let ci = 0;
+			while (ci < connections.length && connections[ci].reacting) {
+				if (!inBetween(state.numPlayers, connections[ci].reacting, lastPlayer, target))
+					break;
+				lastPlayer = connections[ci].reacting;
+				ci++;
+			}
+			const no_connecting_play = ci > 0 && connections[ci-1].identities.every(id => id.suitIndex !== suitIndex || id.rank >= rank);
+
+			// 2. The target knows their card must either be trash or match the last play.
+			const card_matches_last_play = next_rank > rank && focus_thoughts.possible.every(id => state.isBasicTrash(id) || id.suitIndex === suitIndex);
+
+			if (no_connecting_play || card_matches_last_play) {
+				logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
+				for (const id of possible_trash)
+					focus_possible.push({ ...id, save: false, connections: tf_connections, interp: CLUE_INTERP.TRASH_FINESSE });
+			}
+			if (card_matches_last_play) {
+				// The card may still have the real identity, however, we must treat it as a trash finesse.
+				focus_possible.push({ suitIndex, rank, save: false, connections: tf_connections, interp: CLUE_INTERP.TRASH_FINESSE });
+			}
 			continue;
 		}
 
@@ -407,6 +422,111 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 }
 
 /**
+ * Returns all the valid focus possibilities of the focused trash pushed card.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {FocusResult} focusResult
+ * @param {Set<number>} thinks_stall
+ */
+export function find_trash_push(game, action, focusResult, thinks_stall) {
+	const { common, state } = game;
+	const { giver, target } = action;
+	const { focus } = focusResult;
+	const focus_thoughts = common.thoughts[focus];
+
+	/** @type {FocusPossibility[]} */
+	const focus_possible = [];
+
+	// Consider whether the card can be played.
+	for (const id of focus_thoughts.possible) {
+		if (state.isBasicTrash(id))
+			continue;
+		const { suitIndex, rank } = id;
+		const wrong_prompts = new Set();
+		let next_rank = rank - 1;
+
+		if (!focus_thoughts.possible.some(id => id.suitIndex === suitIndex && id.rank >= next_rank))
+			continue;
+
+		/** @type {Connection[]} */
+		let connections = [];
+		let finesses = 0;
+		let already_connected = [focus];
+		const bluffed = false;
+
+		// Trash pushes need to be playable by the target's turn. Each player
+		// between the giver and the target in order will be able to provide
+		// one card each. We search backwards from the target to find the
+		// last possible player as earlier players will see a later player's
+		// potential play.
+		const before_player = target;
+
+		let looksDirect = true;
+
+		// Try looking for all connecting cards
+		while (next_rank > state.play_stacks[suitIndex]) {
+			const identity = { suitIndex, rank: next_rank };
+			const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
+			const conn_player_order = playersBetween(state.numPlayers, giver, before_player).reverse();
+			const connect_options = { knownOnly: action.hypothetical ? [state.ourPlayerIndex] : [], bluffed, playerOrder: conn_player_order, assumeTruth: true, immediate: true };
+			const connecting = find_connecting(game, action, identity, looksDirect, thinks_stall, already_connected, ignoreOrders, connect_options);
+
+			if (connecting.length === 0)
+				break;
+
+			const { type, order } = connecting.at(-1);
+			const card = state.deck[order];
+
+			if (type === 'terminate') {
+				// Trying to look for the same identity as the focused card and being "wrong prompted"
+				if (!focus_thoughts.inferred.has(identity)) {
+					for (const { reacting } of connecting)
+						wrong_prompts.add(reacting);
+				}
+				break;
+			}
+
+			if (card.newly_clued && common.thoughts[order].possible.length > 1 && focus_thoughts.inferred.has(identity)) {
+				// Trying to use a newly known/playable connecting card, but the focused card could be that
+				// e.g. If two 4s are clued (all other 4s visible), the other 4 should not connect and render this card with only one inference
+				logger.warn(`blocked connection - focused card could be ${logCard(identity)}`);
+				break;
+			}
+
+			finesses += connecting.filter(conn => conn.type === 'finesse').length;
+			// Unnecessary check since trash push is level 14.
+			if (game.level === 1 && finesses === 2) {
+				logger.warn('blocked double finesse at level 1');
+				break;
+			}
+
+			if (type === 'finesse') {
+				// A finesse proves that this is not direct
+				looksDirect = focus_thoughts.identity() === undefined;
+			}
+
+			connections = connecting.concat(connections);
+			already_connected = already_connected.concat(connecting.map(conn => conn.order));
+
+			next_rank--;
+		}
+
+		if (next_rank > state.play_stacks[suitIndex]) {
+			logger.warn(`couldn't find needed plays ${logConnections(connections, id)} for identity ${logCard(id)}`);
+			continue;
+		}
+
+		logger.info('found connections:', logConnections(connections, id));
+
+		// Connected cards can stack up to this rank
+		if (next_rank === state.play_stacks[suitIndex])
+			focus_possible.push({ suitIndex, rank, save: false, connections, interp: CLUE_INTERP.PLAY, illegal: false });
+	}
+
+	return focus_possible;
+}
+
+/**
  * Finds all the valid focus possibilities from the given clue.
  * @param {Game} game
  * @param {ClueAction} action
@@ -422,12 +542,12 @@ export function find_focus_possible(game, action, focusResult, thinks_stall, loa
 	logger.debug('play/hypo/max stacks in clue interpretation:', state.play_stacks, common.hypo_stacks, state.max_ranks);
 
 	const focus_possible = focus_interp === FOCUS_INTERP.TRASH_PUSH ?
-		state.variant.suits.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded, focus_interp)) :
+		find_trash_push(game, action, focusResult, thinks_stall) :
 		clue.type === CLUE.COLOUR ?
 			state.variant.suits
 				.filter(s => Utils.combineRegex(variantRegexes.rainbowish, variantRegexes.prism).test(s))
 				.concat(colourableSuits(state.variant)[clue.value])
-				.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded, focus_interp)) :
+				.flatMap(s => find_colour_focus(game, state.variant.suits.indexOf(s), action, focusResult, thinks_stall, loaded)) :
 			find_rank_focus(game, clue.value, action, focusResult, thinks_stall, loaded);
 
 	// Remove play duplicates (since save overrides play)

@@ -151,6 +151,7 @@ describe('interpreting trash push', () => {
 
 		// Bob's slot 2 should be finessed.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][1]].status, CARD_STATUS.FINESSED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][1]], ['r2', 'g2', 'b2', 'y2', 'p2']);
 	});
 
 	it('will interpret a receiving a trash push', () => {
@@ -211,7 +212,7 @@ describe('interpreting trash finesse', () => {
 			['r1', 'p3', 'b4', 'g4'],
 		], {
 			level: { min: 14 },
-			play_stacks: [0, 1, 2, 0, 0],
+			play_stacks: [0, 1, 2, 1, 1],
 		});
 		takeTurn(game, 'Alice clues 1 to Bob');
 
@@ -282,7 +283,7 @@ describe('interpreting trash finesse', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r1', 'y1', 'g1', 'b1', 'p1']);
 	});
 
-	it('will interpret receiving a play when a possible reverse trash finesse is visible', async () => {
+	it('will interpret receiving a play when an ambiguous reverse trash finesse is visible', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['r1', 'p3', 'b4', 'g4'],

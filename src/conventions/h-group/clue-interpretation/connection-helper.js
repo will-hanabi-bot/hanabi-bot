@@ -6,9 +6,10 @@ import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections } from '../../../tools/log.js';
 import { isTrash } from '../../../basics/hanabi-util.js';
-import { LEVEL } from '../h-constants.js';
+import { FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { variantRegexes } from '../../../variants.js';
-import { colour_save, rank_save } from './focus-possible.js';
+import { colour_save, find_trash_push, rank_save } from './focus-possible.js';
+import { interpret_tp } from '../hanabi-logic.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -173,6 +174,9 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 
 	/** @type {(conns: Connection[], playerIndex: number) => number} */
 	const blind_plays = (conns, playerIndex) => conns.filter(conn => conn.type === 'finesse' && conn.reacting === playerIndex).length;
+
+	if (focusResult.focus_interp === FOCUS_INTERP.TRASH_PUSH)
+		return find_trash_push(game, action, focusResult, new Set());
 
 	for (const id of focused_card.inferred) {
 		// Receiver won't consider trash possibilities or ones that are subsumed by real possibilities

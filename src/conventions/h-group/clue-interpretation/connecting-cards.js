@@ -183,7 +183,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
  * @param {Identity} identity
  * @param {number[]} [connected] 	The orders of cards that have previously connected (and should be skipped).
  * @param {number[]} [ignoreOrders] The orders of cards to ignore when searching.
- * @param {{assumeTruth?: boolean, noLayer?: boolean, bluffed?: boolean}} options
+ * @param {{assumeTruth?: boolean, noLayer?: boolean, bluffed?: boolean }} options
  * @returns {Connection | undefined}
  */
 function find_unknown_connecting(game, action, reacting, identity, connected = [], ignoreOrders = [], options = {}) {
@@ -336,7 +336,7 @@ function find_unknown_connecting(game, action, reacting, identity, connected = [
  * @param {Set<number>} thinks_stall Whether the clue appears to be a stall to these players.
  * @param {number[]} [connected]	The orders of cards that have previously connected (and should be skipped).
  * @param {number[]} [ignoreOrders] The orders of cards to ignore when searching.
- * @param {{knownOnly?: number[], assumeTruth?: boolean, bluffed?: boolean}} options
+ * @param {{knownOnly?: number[], assumeTruth?: boolean, bluffed?: boolean, immediate?: boolean, playerOrder?: number[]}} options
  * @returns {Connection[]}
  */
 export function find_connecting(game, action, identity, looksDirect, thinks_stall, connected = [], ignoreOrders = [], options = {}) {
@@ -394,7 +394,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 	const wrong_prompts = [];
 	const old_play_stacks = state.play_stacks;
 
-	const conn_player_order = [target, ...Utils.range(0, state.numPlayers).map(i => (state.numPlayers + giver - i - 1) % state.numPlayers).filter(i => i !== target), target];
+	const conn_player_order = options.playerOrder || [target, ...Utils.range(0, state.numPlayers).map(i => (state.numPlayers + giver - i - 1) % state.numPlayers).filter(i => i !== target), target];
 
 	// Only consider prompts/finesses if no connecting cards found
 	for (let i = 0; i < conn_player_order.length; i++) {
@@ -420,6 +420,10 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 			wrong_prompts.push(connecting);
 			continue;
 		}
+
+		// If we need an immediate play, the connection cannot be hidden.
+		if (connecting?.hidden && options.immediate)
+			continue;
 
 		// If the connection is hidden, that player must have the actual card playable in order for the layer to work.
 		// Thus, we keep searching for unknown connections in their hand until we find a non-hidden connection.
@@ -458,7 +462,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 	state.play_stacks = old_play_stacks;
 
 	// Unknown playable(s) in our hand (obviously, we can't use them in our clues)
-	if (giver !== state.ourPlayerIndex && !options.knownOnly?.includes(state.ourPlayerIndex)) {
+	if (giver !== state.ourPlayerIndex && !options.knownOnly?.includes(state.ourPlayerIndex) && (!options.playerOrder || options.playerOrder.includes(state.ourPlayerIndex))) {
 		let layered = false;
 		/** @type {number[]} */
 		const playable_conns = [];

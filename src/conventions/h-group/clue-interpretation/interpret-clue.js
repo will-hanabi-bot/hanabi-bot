@@ -687,7 +687,7 @@ export function interpret_clue(game, action) {
 
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
-	const trash_finesses = focus_possible.filter(p => state.isBasicTrash(p));
+	const trash_finesses = focus_possible.filter(p => p.interp === CLUE_INTERP.TRASH_FINESSE);
 	if (trash_finesses.length > 0 && (target === state.ourPlayerIndex || !focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) &&focused_card.matches(p)))) {
 		// If a trash finesse is possible, we must assume one
 		// if possible unless / until the finessed card is not playable.
@@ -702,6 +702,14 @@ export function interpret_clue(game, action) {
 			// Trash chop move
 			const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
 			perform_cm(state, common, tcm_orders);
+		}
+
+		// Further, any play identites are illegal if they could also be trash finesse identites:
+		for (const fp of focus_possible.filter(p => p.interp === CLUE_INTERP.PLAY)) {
+			if (trash_finesses.some(tf => tf.suitIndex === fp.suitIndex && tf.rank === fp.rank)) {
+				fp.illegal = true;
+				logger.info(`marking ${logCard(fp)} as illegal due to possible trash finesse identity`);
+			}
 		}
 	}
 
