@@ -13,6 +13,35 @@ import { getVariant } from './variants.js';
 import { State } from './basics/State.js';
 import { logPerformAction } from './tools/log.js';
 
+// configuration from environment
+// two separate flags control bot‑only departure behaviour:
+// * pregame – handled while in the table lobby, before the game starts
+// * replay  – handled when watching a shared replay
+// both values are treated as truthy if their string (lowercased) is
+// in the set ['1','true'].
+const LEAVE_PREGAME_IF_ONLY_BOTS = ['1', 'true'].includes(
+	(process.env.HANABI_LEAVE_PREGAME_IF_ONLY_BOTS || '').toLowerCase()
+);
+const LEAVE_REPLAY_IF_ONLY_BOTS = ['1', 'true'].includes(
+	(process.env.HANABI_LEAVE_REPLAY_IF_ONLY_BOTS || 'true').toLowerCase()
+);
+
+// comma-separated list of prefixes which identify bot accounts; empty by default
+// e.g. "will-bot,mybot". If the list is empty, no names will be treated as bots.
+const BOT_NAME_PREFIXES: string[] = (() => {
+	const raw = process.env.HANABI_BOT_NAME_PREFIXES || '';
+	if (!raw) return [];
+	return raw.split(',').map(p => p.trim()).filter(Boolean);
+})();
+
+function isBotName(name: string): boolean {
+	for (const prefix of BOT_NAME_PREFIXES) {
+		if (name.startsWith(prefix)) return true;
+	}
+	return false;
+}
+
+
 declare type WebSocket = typeof import("undici-types").WebSocket.prototype;
 
 const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
@@ -136,12 +165,23 @@ export class Bot {
 
 			// Received when a table updates its information.
 			case 'table': {
-				const { id, sharedReplay, spectators } = data as Table;
+				const { id, sharedReplay, spectators, running, players } = data as Table;
 				this.tables.set(id, data as Table);
 
 				// Only bots left in the replay
-				if (id === this.tableID && sharedReplay && spectators.every(({name}) => name.startsWith('will-bot')))
-					this.leaveRoom();
+				if (id !== this.tableID) break;
+
+				if (sharedReplay) {
+					if (LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({name}) => isBotName(name))) {
+						console.info("Leaving game. Only bots left spectating")
+						this.leaveRoom();
+					}
+				} else if (!running) {
+					if (LEAVE_PREGAME_IF_ONLY_BOTS && players.every((name) => isBotName(name))) {
+						console.info("Leaving game. Only bots left in lobby")
+						this.leaveRoom();
+					}
+				}
 				break;
 			}
 
