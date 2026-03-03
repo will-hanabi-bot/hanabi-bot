@@ -268,10 +268,19 @@ export class Bot {
 			}
 
 			// Received once, with a list of the current tables and their information.
-			case 'tableList':
+			case 'tableList': {
 				for (const table of data as Table[])
 					this.tables.set(table.id, table);
+
+				// Try to automatically re-attend games after crash
+				const table = Utils.maxOn(this.tables.values().filter(table => table.players.includes(this.self.username)).toArray(), (table) => table.id);
+
+				logger.info("Trying to re-attend table", table);
+
+				if (table !== undefined)
+					this.sendCmd('tableReattend', { tableID: table.id });
 				break;
+			}
 
 			// Received when the current table starts a game.
 			case 'tableStart': {
