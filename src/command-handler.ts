@@ -1,4 +1,4 @@
-import type { ChatMessage, InitData, Self, Table } from './types-live.js';
+import type { ChatMessage, InitData, NoteListPlayerData, Self, Table } from './types-live.js';
 
 import { Game } from './basics/Game.js';
 import { BOT_VERSION, MAX_H_LEVEL } from './constants.js';
@@ -41,6 +41,42 @@ function isBotName(name: string): boolean {
 	return false;
 }
 
+/**
+ * Parses the bot's level from the note on the first card.
+ * Note format: [INFO: vX.X, ConventionLevel]
+ * Examples: [INFO: v1.0, HGroup5], [INFO: v1.0, RefSieve], [INFO: v1.0, PlayfulSieve]
+ * @param {string | undefined} note
+ * @returns {{ convention: keyof typeof CONVENTIONS, level: number } | null}
+ */
+function parseLevelFromNote(note: string | undefined): { convention: keyof typeof CONVENTIONS, level: number } | null {
+	if (!note || !note.startsWith('[INFO:')) {
+		return null;
+	}
+
+	const parts = note.split("|", 2)
+	const info = parts[0].trim()
+
+	// Extract the part after the comma: "ConventionLevel]"
+	const match = info.match(/,\s*([A-Za-z]+)(\d+)\]$/);
+	if (!match) {
+		// Try format without level (e.g., "RefSieve]" or "PlayfulSieve]")
+		const matchNoLevel = info.match(/,\s*([A-Za-z]+)\]$/);
+		if (matchNoLevel && (matchNoLevel[1] === 'RefSieve' || matchNoLevel[1] === 'PlayfulSieve')) {
+			return { convention: matchNoLevel[1] as keyof typeof CONVENTIONS, level: 1 };
+		}
+		return null;
+	}
+
+	const conventionName = match[1] as keyof typeof CONVENTIONS;
+	const level = parseInt(match[2], 10);
+
+	if (!(conventionName in CONVENTIONS)) {
+		return null;
+	}
+
+	return { convention: conventionName, level };
+}
+
 
 declare type WebSocket = typeof import("undici-types").WebSocket.prototype;
 
@@ -60,7 +96,8 @@ export class Bot {
 	self: Self;
 	tableID: number | undefined;
 	gameStarted = false;
-	
+	restoredLevel = false
+
 	tables: Map<number, Table> = new Map();
 	ws: WebSocket;
 	cmdQueue: string[] = [];
@@ -71,6 +108,10 @@ export class Bot {
 	constructor(ws: WebSocket, manual: boolean) {
 		this.ws = ws;
 		this.manual = manual;
+	}
+
+	settingsString() {
+		return this.settings.convention + (this.settings.convention === 'HGroup' ? ` ${this.settings.level}` : '');
 	}
 
 	async handle_action(action: Action) {
@@ -118,16 +159,23 @@ export class Bot {
 			case 'gameActionList': {
 				const { list } = data as { tableID: number, list: Action[] };
 
-				this.game.catchup = true;
-				for (let i = 0; i < list.length - 1; i++)
-					this.handle_action(list[i]);
+				if (this.restoredLevel) {
+					this.game.catchup = true;
+					logger.info(`Catching up with the game with conventions=${this.settings.convention} level=${this.settings.level}`)
+					const note = `[INFO: v${BOT_VERSION}, ${this.game.convention_name + ((this.game as any).level ?? '')}]`;
+					this.game.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
+					this.game.notes[0] = { last: note, turn: 0, full: note };
 
-				this.game.catchup = false;
+					for (let i = 0; i < list.length - 1; i++)
+						this.handle_action(list[i]);
 
-				this.handle_action(list.at(-1));
+					this.game.catchup = false;
 
-				// Send "loaded" to let server know that we have "finished loading the UI"
-				this.sendCmd('loaded', { tableID: this.tableID });
+					this.handle_action(list.at(-1));
+
+					// Send "loaded" to let server know that we have "finished loading the UI"
+					this.sendCmd('loaded', { tableID: this.tableID });
+				}
 				break;
 			}
 
@@ -136,6 +184,31 @@ export class Bot {
 				const { tableID } = data as { tableID: number };
 				this.tableID = tableID;
 				this.gameStarted = false;
+				break;
+			}
+
+			case 'noteListPlayer': {
+				// If the settings have already been restored do nothing.
+				if (this.restoredLevel) break;
+				const { tableID, notes } = data as NoteListPlayerData
+				logger.info("Parsing level from note", notes[0]);
+
+				// Restore bot level from the note on the first card after rejoin
+				if (notes[0]) {
+					const levelInfo = parseLevelFromNote(notes[0]);
+					if (levelInfo && (levelInfo.convention !== this.settings.convention || levelInfo.level !== this.settings.level)) {
+						logger.info(`Restored bot level from first card note: convention=${levelInfo.convention} level=${levelInfo.level}`);
+						this.settings.convention = levelInfo.convention;
+						this.settings.level = levelInfo.level;
+						this.game.convention_name = this.settings.convention;
+						(this.game as any).level = this.settings.level;
+						this.sendChat(`Restored settings. Playing with ${this.settingsString()} conventions.`);
+					}
+				}
+				// Ask the server for more info. This time really.
+				// This will also resend the 'noteListPlayer' message. But this time we just ignore it.
+				this.restoredLevel = true
+				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
 
@@ -153,6 +226,8 @@ export class Bot {
 				Utils.globalModify({ variant, playerNames, cache: new Map() });
 
 				// Ask the server for more info
+				// We will receive the 'noteListPlayer' next. This is when we can restore the settings.
+				this.restoredLevel = false
 				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
@@ -346,12 +421,9 @@ export class Bot {
 			(msg: string) => this.sendPM(data.who, msg) :
 			(msg: string) => this.sendChat(msg);
 
-		const settingsString = () =>
-			this.settings.convention + (this.settings.convention === 'HGroup' ? ` ${this.settings.level}` : '');
-
 		// Viewing settings
 		if (parts.length === 1) {
-			reply(`Currently playing with ${settingsString()} conventions.`);
+			reply(`Currently playing with ${this.settingsString()} conventions.`);
 			return;
 		}
 
@@ -396,7 +468,7 @@ export class Bot {
 			reply('Note that this bot plays with loaded rank play clues that are right-referential rather than direct (as in the doc).');
 		}
 
-		reply(`Currently playing with ${settingsString()} conventions.`);
+		reply(`Currently playing with ${this.settingsString()} conventions.`);
 	}
 
 	/** Sends a private chat message in hanab.live to the recipient. */
