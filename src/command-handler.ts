@@ -38,7 +38,7 @@ function isBotName(name: string): boolean {
  * @param {string | undefined} note
  * @returns {{ convention: keyof typeof CONVENTIONS, level: number } | undefined}
  */
-function parseLevelFromNote(note: string | undefined): { convention: keyof typeof CONVENTIONS, level: number } | null {
+function parseLevelFromNote(note: string | undefined): { convention: keyof typeof CONVENTIONS, level: number; } | null {
 	if (!note || !note.startsWith('[INFO:')) {
 		return undefined;
 	}
@@ -65,8 +65,8 @@ const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
 
 type Settings = {
 	convention: keyof typeof CONVENTIONS,
-	level: number
-}
+	level: number;
+};
 
 export class Bot {
 	game: Game | undefined;
@@ -77,7 +77,7 @@ export class Bot {
 	self: Self;
 	tableID: number | undefined;
 	gameStarted = false;
-	restoredLevel = false
+	restoredLevel = false;
 
 	tables: Map<number, Table> = new Map();
 	ws: WebSocket;
@@ -142,7 +142,7 @@ export class Bot {
 
 				if (this.restoredLevel) {
 					this.game.catchup = true;
-					logger.info(`Catching up with the game with conventions=${this.settings.convention} level=${this.settings.level}`)
+					logger.info(`Catching up with the game with conventions=${this.settings.convention} level=${this.settings.level}`);
 					const note = `[INFO: v${BOT_VERSION}, ${this.game.convention_name + ((this.game as any).level ?? '')}]`;
 					this.game.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
 					this.game.notes[0] = { last: note, turn: 0, full: note };
@@ -171,7 +171,7 @@ export class Bot {
 			case 'noteListPlayer': {
 				// If the settings have already been restored do nothing.
 				if (this.restoredLevel) break;
-				const { tableID, notes } = data as NoteListPlayerData
+				const { tableID, notes } = data as NoteListPlayerData;
 				logger.info("Parsing level from note", notes[0]);
 
 				// Restore bot level from the note on the first card after rejoin
@@ -188,7 +188,7 @@ export class Bot {
 				}
 				// Ask the server for more info. This time really.
 				// This will also resend the 'noteListPlayer' message. But this time we just ignore it.
-				this.restoredLevel = true
+				this.restoredLevel = true;
 				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
@@ -208,7 +208,7 @@ export class Bot {
 
 				// Ask the server for more info
 				// We will receive the 'noteListPlayer' next. This is when we can restore the settings.
-				this.restoredLevel = false
+				this.restoredLevel = false;
 				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
@@ -227,11 +227,11 @@ export class Bot {
 				// Only bots left in the replay
 				if (id !== this.tableID) break;
 
-				if (sharedReplay && LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({name}) => isBotName(name))) {
-					logger.info("Leaving game. Only bots left spectating")
+				if (sharedReplay && LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({ name }) => isBotName(name))) {
+					logger.info("Leaving game. Only bots left spectating");
 					this.leaveRoom();
 				} else if (!running && LEAVE_PREGAME_IF_ONLY_BOTS && players.every((name) => isBotName(name))) {
-					logger.info("Leaving game. Only bots left in lobby")
+					logger.info("Leaving game. Only bots left in lobby");
 					this.leaveRoom();
 				}
 				break;
