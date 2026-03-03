@@ -28,8 +28,8 @@ If you're interested in understanding how the bot works, I've written [some docu
 - Export the environment variables `HANABI_USERNAME` and `HANABI_PASSWORD` for the bot to log in.
     - You'll need to create its account on hanab.live first.
 - (optional) Control behaviour when only bots remain by exporting one or both of:
-  - `HANABI_LEAVE_PREGAME_IF_ONLY_BOTS` – if truthy (`1` or `true`), the bot will leave rooms in the lobby phase when **all** players match a recognized bot prefix.
-  - `HANABI_LEAVE_REPLAY_IF_ONLY_BOTS` – if truthy, the bot will leave during replay viewing when **all** spectators match a recognized bot prefix.
+  - `HANABI_LEAVE_PREGAME_IF_ONLY_BOTS` – if `1`, the bot will leave rooms in the lobby phase when **all** players match a recognized bot prefix.
+  - `HANABI_LEAVE_REPLAY_IF_ONLY_BOTS` – if `1`, the bot will leave during replay viewing when **all** spectators match a recognized bot prefix.
   Prefixes are configured via `HANABI_BOT_NAME_PREFIXES` (see below).
 - Run `npm start` to start the bot.
     - If you want to run multiple bot accounts using one env file, export environment variables with a number at the end (like `HANABI_USERNAME2`) and use `npm start -- index=2`. See `.env.template` for an example.
