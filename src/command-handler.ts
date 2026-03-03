@@ -24,15 +24,11 @@ const LEAVE_REPLAY_IF_ONLY_BOTS = (process.env.HANABI_LEAVE_REPLAY_IF_ONLY_BOTS 
 // e.g. "will-bot,mybot". If the list is empty, no names will be treated as bots.
 const BOT_NAME_PREFIXES: string[] = (() => {
 	const raw = process.env.HANABI_BOT_NAME_PREFIXES || '';
-	if (!raw) return [];
-	return raw.split(',').map(p => p.trim()).filter(Boolean);
+	return raw.split(',').map(p => p.trim()).filter(p => p.length > 0);
 })();
 
 function isBotName(name: string): boolean {
-	for (const prefix of BOT_NAME_PREFIXES) {
-		if (name.startsWith(prefix)) return true;
-	}
-	return false;
+	return BOT_NAME_PREFIXES.some(prefix => name.startsWith(prefix));
 }
 
 /**
@@ -40,35 +36,26 @@ function isBotName(name: string): boolean {
  * Note format: [INFO: vX.X, ConventionLevel]
  * Examples: [INFO: v1.0, HGroup5], [INFO: v1.0, RefSieve], [INFO: v1.0, PlayfulSieve]
  * @param {string | undefined} note
- * @returns {{ convention: keyof typeof CONVENTIONS, level: number } | null}
+ * @returns {{ convention: keyof typeof CONVENTIONS, level: number } | undefined}
  */
 function parseLevelFromNote(note: string | undefined): { convention: keyof typeof CONVENTIONS, level: number } | null {
 	if (!note || !note.startsWith('[INFO:')) {
-		return null;
+		return undefined;
 	}
 
-	const parts = note.split("|", 2)
-	const info = parts[0].trim()
+	const parts = note.split("|", 2);
+	const info = parts[0].trim();
+	const convStr = info.slice(info.indexOf(',') + 1, -1);
 
-	// Extract the part after the comma: "ConventionLevel]"
-	const match = info.match(/,\s*([A-Za-z]+)(\d+)\]$/);
-	if (!match) {
-		// Try format without level (e.g., "RefSieve]" or "PlayfulSieve]")
-		const matchNoLevel = info.match(/,\s*([A-Za-z]+)\]$/);
-		if (matchNoLevel && (matchNoLevel[1] === 'RefSieve' || matchNoLevel[1] === 'PlayfulSieve')) {
-			return { convention: matchNoLevel[1] as keyof typeof CONVENTIONS, level: 1 };
-		}
-		return null;
+	if (convStr.startsWith('HGroup')) {
+		return { convention: 'HGroup', level: Number(convStr.slice(6)) };
+	} else if (convStr === 'RefSieve') {
+		return { convention: 'RefSieve', level: 0 };
+	} else if (convStr === 'PlayfulSieve') {
+		return { convention: 'PlayfulSieve', level: 0 };
 	}
 
-	const conventionName = match[1] as keyof typeof CONVENTIONS;
-	const level = parseInt(match[2], 10);
-
-	if (!(conventionName in CONVENTIONS)) {
-		return null;
-	}
-
-	return { convention: conventionName, level };
+	return undefined;
 }
 
 
@@ -240,16 +227,12 @@ export class Bot {
 				// Only bots left in the replay
 				if (id !== this.tableID) break;
 
-				if (sharedReplay) {
-					if (LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({name}) => isBotName(name))) {
-						console.info("Leaving game. Only bots left spectating")
-						this.leaveRoom();
-					}
-				} else if (!running) {
-					if (LEAVE_PREGAME_IF_ONLY_BOTS && players.every((name) => isBotName(name))) {
-						console.info("Leaving game. Only bots left in lobby")
-						this.leaveRoom();
-					}
+				if (sharedReplay && LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({name}) => isBotName(name))) {
+					logger.info("Leaving game. Only bots left spectating")
+					this.leaveRoom();
+				} else if (!running && LEAVE_PREGAME_IF_ONLY_BOTS && players.every((name) => isBotName(name))) {
+					logger.info("Leaving game. Only bots left in lobby")
+					this.leaveRoom();
 				}
 				break;
 			}
