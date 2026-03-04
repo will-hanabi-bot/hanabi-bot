@@ -45,14 +45,14 @@ function parseLevelFromNote(note: string | undefined): { convention: keyof typeo
 
 	const parts = note.split('|', 2);
 	const info = parts[0].trim();
-	const convStr = info.slice(info.indexOf(',') + 1, -1);
+	const convStr = info.split(',', 2)[1].trim();
 
 	if (convStr.startsWith('HGroup')) {
 		return { convention: 'HGroup', level: Number(convStr.slice(6)) };
 	} else if (convStr === 'RefSieve') {
-		return { convention: 'RefSieve', level: 0 };
+		return { convention: 'RefSieve', level: undefined };
 	} else if (convStr === 'PlayfulSieve') {
-		return { convention: 'PlayfulSieve', level: 0 };
+		return { convention: 'PlayfulSieve', level: undefined };
 	}
 
 	return undefined;
