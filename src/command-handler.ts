@@ -5,6 +5,7 @@ import { BOT_VERSION, MAX_H_LEVEL } from './constants.js';
 import HGroup from './conventions/h-group.js';
 import PlayfulSieve from './conventions/playful-sieve.js';
 import RefSieve from './conventions/ref-sieve.js';
+import { parseSettingsFromNote, settingsString } from './tools/settings.ts';
 
 import * as Utils from './tools/util.js';
 import logger from './tools/logger.js';
@@ -31,42 +32,14 @@ function isBotName(name: string): boolean {
 	return BOT_NAME_PREFIXES.some(prefix => name.startsWith(prefix));
 }
 
-/**
- * Parses the bot's level from the note on the first card.
- * Note format: [INFO: vX.X, ConventionLevel]
- * Examples: [INFO: v1.0, HGroup5], [INFO: v1.0, RefSieve], [INFO: v1.0, PlayfulSieve]
- * @param {string | undefined} note
- * @returns {{ convention: keyof typeof CONVENTIONS, level: number } | undefined}
- */
-function parseLevelFromNote(note: string | undefined): { convention: keyof typeof CONVENTIONS, level: number; } | null {
-	if (!note || !note.startsWith('[INFO:')) {
-		return undefined;
-	}
+export const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
 
-	const parts = note.split('|', 2);
-	const info = parts[0].trim();
-	const convStr = info.split(',', 2)[1].trim();
-
-	if (convStr.startsWith('HGroup')) {
-		return { convention: 'HGroup', level: Number(convStr.slice(6)) };
-	} else if (convStr === 'RefSieve') {
-		return { convention: 'RefSieve', level: undefined };
-	} else if (convStr === 'PlayfulSieve') {
-		return { convention: 'PlayfulSieve', level: undefined };
-	}
-
-	return undefined;
-}
-
+export type Settings = {
+	convention: keyof typeof CONVENTIONS,
+	level: number | undefined;
+};
 
 declare type WebSocket = typeof import("undici-types").WebSocket.prototype;
-
-const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
-
-type Settings = {
-	convention: keyof typeof CONVENTIONS,
-	level: number;
-};
 
 export class Bot {
 	game: Game | undefined;
@@ -89,10 +62,6 @@ export class Bot {
 	constructor(ws: WebSocket, manual: boolean) {
 		this.ws = ws;
 		this.manual = manual;
-	}
-
-	settingsString() {
-		return this.settings.convention + (this.settings.convention === 'HGroup' ? ` ${this.settings.level}` : '');
 	}
 
 	async handle_action(action: Action) {
@@ -141,15 +110,11 @@ export class Bot {
 				const { list } = data as { tableID: number, list: Action[] };
 
 				if (this.restoredLevel) {
-					this.game.catchup = true;
-					logger.info(`Catching up with the game with ${this.settingsString()}`);
-					const note = `[INFO: v${BOT_VERSION}, ${this.game.convention_name + ((this.game as any).level ?? '')}]`;
-					this.game.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
-					this.game.notes[0] = { last: note, turn: 0, full: note };
+					logger.info(`Catching up with the game with ${settingsString(this.settings)}`);
 
+					this.game.catchup = true;
 					for (let i = 0; i < list.length - 1; i++)
 						this.handle_action(list[i]);
-
 					this.game.catchup = false;
 
 					this.handle_action(list.at(-1));
@@ -176,17 +141,16 @@ export class Bot {
 
 				// Restore bot level from the note on the first card after rejoin
 				if (notes[0]) {
-					const levelInfo = parseLevelFromNote(notes[0]);
+					const levelInfo = parseSettingsFromNote(notes[0]);
 					if (levelInfo && (levelInfo.convention !== this.settings.convention || levelInfo.level !== this.settings.level)) {
-						logger.info(`Restored bot level from first card note: ${this.settingsString()}`);
+						logger.info(`Restored bot level from first card note: ${settingsString(levelInfo)}`);
 						// Use information from current game to reconstruct initial state
 						const { playerNames, ourPlayerIndex, variant, options } = this.game.state;
 						const state = new State(playerNames, ourPlayerIndex, variant, options);
-						this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
-						this.sendChat(`Restored settings. Playing with ${this.settingsString()} conventions.`);
 						this.settings.convention = levelInfo.convention;
 						this.settings.level = levelInfo.level;
-						this.sendChat(`Restored settings. Playing with ${this.settingsString()} conventions.`);
+						this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
+						this.sendChat(`Restored settings. Playing with ${settingsString(this.game.settings)} conventions.`);
 					}
 				}
 				// Ask the server for more info. This time really.
@@ -412,7 +376,7 @@ export class Bot {
 
 		// Viewing settings
 		if (parts.length === 1) {
-			reply(`Currently playing with ${this.settingsString()} conventions.`);
+			reply(`Currently playing with ${settingsString(this.settings)} conventions.`);
 			return;
 		}
 
@@ -457,7 +421,7 @@ export class Bot {
 			reply('Note that this bot plays with loaded rank play clues that are right-referential rather than direct (as in the doc).');
 		}
 
-		reply(`Currently playing with ${this.settingsString()} conventions.`);
+		reply(`Currently playing with ${settingsString(this.settings)} conventions.`);
 	}
 
 	/** Sends a private chat message in hanab.live to the recipient. */

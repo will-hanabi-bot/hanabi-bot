@@ -128,6 +128,13 @@ export default class HGroup extends Game {
 		return this.moveHistory.at(-1)?.move ?? CLUE_INTERP.NONE;
 	}
 
+	get settings() {
+		return {
+			convention: this.convention_name,
+			level: this.level
+		};
+	}
+
 	createBlank() {
 		const blank = super.createBlank();
 		blank.level = this.level;
