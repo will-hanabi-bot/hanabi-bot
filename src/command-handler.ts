@@ -142,7 +142,7 @@ export class Bot {
 
 				if (this.restoredLevel) {
 					this.game.catchup = true;
-					logger.info(`Catching up with the game with conventions=${this.settings.convention} level=${this.settings.level}`);
+					logger.info(`Catching up with the game with ${this.settingsString()}`);
 					const note = `[INFO: v${BOT_VERSION}, ${this.game.convention_name + ((this.game as any).level ?? '')}]`;
 					this.game.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
 					this.game.notes[0] = { last: note, turn: 0, full: note };
@@ -178,11 +178,12 @@ export class Bot {
 				if (notes[0]) {
 					const levelInfo = parseLevelFromNote(notes[0]);
 					if (levelInfo && (levelInfo.convention !== this.settings.convention || levelInfo.level !== this.settings.level)) {
-						logger.info(`Restored bot level from first card note: convention=${levelInfo.convention} level=${levelInfo.level}`);
+						logger.info(`Restored bot level from first card note: ${this.settingsString()}`);
 						// Use information from current game to reconstruct initial state
 						const { playerNames, ourPlayerIndex, variant, options } = this.game.state;
 						const state = new State(playerNames, ourPlayerIndex, variant, options);
 						this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
+						this.sendChat(`Restored settings. Playing with ${this.settingsString()} conventions.`);
 						this.settings.convention = levelInfo.convention;
 						this.settings.level = levelInfo.level;
 						this.sendChat(`Restored settings. Playing with ${this.settingsString()} conventions.`);
