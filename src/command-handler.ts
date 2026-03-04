@@ -385,6 +385,7 @@ export class Bot {
 			return;
 		}
 
+		this.settings.level = undefined;
 		let level: number | undefined;
 
 		// Allow setting H-Group conventions by only providing level
@@ -422,6 +423,7 @@ export class Bot {
 		}
 
 		reply(`Currently playing with ${settingsString(this.settings)} conventions.`);
+		logger.info(this.settings.convention, this.settings.level);
 	}
 
 	/** Sends a private chat message in hanab.live to the recipient. */
