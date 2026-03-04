@@ -21,7 +21,7 @@ const LEAVE_PREGAME_IF_ONLY_BOTS = (process.env.HANABI_LEAVE_PREGAME_IF_ONLY_BOT
 const LEAVE_REPLAY_IF_ONLY_BOTS = (process.env.HANABI_LEAVE_REPLAY_IF_ONLY_BOTS || '1') === '1';
 
 // comma-separated list of prefixes which identify bot accounts; empty by default
-// e.g. "will-bot,mybot". If the list is empty, no names will be treated as bots.
+// e.g. 'will-bot,mybot'. If the list is empty, no names will be treated as bots.
 const BOT_NAME_PREFIXES: string[] = (() => {
 	const raw = process.env.HANABI_BOT_NAME_PREFIXES || '';
 	return raw.split(',').map(p => p.trim()).filter(p => p.length > 0);
@@ -43,7 +43,7 @@ function parseLevelFromNote(note: string | undefined): { convention: keyof typeo
 		return undefined;
 	}
 
-	const parts = note.split("|", 2);
+	const parts = note.split('|', 2);
 	const info = parts[0].trim();
 	const convStr = info.slice(info.indexOf(',') + 1, -1);
 
@@ -172,7 +172,7 @@ export class Bot {
 				// If the settings have already been restored do nothing.
 				if (this.restoredLevel) break;
 				const { tableID, notes } = data as NoteListPlayerData;
-				logger.info("Parsing level from note", notes[0]);
+				logger.info('Parsing level from not', notes[0]);
 
 				// Restore bot level from the note on the first card after rejoin
 				if (notes[0]) {
@@ -228,10 +228,10 @@ export class Bot {
 				if (id !== this.tableID) break;
 
 				if (sharedReplay && LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({ name }) => isBotName(name))) {
-					logger.info("Leaving game. Only bots left spectating");
+					logger.info('Leaving game. Only bots left spectating');
 					this.leaveRoom();
 				} else if (!running && LEAVE_PREGAME_IF_ONLY_BOTS && players.every((name) => isBotName(name))) {
-					logger.info("Leaving game. Only bots left in lobby");
+					logger.info('Leaving game. Only bots left in lobby');
 					this.leaveRoom();
 				}
 				break;
@@ -252,7 +252,7 @@ export class Bot {
 				// Try to automatically re-attend games after crash
 				const table = Utils.maxOn(this.tables.values().filter(table => table.players.includes(this.self.username)).toArray(), (table) => table.id);
 
-				logger.info("Trying to re-attend table", table);
+				logger.info('Trying to re-attend table', table);
 
 				if (table !== undefined)
 					this.sendCmd('tableReattend', { tableID: table.id });
