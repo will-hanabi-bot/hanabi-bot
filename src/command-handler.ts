@@ -179,10 +179,12 @@ export class Bot {
 					const levelInfo = parseLevelFromNote(notes[0]);
 					if (levelInfo && (levelInfo.convention !== this.settings.convention || levelInfo.level !== this.settings.level)) {
 						logger.info(`Restored bot level from first card note: convention=${levelInfo.convention} level=${levelInfo.level}`);
+						// Use information from current game to reconstruct initial state
+						const { playerNames, ourPlayerIndex, variant, options } = this.game.state;
+						const state = new State(playerNames, ourPlayerIndex, variant, options);
+						this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
 						this.settings.convention = levelInfo.convention;
 						this.settings.level = levelInfo.level;
-						this.game.convention_name = this.settings.convention;
-						(this.game as any).level = this.settings.level;
 						this.sendChat(`Restored settings. Playing with ${this.settingsString()} conventions.`);
 					}
 				}
