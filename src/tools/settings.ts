@@ -1,20 +1,22 @@
 import { BOT_VERSION } from '../constants.js';
-import logger from './logger.js';
+import HGroup from '../conventions/h-group.js';
+import PlayfulSieve from '../conventions/playful-sieve.js';
+import RefSieve from '../conventions/ref-sieve.js';
 
-type AnySettings = {
-	convention: String,
+export const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
+
+export type Settings = {
+	convention: keyof typeof CONVENTIONS,
 	level: number | undefined;
 };
 
-export function settingsString(settings: AnySettings) {
+export function settingsString(settings: Settings) {
 	return settings.convention + (settings.convention === 'HGroup' ? `${settings.level}` : '');
 }
 
-export function infoNote(settings: AnySettings) {
+export function infoNote(settings: Settings) {
 	return `[INFO: v${BOT_VERSION}, ${settingsString(settings)}]`;
 }
-
-type ParsedSetting = { convention: 'HGroup', level: number; } | { convention: 'RefSieve', level: undefined; } | { convention: 'PlayfulSieve', level: undefined; };
 
 /**
  * Parses the bot's level from the note on the first card.
@@ -23,7 +25,7 @@ type ParsedSetting = { convention: 'HGroup', level: number; } | { convention: 'R
  * @param {string | undefined} note
  * @returns {ParsedSetting | undefined}
  */
-export function parseSettingsFromNote(note: string | undefined): ParsedSetting | undefined {
+export function parseSettingsFromNote(note: string | undefined): Settings | undefined {
 	if (!note || !note.startsWith('[INFO:')) {
 		return undefined;
 	}

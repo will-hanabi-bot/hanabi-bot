@@ -2,10 +2,8 @@ import type { ChatMessage, InitData, NoteListPlayerData, Self, Table } from './t
 
 import { Game } from './basics/Game.js';
 import { BOT_VERSION, MAX_H_LEVEL } from './constants.js';
-import HGroup from './conventions/h-group.js';
-import PlayfulSieve from './conventions/playful-sieve.js';
-import RefSieve from './conventions/ref-sieve.js';
-import { parseSettingsFromNote, settingsString } from './tools/settings.ts';
+import { CONVENTIONS, infoNote, parseSettingsFromNote, settingsString } from './tools/settings.ts';
+import type { Settings } from './tools/settings.ts';
 
 import * as Utils from './tools/util.js';
 import logger from './tools/logger.js';
@@ -31,13 +29,6 @@ const BOT_NAME_PREFIXES: string[] = (() => {
 function isBotName(name: string): boolean {
 	return BOT_NAME_PREFIXES.some(prefix => name.startsWith(prefix));
 }
-
-export const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
-
-export type Settings = {
-	convention: keyof typeof CONVENTIONS,
-	level: number | undefined;
-};
 
 declare type WebSocket = typeof import("undici-types").WebSocket.prototype;
 
@@ -150,12 +141,21 @@ export class Bot {
 						this.settings.convention = levelInfo.convention;
 						this.settings.level = levelInfo.level;
 						this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
-						this.sendChat(`Restored settings. Playing with ${settingsString(this.game.settings)} conventions.`);
+						this.sendChat(`Restored settings. Playing with ${settingsString(this.game.settings as Settings)} conventions.`);
 					}
 				}
 				// Ask the server for more info. This time really.
 				// This will also resend the 'noteListPlayer' message. But this time we just ignore it.
 				this.restoredLevel = true;
+
+				// Write the note with the settings as early as possible.
+				// This does not fully protect against the note not being written if the bot crashes before this point.
+				if (this.game.notes[0] === undefined && this.game.in_progress) {
+					const note = infoNote(this.game.settings as Settings);
+					this.game.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
+					this.game.notes[0] = { last: note, turn: 0, full: note };
+				}
+
 				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
