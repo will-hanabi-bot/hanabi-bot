@@ -101,7 +101,10 @@ export class Bot {
 				const { list } = data as { tableID: number, list: Action[] };
 
 				if (this.restoredLevel) {
-					logger.info(`Catching up with the game with ${settingsString(this.settings)}`);
+					if (list.some(action => action.type !== 'draw')) {
+						// We are not at the beginning of the game.
+						logger.info(`Catching up with the game with ${settingsString(this.settings)}`);
+					}
 
 					this.game.catchup = true;
 					for (let i = 0; i < list.length - 1; i++)
@@ -128,10 +131,10 @@ export class Bot {
 				// If the settings have already been restored do nothing.
 				if (this.restoredLevel) break;
 				const { tableID, notes } = data as NoteListPlayerData;
-				logger.info('Parsing level from not', notes[0]);
 
 				// Restore bot level from the note on the first card after rejoin
 				if (notes[0]) {
+					logger.info('Parsing level from note', notes[0]);
 					const levelInfo = parseSettingsFromNote(notes[0]);
 					if (levelInfo && (levelInfo.convention !== this.settings.convention || levelInfo.level !== this.settings.level)) {
 						logger.info(`Restored bot level from first card note: ${settingsString(levelInfo)}`);
@@ -219,10 +222,10 @@ export class Bot {
 				// Try to automatically re-attend games after crash
 				const table = Utils.maxOn(this.tables.values().filter(table => table.players.includes(this.self.username)).toArray(), (table) => table.id);
 
-				logger.info('Trying to re-attend table', table);
-
-				if (table !== undefined)
+				if (table !== undefined) {
+					logger.info('Trying to re-attend table', table);
 					this.sendCmd('tableReattend', { tableID: table.id });
+				}
 				break;
 			}
 
@@ -423,7 +426,6 @@ export class Bot {
 		}
 
 		reply(`Currently playing with ${settingsString(this.settings)} conventions.`);
-		logger.info(this.settings.convention, this.settings.level);
 	}
 
 	/** Sends a private chat message in hanab.live to the recipient. */
