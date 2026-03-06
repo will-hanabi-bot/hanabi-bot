@@ -335,7 +335,7 @@ describe('layered finesse', () => {
 			starting: PLAYER.CATHY
 		});
 
-		takeTurn(game, 'Cathy clues blue to Bob');				// Finessing ALice's b1 in slot 1
+		takeTurn(game, 'Cathy clues blue to Bob');				// Finessing Alice's b1 in slot 1
 		takeTurn(game, 'Donald clues 4 to Alice (slot 2)');
 
 		// The simplest interpretation is g3 behind b1 (note that g3 cannot be in front of b1)

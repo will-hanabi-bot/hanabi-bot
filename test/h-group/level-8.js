@@ -441,7 +441,7 @@ describe('mistake discards', () => {
 		takeTurn(game, 'Bob discards g4', 'r1');
 
 		// Alice should not attempt to play with no known playables.
-		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
 	});
 });
 
@@ -456,7 +456,7 @@ describe('distribution clues', () => {
 			play_stacks: [4, 5, 5, 3, 5],
 			clue_tokens: 1,
 			init: (game) => {
-				// Alice knows about r5, b5 and b5 in her last 3 slots.
+				// Alice knows about r5, b4 and b5 in her last 3 slots.
 				preClue(game, game.state.hands[PLAYER.ALICE][2], [
 					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.BOB },
 					{ type: CLUE.RANK, value: 5, giver: PLAYER.CATHY }]);

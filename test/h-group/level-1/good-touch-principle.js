@@ -120,7 +120,7 @@ describe('good touch principle', () => {
 		takeTurn(game, 'Alice clues 4 to Cathy');
 		takeTurn(game, 'Bob clues yellow to Alice (slots 1,3)');
 
-		// ALice's slot 1 should be known y5.
+		// Alice's slot 1 should be known y5.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y5']);
 	});
 

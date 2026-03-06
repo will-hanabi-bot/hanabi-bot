@@ -305,14 +305,14 @@ describe('sarcastic discard', () => {
 		takeTurn(game, 'Bob clues 2 to Alice (slots 3,4,5)');
 		takeTurn(game, 'Cathy discards r2', 'g1');
 
-		// ALice should have an r2 link between slots 3 and 4 (can't be slot 5, otherwise Bob wouldn't save).
+		// Alice should have an r2 link between slots 3 and 4 (can't be slot 5, otherwise Bob wouldn't save).
 		assert.ok(game.common.links.some(link =>
 			link.orders.includes(1) && link.orders.includes(2) && link.identities.some(i => i.suitIndex === COLOUR.RED && i.rank === 2)));
 
 		takeTurn(game, 'Alice clues 5 to Bob');
 		takeTurn(game, 'Bob clues green to Alice (slot 3)');	// finessing Cathy's new g1
 
-		// ALice's slot 4 should be known r2 now.
+		// Alice's slot 4 should be known r2 now.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r2']);
 	});
 

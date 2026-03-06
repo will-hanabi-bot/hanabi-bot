@@ -192,7 +192,7 @@ describe('ambiguous finesse', () => {
 		takeTurn(game, 'Bob clues 3 to Cathy');			// looks like r2 self-finesse
 		takeTurn(game, 'Cathy discards r2', 'p3');		// Cathy shows that it is ambiguous on us.
 
-		// ALice's slot 1 should be finessed as r2.
+		// Alice's slot 1 should be finessed as r2.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r2']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, game.level >= 10 ? CARD_STATUS.GD : CARD_STATUS.FINESSED);
 	});

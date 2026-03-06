@@ -103,7 +103,7 @@ describe('stalling', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['b3', 'r1', 'g2', 'b4', 'g3'],
-			['y4', 'y4', 'r3', 'y2', 'g4']
+			['y4', 'y4', 'r3', 'p4', 'g4']
 		], {
 			level: { min: 9 },
 			play_stacks: [2, 0, 0, 0, 0],
@@ -173,7 +173,7 @@ describe('stalling', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'r4', 'b3', 'r2', 'p2'],
-			['y5', 'y4', 'r4', 'g2', 'r3']
+			['y5', 'y4', 'r4', 'g2', 'g4']
 		], {
 			level: { min: 9 },
 			starting: PLAYER.BOB,
@@ -182,7 +182,7 @@ describe('stalling', () => {
 		});
 
 		takeTurn(game, 'Bob clues 5 to Cathy');			// 5 Stall
-		takeTurn(game, 'Cathy discards r3', 'p4');
+		takeTurn(game, 'Cathy discards g4', 'p4');
 
 		// Alice is in DDA, she should clue 2 to Bob even though it bad touches.
 		const action = await game.take_action();
