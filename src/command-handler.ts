@@ -1,10 +1,9 @@
-import type { ChatMessage, InitData, Self, Table } from './types-live.js';
+import type { ChatMessage, InitData, NoteListPlayerData, Self, Table } from './types-live.js';
 
 import { Game } from './basics/Game.js';
 import { BOT_VERSION, MAX_H_LEVEL } from './constants.js';
-import HGroup from './conventions/h-group.js';
-import PlayfulSieve from './conventions/playful-sieve.js';
-import RefSieve from './conventions/ref-sieve.js';
+import { CONVENTIONS, infoNote, parseSettingsFromNote, settingsString } from './tools/settings.ts';
+import type { Settings } from './tools/settings.ts';
 
 import * as Utils from './tools/util.js';
 import logger from './tools/logger.js';
@@ -13,14 +12,25 @@ import { getVariant } from './variants.js';
 import { State } from './basics/State.js';
 import { logPerformAction } from './tools/log.js';
 
-declare type WebSocket = typeof import("undici-types").WebSocket.prototype;
+// configuration from environment
+// two separate flags control bot‑only departure behaviour:
+// * pregame – handled while in the table lobby, before the game starts
+// * replay  – handled when watching a shared replay
+const LEAVE_PREGAME_IF_ONLY_BOTS = (process.env.HANABI_LEAVE_PREGAME_IF_ONLY_BOTS || '') === '1';
+const LEAVE_REPLAY_IF_ONLY_BOTS = (process.env.HANABI_LEAVE_REPLAY_IF_ONLY_BOTS || '1') === '1';
 
-const CONVENTIONS = { HGroup, RefSieve, PlayfulSieve } as const;
+// comma-separated list of prefixes which identify bot accounts; empty by default
+// e.g. 'will-bot,mybot'. If the list is empty, no names will be treated as bots.
+const BOT_NAME_PREFIXES: string[] = (() => {
+	const raw = process.env.HANABI_BOT_NAME_PREFIXES || '';
+	return raw.split(',').map(p => p.trim()).filter(p => p.length > 0);
+})();
 
-type Settings = {
-	convention: keyof typeof CONVENTIONS,
-	level: number
+function isBotName(name: string): boolean {
+	return BOT_NAME_PREFIXES.some(prefix => name.startsWith(prefix));
 }
+
+declare type WebSocket = typeof import("undici-types").WebSocket.prototype;
 
 export class Bot {
 	game: Game | undefined;
@@ -31,7 +41,8 @@ export class Bot {
 	self: Self;
 	tableID: number | undefined;
 	gameStarted = false;
-	
+	restoredLevel = false;
+
 	tables: Map<number, Table> = new Map();
 	ws: WebSocket;
 	cmdQueue: string[] = [];
@@ -89,16 +100,22 @@ export class Bot {
 			case 'gameActionList': {
 				const { list } = data as { tableID: number, list: Action[] };
 
-				this.game.catchup = true;
-				for (let i = 0; i < list.length - 1; i++)
-					this.handle_action(list[i]);
+				if (this.restoredLevel) {
+					if (list.some(action => action.type !== 'draw')) {
+						// We are not at the beginning of the game.
+						logger.info(`Catching up with the game with ${settingsString(this.settings)}`);
+					}
 
-				this.game.catchup = false;
+					this.game.catchup = true;
+					for (let i = 0; i < list.length - 1; i++)
+						this.handle_action(list[i]);
+					this.game.catchup = false;
 
-				this.handle_action(list.at(-1));
+					this.handle_action(list.at(-1));
 
-				// Send "loaded" to let server know that we have "finished loading the UI"
-				this.sendCmd('loaded', { tableID: this.tableID });
+					// Send "loaded" to let server know that we have "finished loading the UI"
+					this.sendCmd('loaded', { tableID: this.tableID });
+				}
 				break;
 			}
 
@@ -107,6 +124,42 @@ export class Bot {
 				const { tableID } = data as { tableID: number };
 				this.tableID = tableID;
 				this.gameStarted = false;
+				break;
+			}
+
+			case 'noteListPlayer': {
+				// If the settings have already been restored do nothing.
+				if (this.restoredLevel) break;
+				const { tableID, notes } = data as NoteListPlayerData;
+
+				// Restore bot level from the note on the first card after rejoin
+				if (notes[0]) {
+					logger.info('Parsing level from note', notes[0]);
+					const levelInfo = parseSettingsFromNote(notes[0]);
+					if (levelInfo && (levelInfo.convention !== this.settings.convention || levelInfo.level !== this.settings.level)) {
+						logger.info(`Restored bot level from first card note: ${settingsString(levelInfo)}`);
+						// Use information from current game to reconstruct initial state
+						const { playerNames, ourPlayerIndex, variant, options } = this.game.state;
+						const state = new State(playerNames, ourPlayerIndex, variant, options);
+						this.settings.convention = levelInfo.convention;
+						this.settings.level = levelInfo.level;
+						this.game = new CONVENTIONS[this.settings.convention](state, true, undefined, this.settings.level);
+						this.sendChat(`Restored settings. Playing with ${settingsString(this.game.settings as Settings)} conventions.`);
+					}
+				}
+				// Ask the server for more info. This time really.
+				// This will also resend the 'noteListPlayer' message. But this time we just ignore it.
+				this.restoredLevel = true;
+
+				// Write the note with the settings as early as possible.
+				// This does not fully protect against the note not being written if the bot crashes before this point.
+				if (this.game.notes[0] === undefined && this.game.in_progress) {
+					const note = infoNote(this.game.settings as Settings);
+					this.game.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
+					this.game.notes[0] = { last: note, turn: 0, full: note };
+				}
+
+				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
 
@@ -124,6 +177,8 @@ export class Bot {
 				Utils.globalModify({ variant, playerNames, cache: new Map() });
 
 				// Ask the server for more info
+				// We will receive the 'noteListPlayer' next. This is when we can restore the settings.
+				this.restoredLevel = false;
 				this.sendCmd('getGameInfo2', { tableID });
 				break;
 			}
@@ -136,12 +191,19 @@ export class Bot {
 
 			// Received when a table updates its information.
 			case 'table': {
-				const { id, sharedReplay, spectators } = data as Table;
+				const { id, sharedReplay, spectators, running, players } = data as Table;
 				this.tables.set(id, data as Table);
 
 				// Only bots left in the replay
-				if (id === this.tableID && sharedReplay && spectators.every(({name}) => name.startsWith('will-bot')))
+				if (id !== this.tableID) break;
+
+				if (sharedReplay && LEAVE_REPLAY_IF_ONLY_BOTS && spectators.every(({ name }) => isBotName(name))) {
+					logger.info('Leaving game. Only bots left spectating');
 					this.leaveRoom();
+				} else if (!running && LEAVE_PREGAME_IF_ONLY_BOTS && players.every((name) => isBotName(name))) {
+					logger.info('Leaving game. Only bots left in lobby');
+					this.leaveRoom();
+				}
 				break;
 			}
 
@@ -153,10 +215,19 @@ export class Bot {
 			}
 
 			// Received once, with a list of the current tables and their information.
-			case 'tableList':
+			case 'tableList': {
 				for (const table of data as Table[])
 					this.tables.set(table.id, table);
+
+				// Try to automatically re-attend games after crash
+				const table = Utils.maxOn(this.tables.values().filter(table => table.players.includes(this.self.username)).toArray(), (table) => table.id);
+
+				if (table !== undefined) {
+					logger.info('Trying to re-attend table', table);
+					this.sendCmd('tableReattend', { tableID: table.id });
+				}
 				break;
+			}
 
 			// Received when the current table starts a game.
 			case 'tableStart': {
@@ -306,12 +377,9 @@ export class Bot {
 			(msg: string) => this.sendPM(data.who, msg) :
 			(msg: string) => this.sendChat(msg);
 
-		const settingsString = () =>
-			this.settings.convention + (this.settings.convention === 'HGroup' ? ` ${this.settings.level}` : '');
-
 		// Viewing settings
 		if (parts.length === 1) {
-			reply(`Currently playing with ${settingsString()} conventions.`);
+			reply(`Currently playing with ${settingsString(this.settings)} conventions.`);
 			return;
 		}
 
@@ -320,6 +388,7 @@ export class Bot {
 			return;
 		}
 
+		this.settings.level = undefined;
 		let level: number | undefined;
 
 		// Allow setting H-Group conventions by only providing level
@@ -356,7 +425,7 @@ export class Bot {
 			reply('Note that this bot plays with loaded rank play clues that are right-referential rather than direct (as in the doc).');
 		}
 
-		reply(`Currently playing with ${settingsString()} conventions.`);
+		reply(`Currently playing with ${settingsString(this.settings)} conventions.`);
 	}
 
 	/** Sends a private chat message in hanab.live to the recipient. */

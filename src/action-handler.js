@@ -1,4 +1,4 @@
-import { BOT_VERSION, HAND_SIZE } from './constants.js';
+import { HAND_SIZE } from './constants.js';
 import { team_elimP } from './basics/helper.js';
 import * as Basics from './basics.js';
 
@@ -104,13 +104,6 @@ export function handle_action(action) {
 			newGame = produce(newGame, (draft) => {
 				draft.state.currentPlayerIndex = currentPlayerIndex;
 				draft.state.turn_count = num + 1;
-
-				if (num === 1 && newGame.notes[0] === undefined && !newGame.catchup && newGame.in_progress) {
-					const note = `[INFO: v${BOT_VERSION}, ${newGame.convention_name + (/** @type {any} */(newGame).level ?? '')}]`;
-
-					this.queued_cmds.push({ cmd: 'note', arg: { order: 0, note } });
-					draft.notes[0] = { last: note, turn: 0, full: note };
-				}
 			});
 
 			newGame = newGame.update_turn(action);

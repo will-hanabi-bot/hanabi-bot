@@ -119,6 +119,13 @@ export class Game {
 		return `${hands},${player_thoughts},${deck},${JSON.stringify(actionList.at(-1))},${clue_tokens},${turn_count}`;
 	}
 
+	get settings() {
+		return {
+			convention: this.convention_name,
+			level: undefined
+		};
+	}
+
 	/**
 	 * Returns a blank copy of the game, as if it had restarted.
 	 * @returns {this}

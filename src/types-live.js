@@ -50,7 +50,10 @@
  * @property {boolean} replay
  * @property {string} seed
  * @property {TableOptions} options
- * 
+ *
+ * @typedef NoteListPlayerData
+ * @property {number} tableID
+ * @property {string[]} notes
  */
 
 export {};
