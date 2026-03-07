@@ -173,9 +173,9 @@ describe('interpreting trash push', () => {
 describe('interpreting trash finesse', () => {
 	it('will interpret a trash finesse', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['r1', 'p3', 'b4', 'g4'],
-			['y5', 'g2', 'g1', 'p2'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'g1'],
+			['y5', 'g2', 'g1', 'p2', 'b3'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 0, 0],
@@ -190,9 +190,9 @@ describe('interpreting trash finesse', () => {
 
 	it('will interpret an ambiguous direct play', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['r1', 'p3', 'b4', 'g4'],
-			['y5', 'g2', 'b1', 'p2'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'g1'],
+			['y5', 'g2', 'b1', 'p2', 'b3'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 0, 0],
@@ -207,9 +207,9 @@ describe('interpreting trash finesse', () => {
 
 	it('will interpret a reverse trash finesse', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['y5', 'g2', 'g1', 'p2'],
-			['r1', 'p3', 'b4', 'g4'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'g2', 'g1', 'p2', 'b3'],
+			['r1', 'p3', 'b4', 'g4', 'g1'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 1, 1],
@@ -224,9 +224,9 @@ describe('interpreting trash finesse', () => {
 
 	it('will interpret receiving a trash finesse', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['y5', 'g2', 'g4', 'p2'],
-			['r1', 'p3', 'b4', 'g4'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'g2', 'g4', 'p2', 'g1'],
+			['r1', 'p3', 'b4', 'g4', 'b3'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 0, 0],
@@ -242,9 +242,9 @@ describe('interpreting trash finesse', () => {
 
 	it('will interpret receiving an ambiguous direct play', () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['y5', 'g2', 'g4', 'p2'],
-			['r1', 'p3', 'b4', 'g4'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'g2', 'g4', 'p2', 'g1'],
+			['r1', 'p3', 'b4', 'g4', 'b3'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 0, 0],
@@ -267,19 +267,20 @@ describe('interpreting trash finesse', () => {
 
 	it('will interpret receiving a reverse trash finesse', async () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['r1', 'p3', 'b4', 'g4'],
-			['y5', 'g2', 'g4', 'p3'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'b3'],
+			['y5', 'g2', 'g4', 'p3', 'g1'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 1, 1],
 			starting: PLAYER.CATHY,
 		});
 		// Alice can see that the identity of the promised play matches Bob's r1.
-		// She should treat it as a reverse trash finesse and chop move her slot 4.
+		// She should treat it as a reverse trash finesse and chop move her slots 4 and 5.
 		takeTurn(game, 'Cathy clues 1 to Alice (slot 3)');
 
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r1', 'y1', 'g1', 'b1', 'p1']);
 
 		// Alice should discard her slot 3 to show that the finesse is recognized.
@@ -287,15 +288,16 @@ describe('interpreting trash finesse', () => {
 		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] });
 		takeTurn(game, 'Alice discards r1 (slot 3)');
 
-		// After the discard, slot 4 is still chop moved.
+		// After the discard, slots 4 and 5 are still chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 	});
 
 	it('will interpret receiving a play when an ambiguous reverse trash finesse is visible', async () => {
 		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx'],
-			['r1', 'p3', 'b4', 'g4'],
-			['y5', 'g2', 'g4', 'p3'],
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'b3'],
+			['y5', 'g2', 'g4', 'p3', 'g1'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 1, 2, 0, 0],
