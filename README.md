@@ -1,4 +1,8 @@
 # hanabi-bot
+
+> [!IMPORTANT]
+> This project has been succeeded by [scala-bot](https://github.com/will-hanabi-bot/scala-bot) and is no longer actively developed. I still plan to review PRs but won't be working on any features or bug fixes. However, this bot will likely remain the strongest H-Group and RS bot for the next while, and is the only bot that can play Playful Sieve.
+
 A deterministic NodeJS bot that plays on the [hanab.live](https://hanab.live/) interface. Basic structure and ideas were taken from [Zamiell's example bot](https://github.com/Zamiell/hanabi-live-bot) (Python). You can play with it by inviting any of the `will-bot`'s to your table.
 
 It can play with [H-Group](https://hanabi.github.io/), [Referential Sieve](https://hackmd.io/Ui6LXAK3TdC7AKSDcN20PQ?view) and [Playful Sieve](https://hackmd.io/@sodiumdebt/playful_sieve) conventions. The goal of the bot is to play with humans, so it can handle suboptimal play within reason. However, it still expects that the conventions are followed (in terms of focus, chop, etc.) and does not perform any "learning" during a game.
