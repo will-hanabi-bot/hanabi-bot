@@ -171,7 +171,7 @@ describe('interpreting trash push', () => {
 });
 
 describe('interpreting trash finesse', () => {
-	it('will interpret a trash finesse', () => {
+	it('will interpret a rank trash finesse', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'p3', 'b4', 'g4', 'g1'],
@@ -188,7 +188,27 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, CARD_STATUS.CM);
 	});
 
-	it('will interpret an ambiguous direct play', () => {
+	it('will interpret a colour trash finesse', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'g1'],
+			['y1', 'g2', 'y5', 'p2', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 4, 0, 0],
+		});
+		// The clue looks like Alice is telling Cathy to play g5.
+		// If Bob plays slot 1, it will prove that Alice's clued card was in fact trash, and
+		// saves several useful cards in cathy's hand.
+		takeTurn(game, 'Alice clues green to Cathy');
+
+		// Bob's slot 1 should be blind played.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].blind_playing, true);
+		// Cathy's slot 4 should be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret an ambiguous rank direct play', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'p3', 'b4', 'g4', 'g1'],
@@ -198,14 +218,31 @@ describe('interpreting trash finesse', () => {
 			play_stacks: [0, 1, 2, 0, 0],
 		});
 		takeTurn(game, 'Alice clues 1 to Cathy');
-		takeTurn(game, 'Bob discards g4', 'p3');
+		takeTurn(game, 'Bob discards g1', 'p3');
 
 		// Cathy's slot 3 should be assumed playable.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]], ['r1', 'b1', 'p1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, undefined);
 	});
 
-	it('will interpret a reverse trash finesse', () => {
+	it('will interpret an ambiguous colour direct play', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'g1'],
+			['y5', 'g5', 'b1', 'p2', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 4, 0, 0],
+		});
+		takeTurn(game, 'Alice clues green to Cathy');
+		takeTurn(game, 'Bob discards g1', 'p3');
+
+		// Cathy's slot 2 should be assumed playable.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['g5']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, undefined);
+	});
+
+	it('will interpret a reverse rank trash finesse', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['y5', 'g2', 'g1', 'p2', 'b3'],
@@ -218,11 +255,30 @@ describe('interpreting trash finesse', () => {
 
 		// Cathy's slot 1 should be finessed.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
-		// Bob's slot 4 should be chop moved.
+		// Bob's slots 4 and 5 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
 	});
 
-	it('will interpret receiving a trash finesse', () => {
+	it('will interpret a reverse colour trash finesse', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'b1', 'g2', 'p2', 'b3'],
+			['g5', 'p3', 'b4', 'g4', 'g1'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 4, 1, 1],
+		});
+		takeTurn(game, 'Alice clues green to Bob');
+
+		// Cathy's slot 1 should be finessed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
+		// Bob's slots 4 and 5 should be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret receiving a rank trash finesse', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['y5', 'g2', 'g4', 'p2', 'g1'],
@@ -238,9 +294,55 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 		// Alice's slot 4 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 	});
 
-	it('will interpret receiving an ambiguous direct play', () => {
+	it('will interpret receiving a colour trash finesse', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'g2', 'p4', 'p2', 'g1'],
+			['g5', 'p3', 'b4', 'g4', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 4, 0, 0],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues green to Alice (slot 3)');
+
+		// Cathy's slot 1 should be blind played.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.FINESSED);
+		// Alice's slots 4 and 5 should be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret receiving a colour trash bluff', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'g2', 'p4', 'p2', 'g1'],
+			['r1', 'p3', 'b4', 'g4', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 4, 0, 0],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues green to Alice (slot 3)');
+
+		// Cathy's slot 1 should be blind played.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
+		// Alice's slots 4 and 5 should be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+
+		takeTurn(game, 'Cathy plays r1', 'b5');
+
+		// Alice's slot 2 must be known trash.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['g1', 'g2', 'g3', 'g4']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret receiving an ambiguous rank direct play', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['y5', 'g2', 'g4', 'p2', 'g1'],
@@ -254,8 +356,9 @@ describe('interpreting trash finesse', () => {
 
 		// Cathy's slot 1 is expected to blind play.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
-		// Alice's slot 4 should be chop moved.
+		// Alice's slots 4 and 5 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 
 		takeTurn(game, 'Cathy discards g4', 'p3');
 
@@ -265,7 +368,7 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
 	});
 
-	it('will interpret receiving a reverse trash finesse', async () => {
+	it('will interpret receiving a reverse rank trash finesse', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'p3', 'b4', 'g4', 'b3'],
@@ -293,7 +396,34 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 	});
 
-	it('will interpret receiving a play when an ambiguous reverse trash finesse is visible', async () => {
+	it('will interpret receiving a reverse colour trash finesse', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g4', 'p3', 'b4', 'g4', 'b3'],
+			['y5', 'g2', 'y4', 'p3', 'g1'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 3, 1, 1],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues 5 to Alice (slot 5)');
+		// Alice can see that the identity of the promised play matches Bob's g4.
+		// She should treat it as a reverse trash finesse and chop move her slot 4.
+		takeTurn(game, 'Cathy clues green to Alice (slot 3)');
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['g1', 'g2', 'g3', 'g4']);
+
+		// Alice should discard her slot 3 to show that the finesse is recognized.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.DISCARD, target: game.state.hands[PLAYER.ALICE][2] });
+		takeTurn(game, 'Alice discards g4 (slot 3)');
+
+		// After the discard, slot 4 is still chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret receiving a play when an ambiguous reverse rank trash finesse is visible', async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['r1', 'p3', 'b4', 'g4', 'b3'],
