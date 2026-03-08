@@ -1,7 +1,7 @@
 import { CLUE } from '../../../constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
-import { IllegalInterpretation, find_own_finesses, find_own_trash_finesses } from './own-finesses.js';
+import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections } from '../../../tools/log.js';
