@@ -1,4 +1,8 @@
 # hanabi-bot
+
+> [!IMPORTANT]
+> This project has been succeeded by [scala-bot](https://github.com/will-hanabi-bot/scala-bot) and is no longer actively developed. I still plan to review PRs but won't be working on any features or bug fixes. However, this bot will likely remain the strongest H-Group and RS bot for the next while, and is the only bot that can play Playful Sieve.
+
 A deterministic NodeJS bot that plays on the [hanab.live](https://hanab.live/) interface. Basic structure and ideas were taken from [Zamiell's example bot](https://github.com/Zamiell/hanabi-live-bot) (Python). You can play with it by inviting any of the `will-bot`'s to your table.
 
 It can play with [H-Group](https://hanabi.github.io/), [Referential Sieve](https://hackmd.io/Ui6LXAK3TdC7AKSDcN20PQ?view) and [Playful Sieve](https://hackmd.io/@sodiumdebt/playful_sieve) conventions. The goal of the bot is to play with humans, so it can handle suboptimal play within reason. However, it still expects that the conventions are followed (in terms of focus, chop, etc.) and does not perform any "learning" during a game.
@@ -27,6 +31,10 @@ If you're interested in understanding how the bot works, I've written [some docu
 - If you want to run on an alternate hanabi-live server, export the server hostname as `HANABI_HOSTNAME`.
 - Export the environment variables `HANABI_USERNAME` and `HANABI_PASSWORD` for the bot to log in.
     - You'll need to create its account on hanab.live first.
+- (optional) Control behaviour when only bots remain by exporting one or both of:
+  - `HANABI_LEAVE_PREGAME_IF_ONLY_BOTS` – if `1`, the bot will leave rooms in the lobby phase when **all** players match a recognized bot prefix.
+  - `HANABI_LEAVE_REPLAY_IF_ONLY_BOTS` – if `1`, the bot will leave during replay viewing when **all** spectators match a recognized bot prefix.
+  Prefixes are configured via `HANABI_BOT_NAME_PREFIXES` (see below).
 - Run `npm start` to start the bot.
     - If you want to run multiple bot accounts using one env file, export environment variables with a number at the end (like `HANABI_USERNAME2`) and use `npm start -- index=2`. See `.env.template` for an example.
 - Debug logs will show up in the console, providing more information about what the bot thinks about every action.
@@ -83,3 +91,17 @@ The final score for each seed as well as how each game terminated are logged to 
 
 
 Feel free to report any issues [here](https://github.com/WillFlame14/hanabi-bot/issues)!
+
+---
+
+## Environment variables reference
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HANABI_USERNAME` / `HANABI_PASSWORD` | Credentials for the bot account | – |
+| `HANABI_HOSTNAME` | Alternate server hostname | hanab.live |
+| `HANABI_PORT` | Custom port for a local server | 443 |
+| `SSL_ENABLED` | Set to `false` when running against unencrypted local server | `true` |
+| `HANABI_LEAVE_PREGAME_IF_ONLY_BOTS` | Leave table lobby when all players match a bot prefix | `false` |
+| `HANABI_LEAVE_REPLAY_IF_ONLY_BOTS` | Leave replay views when all spectators match a bot prefix | `true` |
+| `HANABI_BOT_NAME_PREFIXES` | Comma-separated prefixes used by `startsWith` to identify bots | (empty) |

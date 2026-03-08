@@ -39,7 +39,6 @@ describe('pink promise', () => {
 		], {
 			level: { min: 1 },
 			clue_tokens: 7,
-			starting: PLAYER.BOB,
 			variant: VARIANTS.PINK
 		});
 
@@ -485,7 +484,7 @@ describe('pink choice tempo clues', () => {
 			starting: PLAYER.CATHY,
 			variant: VARIANTS.OMNI,
 			init: (game) => {
-				// ALice's slots 4 and 5 are known omni.
+				// Alice's slots 4 and 5 are known omni.
 				for (const s of [3, 4]) {
 					preClue(game, game.state.hands[PLAYER.ALICE][s], [
 						{ type: CLUE.RANK, value: 1, giver: PLAYER.CATHY },

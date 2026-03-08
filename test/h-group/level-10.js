@@ -436,7 +436,7 @@ describe('composition finesse', () => {
 
 		takeTurn(game, 'Cathy discards r3', 'g2');
 
-		// ALice's red card in slot 5 should be r3.
+		// Alice's red card in slot 5 should be r3.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]], ['r3']);
 	});
 
@@ -483,7 +483,7 @@ describe('composition finesse', () => {
 
 		const { play_clues } = find_clues(game);
 
-		// ALice cannot clue red to Bob, since Bob cannot perform a Certain Discard.
+		// Alice cannot clue red to Bob, since Cathy cannot perform a Certain Discard.
 		assert.ok(!play_clues[PLAYER.BOB].some(clue => clue.type === CLUE.COLOUR && clue.value === COLOUR.RED));
 	});
 
