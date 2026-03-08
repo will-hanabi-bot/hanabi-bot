@@ -22,7 +22,6 @@ describe('simple endgames with 1 card left', () => {
 			['r4', 'r1', 'g1', 'b1'],
 			['r4', 'p1', 'p1', 'b5'],
 		], {
-			level: { max: 13 },
 			play_stacks: [3, 4, 5, 4, 5],
 			discarded: [
 				'r2', 'r3',

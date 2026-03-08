@@ -202,16 +202,21 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 		// 1. The connecting plays before the target don't connect to the target, or
 		let lastPlayer = action.giver;
 		let ci = 0;
+		let ourMaxRank = 0;
+		for (const id of focus_thoughts.possible) {
+			if (id.suitIndex === suitIndex && id.rank > ourMaxRank)
+				ourMaxRank = id.rank;
+		}
 		while (ci < connections.length && connections[ci].reacting) {
 			if (!inBetween(state.numPlayers, connections[ci].reacting, lastPlayer, action.target))
 				break;
 			lastPlayer = connections[ci].reacting;
 			ci++;
 		}
-		const no_connecting_play = ci > 0 && connections[ci-1].identities.every(id => id.suitIndex !== suitIndex);
+		const no_connecting_play = ci > 0 && connections[ci-1].identities.every(id => id.suitIndex !== suitIndex || id.rank >= ourMaxRank);
 
-		const connected_finesses = connections.filter((conn, conn_i) => conn_i < ci && conn.type === 'finesse');
-		const connected_reverse_finesses = connections.filter((conn, conn_i) => conn_i >= ci && conn.type === 'finesse');
+		// Can only reverse trash finesse before end game.
+		const connected_reverse_finesses = state.inEndgame() ? [] : connections.filter((conn, conn_i) => conn_i >= ci && conn.type === 'finesse');
 		const possible_trash = focus_thoughts.possible.filter(id =>
 			state.isBasicTrash(id) ||
 			connected_reverse_finesses.some(cf => cf.identities.some(cid => cid.suitIndex === id.suitIndex && cid.rank === id.rank)));
@@ -219,10 +224,10 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 		// The connection is only a bluff if we didn't find the expected rank playable.
 		tf_connections[0].possibly_bluff = tf_connections[0].bluff;
 
-		// 2. The target knows their card matches a finesse or must be trash.
+		// 2. The target knows their card must either be trash or match a reverse finesse play.
 		const card_matches_last_play = focus_thoughts.possible.every(id =>
-			possible_trash.includes(id) ||
-			connected_finesses.some(cf => cf.identities.some(cid => cid.suitIndex === id.suitIndex && cid.rank === id.rank)));
+			possible_trash.includes(id)
+		);
 
 		if (no_connecting_play || card_matches_last_play) {
 			logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
@@ -415,11 +420,11 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 			}
 			const no_connecting_play = ci > 0 && connections[ci-1].identities.every(id => id.suitIndex !== suitIndex || id.rank >= rank);
 
-			// 2. The target knows their card must either be trash or match a reverse finesse play.
-			const matching_play_index = connections.findIndex(conn => conn.type === 'finesse' && conn.identities.some(id => id.suitIndex === suitIndex && id.rank === rank));
+			// 2. The target knows their card must either be trash or match a reverse finesse play before end game.
+			const matching_play_index = state.inEndgame() ? -1 : connections.findIndex((conn, index) => index >= ci && conn.type === 'finesse' && conn.identities.some(id => id.suitIndex === suitIndex && id.rank === rank));
 			const card_matches_last_play = next_rank > rank && focus_thoughts.possible.every(id =>
 				state.isBasicTrash(id) ||
-				matching_play_index >= ci && id.suitIndex === suitIndex);
+				matching_play_index != -1 && id.suitIndex === suitIndex);
 
 			if (no_connecting_play || card_matches_last_play) {
 				logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
