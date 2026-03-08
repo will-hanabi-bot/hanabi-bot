@@ -508,13 +508,17 @@ describe('interpreting trash finesse', () => {
 
 		// Alice's slot 1 should be r1 blind playing.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y2', 'g2', 'b2', 'p2']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['y1', 'g1', 'b1', 'p1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].blind_playing, true);
 
 		// Bob's slots 5 is chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][0] });
 		takeTurn(game, 'Alice plays g2 (slot 1)');
 
 		// Bob is still chop moved.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['y1', 'g1', 'b1', 'p1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
 	});
 });

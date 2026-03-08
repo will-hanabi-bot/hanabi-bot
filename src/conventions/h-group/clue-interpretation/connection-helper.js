@@ -1,7 +1,7 @@
 import { CLUE } from '../../../constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
-import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
+import { IllegalInterpretation, find_own_finesses, find_own_trash_finesses } from './own-finesses.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections } from '../../../tools/log.js';
@@ -214,7 +214,7 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 			// Fake connection - we need to blind play too many times
 			const fake = blind_plays(connections, state.ourPlayerIndex) > ownBlindPlays;
 
-			if (connections.find(conn => conn.type !== 'known' && conn.type !== 'playable')?.reacting === target)
+			if (connections.length === 0 || connections.find(conn => conn.type !== 'known' && conn.type !== 'playable')?.reacting === target)
 				self_connections.push({ ...id.raw(), connections, fake });
 			else
 				non_self_connections.push({ ...id.raw(), connections, fake });

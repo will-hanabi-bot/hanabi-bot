@@ -139,8 +139,22 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 	const focus = focused_card.order;
 	const old_inferred = old_game.common.thoughts[focus].inferred;
 
+	// Trash finesse possibilities need to be re-added as trash is normally ruled out.
+	// TODO: Maybe we should not rule them out in the first place?
+	const trash_fps = simplest_poss.filter(sp => sp.interp == CLUE_INTERP.TRASH_FINESSE);
+	if (trash_fps.length > 0) {
+		old_game.common.updateThoughts(focus, (draft) => {
+			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
+			draft.trash = true;
+		});
+		common.updateThoughts(focus, (draft) => {
+			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
+			draft.trash = true;
+		});
+	}
+
 	common.updateThoughts(focus, (draft) => {
-		draft.inferred = common.thoughts[focus].inferred.intersect(simplest_poss).union(simplest_poss.filter(sp => sp.interp == CLUE_INTERP.TRASH_FINESSE));
+		draft.inferred = common.thoughts[focus].inferred.intersect(simplest_poss);
 	});
 
 	if (important_finesse(state, action, simplest_poss)) {
