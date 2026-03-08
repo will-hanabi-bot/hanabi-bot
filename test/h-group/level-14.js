@@ -1,13 +1,13 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { PLAYER, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
 
 import logger from '../../src/tools/logger.js';
-import { ACTION } from '../../src/constants.js';
+import { ACTION, CLUE } from '../../src/constants.js';
 import { find_clues } from '../../src/conventions/h-group/clue-finder/clue-finder.js';
 import { determine_playable_card } from '../../src/conventions/h-group/action-helper.js';
 import { find_urgent_actions } from '../../src/conventions/h-group/urgent-actions.js';
@@ -441,4 +441,96 @@ describe('interpreting trash finesse', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r1', 'b1', 'p1']);
 	});
 
+	it('interprets a fill-in trash finesse', async() => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'b4', 'r1', 'b3', 'g4'],
+			['y2', 'r1', 'g4', 'b3', 'r5'],
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 0, 0, 0, 0],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues 5 to Cathy');
+		takeTurn(game, 'Cathy clues 5 to Alice (slot 5)');
+
+		// This fills in the r5 and clues the r1 as a play.
+		takeTurn(game, 'Alice clues red to Cathy');
+		// Bob's slot 1 should be blind played.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].blind_playing, true);
+		// Cathy's slots 3 and 4 should be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, CARD_STATUS.CM);
+
+		takeTurn(game, 'Bob plays r4', 'g2');
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r1', 'r2', 'r3']);
+		// Cathy's slots 3 and 4 remain chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, CARD_STATUS.CM);
+	});
+
+	it('interprets receiving a reverse trash finesse', async() => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'b4', 'r1', 'b3', 'g4'],
+			['y3', 'g3', 'g4', 'b1', 'r5'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 1, 1, 1],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues 1 to Cathy');
+		takeTurn(game, 'Cathy discards b1', 'y3');
+
+		// Alice's slot 1 should be r1 blind playing.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].blind_playing, true);
+
+		// Cathy's slots 5 is chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
+		takeTurn(game, 'Alice plays r1 (slot 1)');
+
+		// Cathy is still chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
+	});
+
+	it('interprets receiving a trash bluff', async() => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y3', 'g3', 'g4', 'b1', 'r5'],
+			['r4', 'b4', 'r1', 'b3', 'g4'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 1, 1, 1],
+			starting: PLAYER.CATHY,
+		});
+		takeTurn(game, 'Cathy clues 1 to Bob');
+
+		// Alice's slot 1 should be r1 blind playing.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y2', 'g2', 'b2', 'p2']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].blind_playing, true);
+
+		// Bob's slots 5 is chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
+		takeTurn(game, 'Alice plays g2 (slot 1)');
+
+		// Bob is still chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
+	});
+});
+
+describe('giving trash finesses', () => {
+	it(`won't give a bad trash finesse`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'p3', 'b4', 'g2', 'b3'],
+			['y5', 'g3', 'g4', 'r1', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 0, 0, 0, 0]
+		});
+		const { play_clues } = find_clues(game);
+		// Red to Cathy is not a valid clue as Cathy will think it is r5.
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.COLOUR && clue.value === COLOUR.RED));
+	});
 });

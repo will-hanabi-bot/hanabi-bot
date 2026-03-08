@@ -344,6 +344,84 @@ export function find_own_finesses(game, action, focus, identity, looksDirect, ig
 }
 
 /**
+ * Looks for a trash finesse / bluff through own hand.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {number} focus
+ * @param {Identity} identity
+ * @throws {IllegalInterpretation} If no connection can be found.
+ * @returns {Connection[] | undefined}
+ */
+export function find_own_trash_finesses(game, action, focus, identity) {
+	const { common, state } = game;
+	const { target } = action;
+	const { suitIndex, rank } = identity;
+
+	// Create hypothetical state where we have the missing cards (and others can elim from them)
+	const hypo_game = game.shallowCopy();
+	hypo_game.state = state.shallowCopy();
+	hypo_game.state.play_stacks = state.play_stacks.slice();
+	hypo_game.common = common.clone();
+
+	const { state: hypo_state, common: hypo_common } = hypo_game;
+
+	const connections = /** @type {Connection[]} */ ([]);
+	const already_connected = [focus];
+
+	let finesses = 0;
+	const direct = common.thoughts[focus].possible.some(id => state.isPlayable(id));
+
+	for (let next_rank = hypo_state.play_stacks[suitIndex] + 1; next_rank <= rank; next_rank++) {
+		const next_identity = { suitIndex, rank: next_rank };
+		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
+
+		const options = { assumeTruth: true, bluffed: false };
+		const curr_connections = connect(hypo_game, action, next_identity, direct, already_connected, ignoreOrders, target, [], finesses, options);
+
+		if (curr_connections.length === 0)
+			break;
+
+		let allHidden = true;
+		for (const connection of curr_connections) {
+			connections.push(connection);
+
+			const { order, hidden, type } = connection;
+
+			if (type === 'finesse')
+				finesses++;
+
+			if (hidden) {
+				const id = state.deck[order].identity();
+
+				if (id !== undefined) {
+					hypo_state.play_stacks[id.suitIndex]++;
+					hypo_common.hypo_stacks[id.suitIndex]++;		// Everyone knows this card is playing
+				}
+			}
+			else {
+				allHidden = false;
+
+				// Assume this is actually the card
+				hypo_common.updateThoughts(order, (draft) => { draft.inferred = hypo_common.thoughts[order].inferred.intersect(next_identity); });
+				Object.assign(hypo_common, hypo_common.good_touch_elim(hypo_state));
+			}
+			already_connected.push(order);
+		}
+
+		// Hidden connection, need to look for this rank again
+		if (allHidden)
+			next_rank--;
+		else
+			hypo_state.play_stacks[suitIndex]++;
+	}
+
+	if (hypo_state.play_stacks[suitIndex] !== rank)
+		return undefined;
+
+	return connections;
+}
+
+/**
  * @param {Game} game
  * @param {Identity} identity
  * @param {number[]} [connected] 		The orders of cards that have previously connected.
