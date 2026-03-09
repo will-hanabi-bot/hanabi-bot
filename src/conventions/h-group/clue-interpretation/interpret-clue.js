@@ -151,6 +151,18 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
 			draft.trash = true;
 		});
+		// All newly clued cards are trash
+		for (const order of state.hands[target]) {
+			if (order === focus || !state.deck[order].newly_clued)
+				continue;
+
+			const { possible } = common.thoughts[order];
+			const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+			common.updateThoughts(order, (draft) => {
+				draft.inferred = new_inferred;
+				draft.trash = true;
+			});
+		}
 	}
 
 	common.updateThoughts(focus, (draft) => {
