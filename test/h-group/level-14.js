@@ -184,8 +184,29 @@ describe('interpreting trash finesse', () => {
 
 		// Bob's slot 1 should be blind played.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].blind_playing, true);
-		// Cathy's slot 4 should be chop moved.
+		// Cathy's slots 4 and 5 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret a rank trash finesse touching multiple cards', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'p3', 'b4', 'g4', 'g1'],
+			['y5', 'g2', 'g1', 'y1', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 2, 0, 0],
+		});
+		takeTurn(game, 'Alice clues 1 to Cathy');
+
+		// Bob's slot 1 should be blind played.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].blind_playing, true);
+		// Both touched cards are marked as trash.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].trash, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].trash, true);
+		// Cathy's slot 5 should be chop moved.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].status, CARD_STATUS.CM);
 	});
 
 	it('will interpret a colour trash finesse', () => {
@@ -294,6 +315,27 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
 		// Alice's slot 4 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+	});
+
+	it('will interpret receiving a rank trash finesse touching multiple cards', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y5', 'g2', 'g4', 'p2', 'g1'],
+			['r1', 'p3', 'b4', 'g4', 'b3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 2, 0, 0],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues 1 to Alice (slots 3,4)');
+
+		// Cathy's slot 1 should be blind played.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].status, CARD_STATUS.MAYBE_BLUFFED);
+		// Alice's slot 3 and 4 are known trash
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].trash, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].trash, true);
+		// Alice's slot 5 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
 	});
 
@@ -485,9 +527,13 @@ describe('interpreting trash finesse', () => {
 		takeTurn(game, 'Alice clues red to Cathy');
 		// Bob's slot 1 should be blind played.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].blind_playing, true);
+		// Cathy's slot 2 is known trash
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]].trash, true);
 		// Cathy's slots 3 and 4 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][2]].status, CARD_STATUS.CM);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].status, CARD_STATUS.CM);
+		// Cathy's slot 5 is not trash
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][4]].trash, false);
 
 		takeTurn(game, 'Bob plays r4', 'g2');
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][1]], ['r1', 'r2', 'r3']);
