@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
@@ -547,6 +547,37 @@ describe('interpreting trash finesse', () => {
 		// Bob is still chop moved.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['y1', 'g1', 'b1', 'p1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
+	});
+
+	describe('recognizes real prompt over false trash finesse', async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['b1', 'g1', 'r5', 'r4'],
+			['g3', 'r2', 'y1', 'g4'],
+			['g4', 'y3', 'b3', 'p4'],
+		], {
+			level: { min: 14 },
+			play_stacks: [1, 2, 2, 0, 5],
+			starting: PLAYER.BOB,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Cathy's r1 is known.
+				preClue(game, game.state.hands[PLAYER.CATHY][1], [
+					{ type: CLUE.RANK, value: 2, giver: PLAYER.ALICE }
+				]);
+			}
+		});
+		takeTurn(game, 'Bob clues 3 to Alice (slot 2)');
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+
+		takeTurn(game, 'Cathy plays r2', 'g5');
+
+		// After cathy doesn't play possible trash bluff, we are no longer chop moved and can infer regular connections.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['r3', 'y3', 'g3']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
 	});
 });
 

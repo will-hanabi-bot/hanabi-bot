@@ -146,9 +146,10 @@ export function knownAs(game, order, regex) {
  * @param {Game} game
  * @param {number} index
  * @param {number} suitIndex
+ * @param {boolean} [possibly_bluff] If we may be bluffing cards, need to include all suits
  */
-export function getIgnoreOrders(game, index, suitIndex) {
+export function getIgnoreOrders(game, index, suitIndex, possibly_bluff = false) {
 	return (game.next_ignore[index] ?? [])
-		.filter(i => i.inference === undefined || i.inference.suitIndex === suitIndex)
+		.filter(i => i.inference === undefined || possibly_bluff || i.inference.suitIndex === suitIndex)
 		.map(i => i.order);
 }
