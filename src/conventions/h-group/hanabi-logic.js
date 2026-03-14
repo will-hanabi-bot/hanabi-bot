@@ -30,10 +30,12 @@ import { is_trash_clue } from './clue-interpretation/interpret-cm.js';
  * @param {number[]} hand
  * @param {Player} player
  * @param {number[]} list 	The orders of all cards that were just clued.
+ * @param {number} giver
+ * @param {number} target
  * @param {BaseClue} clue
  * @returns The order of the trash pushed card or -1 if no card is trash pushed.
  */
-export function interpret_tp(game, hand, player, list, clue) {
+export function interpret_tp(game, hand, player, list, giver, target, clue) {
 	const chopIndex = player.chopIndex(hand);
 	if (chopIndex === -1)
 		return -1;
@@ -55,7 +57,7 @@ export function interpret_tp(game, hand, player, list, clue) {
 		return -1;
 
 	// Check if the clued card is a trash clue.
-	if (!is_trash_clue(game, clue, chop, player))
+	if (!is_trash_clue(game, giver, clue, target, chop, player))
 		return -1;
 
 	return tp_focus;
@@ -69,10 +71,12 @@ export function interpret_tp(game, hand, player, list, clue) {
  * @param {number[]} hand
  * @param {Player} player
  * @param {number[]} list 	The orders of all cards that were just clued.
+ * @param {number} giver
+ * @param {number} target
  * @param {BaseClue} clue
  * @returns {FocusResult}
  */
-export function determine_focus(game, hand, player, list, clue) {
+export function determine_focus(game, hand, player, list, giver, target, clue) {
 	const { common, state } = game;
 	const chop = player.chop(hand);
 
@@ -80,7 +84,7 @@ export function determine_focus(game, hand, player, list, clue) {
 	if (chop !== undefined && list.includes(chop)) {
 		// Check for trash push which focuses new chop.
 		if (game.level >= LEVEL.TRASH_MOVES) {
-			const tp = interpret_tp(game, hand, player, list, clue);
+			const tp = interpret_tp(game, hand, player, list, giver, target, clue);
 
 			if (tp != -1) {
 				logger.highlight('cyan', `trash push on ${logCard(state.deck[tp])} ${tp}`);

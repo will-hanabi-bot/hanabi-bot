@@ -458,7 +458,7 @@ export function interpret_clue(game, action) {
 	logger.info('loaded?', loaded);
 
 
-	const focusResult = determine_focus(game, state.hands[target], common, list, clue);
+	const focusResult = determine_focus(game, state.hands[target], common, list, giver, target, clue);
 	const { positional, focus, chop, focus_interp } = focusResult;
 	const focused_card = state.deck[focus];
 

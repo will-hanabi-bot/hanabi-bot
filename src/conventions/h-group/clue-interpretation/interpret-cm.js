@@ -20,12 +20,14 @@ import { LEVEL } from '../h-constants.js';
 /**
  * Checks whether a clue focus is trash.
  * @param {Game} game
+ * @param {number} giver
  * @param {BaseClue} clue
+ * @param {number} target
  * @param {number} focus_order
  * @param {Player} oldCommon
  * @returns Whether the clued card is considered trash.
  */
-export function is_trash_clue(game, clue, focus_order, oldCommon) {
+export function is_trash_clue(game, giver, clue, target, focus_order, oldCommon) {
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus_order];
 	const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
@@ -36,11 +38,10 @@ export function is_trash_clue(game, clue, focus_order, oldCommon) {
 	const playable_cards = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
 	if (game.level < LEVEL.TRASH_MOVES || playable_cards > 1)
 		return false;
-	// There's exactly one playable card. If we aren't the target assume we have it if it is trash.
-	if (oldCommon.playerIndex !== state.ourPlayerIndex)
-		return state.isBasicTrash(state.deck[focus_order].identity());
-	// If we are the target, check if we think it could be playable.
-	return playable_ids.some(id => oldCommon.thoughts[focus_order].possible.has(id));
+	// There's exactly one playable card. Check if the target might be able to see it.
+	const id = playable_ids[0];
+	const could_be_in_our_hand = giver !== state.ourPlayerIndex && target !== state.ourPlayerIndex && state.hands[state.ourPlayerIndex].some(o => game.players[state.ourPlayerIndex].thoughts[o].possible.some(pid => pid.matches(id)));
+	return !game.players[target].thoughts[focus_order].possible.some(pid => pid.matches(id)) || could_be_in_our_hand;
 }
 
 /**
@@ -54,13 +55,13 @@ export function is_trash_clue(game, clue, focus_order, oldCommon) {
  */
 export function interpret_tcm(game, action, focus_order, oldCommon, assume = false) {
 	const { common, state } = game;
-	const { target, clue } = action;
+	const { giver, target, clue } = action;
 	const focused_card = state.deck[focus_order];
 
 	if (!focused_card.newly_clued)
 		return [];
 
-	if (!assume && !is_trash_clue(game, clue, focus_order, oldCommon))
+	if (!assume && !is_trash_clue(game, giver, clue, target, focus_order, oldCommon))
 		return [];
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
