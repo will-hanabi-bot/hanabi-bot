@@ -230,16 +230,6 @@ export function interpret_discard(game, action) {
 		}
 	}
 
-	if (game.level >= LEVEL.TRASH_MOVES && !failed) {
-		const ocm_orders = check_tocm(game, action);
-
-		if (ocm_orders.length > 0) {
-			game.interpretMove(DISCARD_INTERP.TOCM_ORDER);
-			for (const ocm_order of ocm_orders)
-				common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
-		}
-	}
-
 	const newGame = Basics.onDiscard(game, action);
 	Basics.mutate(game, newGame);
 
@@ -351,6 +341,16 @@ export function interpret_discard(game, action) {
 			if (interp !== DISCARD_INTERP.NONE) {
 				resolve_discard(game, action, interp);
 				return game;
+			}
+		} else {
+			if (game.level >= LEVEL.TRASH_MOVES && !failed) {
+				const ocm_orders = check_tocm(game, action);
+
+				if (ocm_orders.length > 0) {
+					game.interpretMove(DISCARD_INTERP.TOCM_ORDER);
+					for (const ocm_order of ocm_orders)
+						common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
+				}
 			}
 		}
 	}

@@ -68,7 +68,7 @@ describe('giving trash order chop move', () => {
 
 });
 
-describe('interpreting touch order chop move', () => {
+describe('interpreting trash order chop move', () => {
 	it('will interpret a tocm to the next player', () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
@@ -101,6 +101,34 @@ describe('interpreting touch order chop move', () => {
 
 		// Alice's slot 5 should be chop moved.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+	});
+	it(`shouldn't confuse a scream discard for a tocm`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b4', 'b5', 'g2', 'r3', 'r5'],
+			['y1', 'r4', 'g4', 'r4', 'y3']
+		], {
+			level: { min: 14 },
+			starting: PLAYER.BOB,
+			play_stacks: [1, 0, 0, 0, 0],
+			clue_tokens: 1
+		});
+
+		takeTurn(game, 'Bob clues 1 to Alice (slot 4)');
+		takeTurn(game, 'Cathy plays y1', 'r2');
+
+		// Alice's slot 5 should be chop moved from the trash finesse.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, CARD_STATUS.CM);
+		// Alice's slot 4 should be known trash.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].trash, true);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r1']);
+
+		// If Alice discards slot 3 with known trash on zero clues, must intend an SDCM.
+		takeTurn(game, 'Alice discards p4 (slot 3)');
+
+		// Bob is chop moved once from the scream discard.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, undefined);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, CARD_STATUS.CM);
 	});
 });
 
@@ -668,6 +696,25 @@ describe('interpreting trash finesse', () => {
 
 		// No blind play expected as there is only one useful red card.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].blind_playing, false);
+	});
+
+	it(`shouldn't interpret a trash finesse if the card could already be blind playing`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g2', 'g5', 'g3', 'y1', 'p3'],
+			['r2', 'y3', 'r5', 'y4', 'r4']
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 0, 0, 1, 0],
+			starting: PLAYER.BOB,
+		});
+		takeTurn(game, 'Bob clues 3 to Alice (slot 5)');
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].blind_playing, true);
+
+		takeTurn(game, 'Cathy clues 1 to Bob (slot 4)');
+		// Since Alice was already going to play, this cannot be a trash finesse and should instead be interpreted as a play.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['y1', 'g1', 'p1', 'r1']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, undefined);
 	});
 });
 
