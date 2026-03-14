@@ -2,7 +2,7 @@ import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { inBetween, playersBetween, rankLooksPlayable } from '../hanabi-logic.js';
-import { is_intermediate_bluff_target } from './connection-helper.js';
+import { is_intermediate_bluff_target, is_trash_finesse_target } from './connection-helper.js';
 import { find_connecting } from './connecting-cards.js';
 import { cardTouched, colourableSuits, variantRegexes } from '../../../variants.js';
 import { finalize_connections } from './interpret-clue.js';
@@ -198,7 +198,8 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 	// If we can't have the next card (either because we stacked beyond the max rank or
 	// we know the identity of our card cannot be the next rank), we should consider a
 	// trash finesse.
-	if (game.level >= LEVEL.TRASH_MOVES && !focus_thoughts.possible.has(next_identity) && finesses > 0) {
+	const possible_trash_finesse_target = game.level >= LEVEL.TRASH_MOVES && is_trash_finesse_target(game, focus);
+	if (possible_trash_finesse_target && !focus_thoughts.possible.has(next_identity) && finesses > 0) {
 		// In order to recognize a colour trash finesse, either
 		// 1. The connecting plays before the target don't connect to the target, or
 		let lastPlayer = action.giver;
@@ -309,6 +310,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 	}
 
 	const old_play_stacks = state.play_stacks;
+	const possible_trash_finesse_target = game.level >= LEVEL.TRASH_MOVES && is_trash_finesse_target(game, focus);
 
 	// Play clue
 	for (let suitIndex = 0; suitIndex < state.variant.suits.length; suitIndex++) {
@@ -321,7 +323,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 			continue;
 
 		let certain_trash_finesse = false;
-		const possible_trash = game.level >= LEVEL.TRASH_MOVES && focus_thoughts.possible.filter(id => state.isBasicTrash(id)) || [];
+		const possible_trash = possible_trash_finesse_target && focus_thoughts.possible.filter(id => state.isBasicTrash(id)) || [];
 
 		if (rank === next_rank) {
 			focus_possible.push({ suitIndex, rank, save: false, connections: [], interp: CLUE_INTERP.PLAY });

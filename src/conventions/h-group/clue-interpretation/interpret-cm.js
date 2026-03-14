@@ -5,6 +5,7 @@ import { variantRegexes } from '../../../variants.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard } from '../../../tools/log.js';
+import { LEVEL } from '../h-constants.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -28,7 +29,18 @@ export function is_trash_clue(game, clue, focus_order, oldCommon) {
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus_order];
 	const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
-	return !possible.some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true }));
+	const playable_ids = possible.filter(i => !isTrash(state, oldCommon, i, focus_order, { infer: true }));
+	if (playable_ids.length === 0)
+		return true;
+	// Check how many playable cards the focus could be.
+	const playable_cards = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
+	if (game.level < LEVEL.TRASH_MOVES || playable_cards > 1)
+		return false;
+	// There's exactly one playable card. If we aren't the target assume we have it if it is trash.
+	if (oldCommon.playerIndex !== state.ourPlayerIndex)
+		return state.isBasicTrash(state.deck[focus_order].identity());
+	// If we are the target, check if we think it could be playable.
+	return playable_ids.some(id => oldCommon.thoughts[focus_order].possible.has(id));
 }
 
 /**
@@ -42,7 +54,7 @@ export function is_trash_clue(game, clue, focus_order, oldCommon) {
  */
 export function interpret_tcm(game, action, focus_order, oldCommon, assume = false) {
 	const { common, state } = game;
-	const { clue, target } = action;
+	const { target, clue } = action;
 	const focused_card = state.deck[focus_order];
 
 	if (!focused_card.newly_clued)

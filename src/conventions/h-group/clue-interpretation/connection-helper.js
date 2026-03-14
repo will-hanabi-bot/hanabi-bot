@@ -75,6 +75,22 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
 }
 
 /**
+ * Returns whether the given identity is a valid playable identity for a trash finesse.
+ * @param {Game} game
+ * @param {number} focus
+ */
+export function is_trash_finesse_target(game, focus) {
+	const { state } = game;
+	// If there is only one missing promised card, the receiver would be
+	// able to tell if it is trash by that single card being in our hand.
+	// Only allow trash finesses with other possible identities.
+	const playable_ids = game.common.thoughts[focus].possible.filter(id => !state.isBasicTrash(id));
+	const playable_count = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
+	return game.level >= LEVEL.TRASH_MOVES &&
+		playable_count > 1;
+}
+
+/**
  * Returns whether the given identity is a valid target for an intermediate bluff.
  * @param {Game} game
  * @param {ClueAction} action
