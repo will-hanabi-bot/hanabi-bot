@@ -716,6 +716,29 @@ describe('interpreting trash finesse', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['y1', 'g1', 'p1', 'r1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][4]].status, undefined);
 	});
+
+	it(`should recognize own trash finesse where necessary to connect before target`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['b3', 'b4', 'p5', 'r5'],
+			['r2', 'p2', 'p1', 'y3'],
+			['r1', 'y2', 'y5', 'r3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 3, 4, 4, 3],
+			starting: PLAYER.BOB,
+		});
+		// r1 -> r2 -> r3
+		takeTurn(game, 'Bob clues 3 to Donald');
+
+		// Trash finesse on b4.
+		takeTurn(game, 'Cathy clues 4 to Bob');
+
+		// Since Alice was already going to play, this cannot be an r4 trash finesse and should instead be interpreted as an immediate y4, p4.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y4', 'p4']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CM);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CM);
+	});
 });
 
 describe('giving trash finesses', () => {

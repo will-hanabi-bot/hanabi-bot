@@ -98,13 +98,12 @@ export function is_trash_finesse_target(game, focus) {
  * @param {ClueAction} action
  * @param {number} focus
  * @param {Connection[]} connections
- * @param {Identity} promised
+ * @param {number} suitIndex
  * @returns {FocusPossibility[]}
  */
-export function find_trash_finesses(game, action, focus, connections, promised) {
+export function find_trash_finesses(game, action, focus, connections, suitIndex) {
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus];
-	const { suitIndex } = promised;
 
 	if (game.level < LEVEL.TRASH_MOVES || !is_trash_finesse_target(game, focus) ||
 		!connections.some(conn => conn.type === 'finesse' && !conn.hidden))
@@ -119,7 +118,7 @@ export function find_trash_finesses(game, action, focus, connections, promised) 
 		if (id.suitIndex === suitIndex && id.rank > ourMaxRank)
 			ourMaxRank = id.rank;
 	}
-	while (ci < connections.length && connections[ci].reacting) {
+	while (ci < connections.length) {
 		if (!inBetween(state.numPlayers, connections[ci].reacting, lastPlayer, action.target))
 			break;
 		// We can't rely on this player playing a new card if they're already blind playing

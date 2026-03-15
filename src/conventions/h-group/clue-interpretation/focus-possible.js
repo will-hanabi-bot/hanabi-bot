@@ -199,7 +199,7 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 	// we know the identity of our card cannot be the next rank), we should consider a
 	// trash finesse.
 	const trash_finesses = focus_thoughts.possible.has(next_identity) ? [] :
-		find_trash_finesses(game, action, focus, connections, {suitIndex, rank: next_identity.rank - 1}, finesses);
+		find_trash_finesses(game, action, focus, connections, suitIndex);
 	for (const fp of trash_finesses)
 		focus_possible.push(fp);
 
@@ -373,7 +373,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 		// If we can't have the next card (because we stacked beyond the clue rank,
 		// we should consider a trash finesse.
 		const trash_finesses = next_rank <= rank ? [] :
-			find_trash_finesses(game, action, focus, connections, { suitIndex, rank: next_rank - 1 });
+			find_trash_finesses(game, action, focus, connections, suitIndex);
 		for (const fp of trash_finesses)
 			focus_possible.push(fp);
 

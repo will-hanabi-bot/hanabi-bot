@@ -7,7 +7,7 @@ import { stalling_situation } from './interpret-stall.js';
 import { determine_focus, getRealConnects, rankLooksPlayable, unknown_1 } from '../hanabi-logic.js';
 import { find_focus_possible } from './focus-possible.js';
 import { IllegalInterpretation, find_own_finesses, find_own_trash_finesses } from './own-finesses.js';
-import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids, is_trash_finesse_target } from './connection-helper.js';
+import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids, is_trash_finesse_target, find_trash_finesses } from './connection-helper.js';
 import { variantRegexes } from '../../../variants.js';
 import { remove_finesse } from '../update-wcs.js';
 import { order_1s } from '../action-helper.js';
@@ -940,15 +940,13 @@ export function interpret_clue(game, action) {
 							const connections = find_own_trash_finesses(game, action, focus, new BasicCard(suitIndex, max_rank));
 							if (connections === undefined)
 								continue;
+							const trash_connections = find_trash_finesses(game, action, focus, connections, suitIndex);
+							if (trash_connections.length === 0)
+								continue;
 
-							logger.info('found connections:', logConnections(connections, focused_card));
-							for (const id of trash_ids) {
-								all_connections.push({
-									...id,
-									connections,
-									interp: CLUE_INTERP.TRASH_FINESSE,
-								});
-							}
+							logger.info('found connections:', logConnections(trash_connections[0].connections, focused_card));
+							for (const fp of trash_connections)
+								all_connections.push(fp);
 						}
 					}
 					simplest_connections = occams_razor(game, all_connections, state.ourPlayerIndex, focus);
