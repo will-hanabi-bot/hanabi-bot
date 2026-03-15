@@ -288,12 +288,10 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 			continue;
 
 		let certain_trash_finesse = false;
-		const possible_trash = possible_trash_finesse_target && focus_thoughts.possible.filter(id => state.isBasicTrash(id)) || [];
-
 		if (rank === next_rank) {
 			focus_possible.push({ suitIndex, rank, save: false, connections: [], interp: CLUE_INTERP.PLAY });
 
-			if (possible_trash.length === 0)
+			if (!possible_trash_finesse_target)
 				continue;
 			certain_trash_finesse = true;
 		}
