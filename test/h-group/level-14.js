@@ -698,7 +698,7 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]].blind_playing, false);
 	});
 
-	it(`shouldn't interpret a trash finesse if the card could already be blind playing`, async () => {
+	it(`shouldn't interpret playing a trash finesse if the card could already be blind playing`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx', 'xx'],
 			['g2', 'g5', 'g3', 'y1', 'p3'],

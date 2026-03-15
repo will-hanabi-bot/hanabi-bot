@@ -122,6 +122,9 @@ export function find_trash_finesses(game, action, focus, connections, promised) 
 	while (ci < connections.length && connections[ci].reacting) {
 		if (!inBetween(state.numPlayers, connections[ci].reacting, lastPlayer, action.target))
 			break;
+		// We can't rely on this player playing a new card if they're already blind playing
+		if (state.hands[connections[ci].reacting].some(o => common.thoughts[o].blind_playing))
+			break;
 		lastPlayer = connections[ci].reacting;
 		ci++;
 	}
