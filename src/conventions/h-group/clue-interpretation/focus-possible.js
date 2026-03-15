@@ -1,7 +1,7 @@
 import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
-import { inBetween, playersBetween, rankLooksPlayable } from '../hanabi-logic.js';
+import { playersBetween, rankLooksPlayable } from '../hanabi-logic.js';
 import { find_trash_finesses, is_intermediate_bluff_target, is_trash_finesse_target } from './connection-helper.js';
 import { find_connecting } from './connecting-cards.js';
 import { cardTouched, colourableSuits, variantRegexes } from '../../../variants.js';
