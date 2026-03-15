@@ -3,6 +3,7 @@
  * @typedef {typeof import('./constants.js').CLUE} CLUE
  * @typedef {typeof import('./constants.js').ACTION} ACTION
  * @typedef {typeof import('./conventions/h-group/h-constants.js').CLUE_INTERP} CLUE_INTERP
+ * @typedef {typeof import('./conventions/h-group/h-constants.js').FOCUS_INTERP} FOCUS_INTERP
  * @typedef {typeof import('./conventions/h-group/h-constants.js').PLAY_INTERP} PLAY_INTERP
  * @typedef {typeof import('./conventions/h-group/h-constants.js').DISCARD_INTERP} DISCARD_INTERP
  * @typedef {CLUE_INTERP[keyof CLUE_INTERP] | PLAY_INTERP[keyof PLAY_INTERP] | DISCARD_INTERP[keyof DISCARD_INTERP]} INTERP
@@ -26,7 +27,7 @@
  * @typedef {Clue & {urgent: boolean, trash: boolean}} FixClue
  */
 /**
- * @typedef {{focus: number, chop: boolean, positional: boolean}} FocusResult
+ * @typedef {{focus: number, chop: boolean, positional: boolean, focus_interp: FOCUS_INTERP[keyof FOCUS_INTERP]}} FocusResult
  * 
  * @typedef ClueResult
  * @property {number} focus

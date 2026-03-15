@@ -163,7 +163,7 @@ export function get_clue_interp(game, clue, giver, options) {
 	const giver_player = game.players[giver];
 
 	const list = state.clueTouched(hand, clue);
-	const { focus, chop } = determine_focus(game, hand, common, list, clue);
+	const { focus, chop } = determine_focus(game, hand, common, list, giver, target, clue);
 	const focused_card = state.deck[focus];
 
 	const in_finesse = common.waiting_connections.find(w_conn => {

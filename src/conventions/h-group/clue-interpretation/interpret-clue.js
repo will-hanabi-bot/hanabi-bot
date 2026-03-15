@@ -1,13 +1,13 @@
 import { CLUE } from '../../../constants.js';
-import { CLUE_INTERP, LEVEL } from '../h-constants.js';
-import { CARD_STATUS } from '../../../basics/Card.js';
+import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
+import { BasicCard, CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
 import { interpret_tcm, interpret_5cm, interpret_tccm, perform_cm } from './interpret-cm.js';
 import { stalling_situation } from './interpret-stall.js';
 import { determine_focus, getRealConnects, rankLooksPlayable, unknown_1 } from '../hanabi-logic.js';
 import { find_focus_possible } from './focus-possible.js';
-import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
-import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids } from './connection-helper.js';
+import { IllegalInterpretation, find_own_finesses, find_own_trash_finesses } from './own-finesses.js';
+import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids, is_trash_finesse_target, find_trash_finesses } from './connection-helper.js';
 import { variantRegexes } from '../../../variants.js';
 import { remove_finesse } from '../update-wcs.js';
 import { order_1s } from '../action-helper.js';
@@ -139,7 +139,35 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 	const focus = focused_card.order;
 	const old_inferred = old_game.common.thoughts[focus].inferred;
 
-	common.updateThoughts(focus, (draft) => { draft.inferred = common.thoughts[focus].inferred.intersect(simplest_poss); });
+	// Trash finesse possibilities need to be re-added as trash is normally ruled out.
+	// TODO: Maybe we should not rule them out in the first place?
+	const trash_fps = simplest_poss.filter(sp => sp.interp == CLUE_INTERP.TRASH_FINESSE);
+	if (trash_fps.length > 0) {
+		old_game.common.updateThoughts(focus, (draft) => {
+			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
+			draft.trash = true;
+		});
+		common.updateThoughts(focus, (draft) => {
+			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
+			draft.trash = true;
+		});
+		// All newly clued cards are trash
+		for (const order of state.hands[target]) {
+			if (order === focus || !state.deck[order].newly_clued)
+				continue;
+
+			const { possible } = common.thoughts[order];
+			const new_inferred = possible.intersect(possible.filter(i => state.isBasicTrash(i)));
+			common.updateThoughts(order, (draft) => {
+				draft.inferred = new_inferred;
+				draft.trash = true;
+			});
+		}
+	}
+
+	common.updateThoughts(focus, (draft) => {
+		draft.inferred = common.thoughts[focus].inferred.intersect(simplest_poss);
+	});
 
 	if (important_finesse(state, action, simplest_poss)) {
 		logger.highlight('yellow', 'action is important!');
@@ -230,6 +258,8 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 		common.thoughts.splice(old_chop, 1, produce(common.thoughts[old_chop], (draft) => { draft.status = undefined; }));
 
 		logger.highlight('yellow', `undoing scream discard chop move on ${old_chop} due to generation!`);
+	} else if (interp === CLUE_INTERP.PLAY && !action.list.includes(focus)) {
+		common.updateThoughts(focus, (draft) => { draft.status = CARD_STATUS.FINESSED; });
 	}
 
 	common.updateThoughts(focus, (draft) => { draft.info_lock = draft.inferred.clone(); });
@@ -427,8 +457,9 @@ export function interpret_clue(game, action) {
 	const loaded = common.thinksTrash(state, target).length > 0 || connectable_simple(game, state.nextPlayerIndex(giver), target);
 	logger.info('loaded?', loaded);
 
-	const focusResult = determine_focus(game, state.hands[target], common, list, clue);
-	const { focus, chop, positional } = focusResult;
+
+	const focusResult = determine_focus(game, state.hands[target], common, list, giver, target, clue);
+	const { positional, focus, chop, focus_interp } = focusResult;
 	const focused_card = state.deck[focus];
 
 	common.updateThoughts(focus, (draft) => { draft.focused = true; });
@@ -438,7 +469,7 @@ export function interpret_clue(game, action) {
 	if (rewinded)
 		return game;
 
-	if (chop && !action.noRecurse) {
+	if (focus_interp !== FOCUS_INTERP.TRASH_PUSH && chop && !action.noRecurse) {
 		common.updateThoughts(focus, (draft) => { draft.chop_when_first_clued = true; });
 		action.important = !loaded && urgent_save(game, action, focus, oldCommon, prev_game);
 		if (action.important)
@@ -682,8 +713,33 @@ export function interpret_clue(game, action) {
 		return game;
 	}
 
-	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded);
+	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
+	const trash_finesses = focus_possible.filter(p => p.interp === CLUE_INTERP.TRASH_FINESSE);
+	if (trash_finesses.length > 0 && (target === state.ourPlayerIndex || !focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) &&focused_card.matches(p)))) {
+		// If a trash finesse is possible, we must assume one
+		// if possible unless / until the finessed card is not playable.
+		const { possible } = common.thoughts[focus];
+		const new_inferred = possible.intersect(trash_finesses);
+		if (new_inferred.length > 0) {
+			common.updateThoughts(focus, (draft) => {
+				draft.inferred = new_inferred;
+				draft.info_lock = new_inferred;
+				draft.trash = true;
+			});
+			// Trash chop move
+			const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
+			perform_cm(state, common, tcm_orders);
+		}
+
+		// Further, any play identites are illegal if they could also be trash finesse identites:
+		for (const fp of focus_possible.filter(p => p.interp === CLUE_INTERP.PLAY)) {
+			if (trash_finesses.some(tf => tf.suitIndex === fp.suitIndex && tf.rank === fp.rank)) {
+				fp.illegal = true;
+				logger.info(`marking ${logCard(fp)} as illegal due to possible trash finesse identity`);
+			}
+		}
+	}
 
 	const matched_inferences = focus_possible.filter(p => !p.illegal && common.thoughts[focus].inferred.has(p));
 	const old_game = game.minimalCopy();
@@ -729,7 +785,7 @@ export function interpret_clue(game, action) {
 		// We are the clue target, so we need to consider all the (sensible) possibilities of the card
 		if (target === state.ourPlayerIndex) {
 			all_connections = focus_possible.filter(fp =>
-				!isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
+				fp.interp === CLUE_INTERP.TRASH_FINESSE || !isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
 
 			for (const id of common.thoughts[focus].inferred) {
 				if (isTrash(state, game.players[giver], id, focus, { infer: true, ignoreCM: true }) ||
@@ -842,6 +898,69 @@ export function interpret_clue(game, action) {
 					throw error;
 			}
 			simplest_connections = all_connections;
+		// Someone else is the clue target, and might think it's playable.
+		// Consider possible trash bluffs or finesses on us.
+		} else if (game.level >= LEVEL.TRASH_MOVES && giver !== state.ourPlayerIndex && state.isBasicTrash(focused_card) && common.thoughts[focus].possible.some(id => !state.isBasicTrash(id))) {
+			if (is_trash_finesse_target(game, focus)) {
+				const own_finesse = common.find_finesse(state, state.ourPlayerIndex, [], []);
+				if (own_finesse !== undefined) {
+					const trash_ids = common.thoughts[focus].possible.filter(id => state.isBasicTrash(id));
+					// In order to demonstrate a trash bluff, there needs to be no playable identities
+					// if the card is not immediately playable.
+					const possible_bluff = state.nextPlayerIndex(giver) === state.ourPlayerIndex &&
+						!common.thoughts[focus].possible.some(id => !state.isBasicTrash(id) && !state.isPlayable(id));
+					if (possible_bluff) {
+						// We only need to consider any immediately playable card.
+						const bluffable_ids = common.thoughts[own_finesse].possible.filter(id => state.isPlayable(id));
+						if (bluffable_ids.length > 0) {
+							for (const id of trash_ids) {
+								all_connections.push({
+									...id,
+									connections: [{type: 'finesse', reacting: state.ourPlayerIndex, order: own_finesse, identities: bluffable_ids, bluff: true}],
+									interp: CLUE_INTERP.TRASH_FINESSE,
+								});
+							}
+							logger.info('found connections:', logConnections(all_connections.at(-1).connections, trash_ids));
+						}
+					} else {
+						const suits = action.clue.type === CLUE.COLOUR ? [action.clue.value] : state.variant.suits.map((_, i) => i);
+						for (const suitIndex of suits) {
+							// We need to play up to the highest playable rank the target might think they have.
+							let max_rank = 0;
+							if (action.clue.type === CLUE.RANK) {
+								max_rank = action.clue.value;
+							} else {
+								for (const id of common.thoughts[focus].possible.filter(id => id.suitIndex === suitIndex && !state.isBasicTrash(id))) {
+									if (id.rank > max_rank)
+										max_rank = id.rank;
+								}
+							}
+							if (state.play_stacks[suitIndex] >= max_rank)
+								continue;
+							const connections = find_own_trash_finesses(game, action, focus, new BasicCard(suitIndex, max_rank));
+							if (connections === undefined)
+								continue;
+							const trash_connections = find_trash_finesses(game, action, focus, connections, suitIndex);
+							if (trash_connections.length === 0)
+								continue;
+
+							logger.info('found connections:', logConnections(trash_connections[0].connections, focused_card));
+							for (const fp of trash_connections)
+								all_connections.push(fp);
+						}
+					}
+					simplest_connections = occams_razor(game, all_connections, state.ourPlayerIndex, focus);
+					if (all_connections.length > 0) {
+						const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
+						perform_cm(state, common, tcm_orders);
+					}
+				}
+			} else {
+				// If the target is not a valid trash finesse target, we should still interpret
+				// it as a trash chop move as we likely have the matching identity.
+				const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
+				perform_cm(state, common, tcm_orders);
+			}
 		}
 
 		const finalized_connections = finalize_connections(state, action, simplest_connections);

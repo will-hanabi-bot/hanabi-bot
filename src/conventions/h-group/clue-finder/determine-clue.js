@@ -193,7 +193,7 @@ export function get_result(game, hypo_game, action, provisions = {}) {
 	const hand = state.hands[target];
 
 	const list = provisions.list ?? state.clueTouched(hand, clue);
-	const { focus } = determine_focus(game, hand, common, list, clue);
+	const { focus } = determine_focus(game, hand, common, list, giver, target, clue);
 
 	const { new_touched, fill } = elim_result(hypo_state, common, hypo_common, hand, list);
 	const { bad_touch, cm_dupe, trash, avoidable_dupe } = bad_touch_result(game, hypo_game, hypo_common, giver, target);

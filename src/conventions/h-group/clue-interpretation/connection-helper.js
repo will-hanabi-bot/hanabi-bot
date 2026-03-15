@@ -6,13 +6,15 @@ import { IllegalInterpretation, find_own_finesses } from './own-finesses.js';
 import logger from '../../../tools/logger.js';
 import { logCard, logConnection, logConnections } from '../../../tools/log.js';
 import { isTrash } from '../../../basics/hanabi-util.js';
-import { LEVEL } from '../h-constants.js';
+import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { variantRegexes } from '../../../variants.js';
-import { colour_save, rank_save } from './focus-possible.js';
+import { colour_save, find_trash_push, rank_save } from './focus-possible.js';
+import { inBetween } from '../hanabi-logic.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
  * @typedef {import('../../../basics/State.js').State} State
+ * @typedef {import('../../../basics/Player.js').BasicCard} BasicCard
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../h-player.js').HGroup_Player} Player
  * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
@@ -72,6 +74,87 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
 			const card = game.players[reacting].thoughts[o];
 			return (card.blind_playing || (card.status === CARD_STATUS.GD && card.maybe_layered)) && card.possible.has(truth);
 		});
+}
+
+/**
+ * Returns whether the given identity is a valid playable identity for a trash finesse.
+ * @param {Game} game
+ * @param {number} focus
+ */
+export function is_trash_finesse_target(game, focus) {
+	const { state } = game;
+	// If there is only one missing promised card, the receiver would be
+	// able to tell if it is trash by that single card being in our hand.
+	// Only allow trash finesses with other possible identities.
+	const playable_ids = game.common.thoughts[focus].possible.filter(id => !state.isBasicTrash(id));
+	const playable_count = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
+	return game.level >= LEVEL.TRASH_MOVES &&
+		playable_count > 1;
+}
+
+/**
+ * Returns a list of possible trash finesse connections.
+ * @param {Game} game
+ * @param {ClueAction} action
+ * @param {number} focus
+ * @param {Connection[]} connections
+ * @param {number} suitIndex
+ * @returns {FocusPossibility[]}
+ */
+export function find_trash_finesses(game, action, focus, connections, suitIndex) {
+	const { state, common } = game;
+	const focus_thoughts = common.thoughts[focus];
+
+	if (game.level < LEVEL.TRASH_MOVES || !is_trash_finesse_target(game, focus) ||
+		!connections.some(conn => conn.type === 'finesse' && !conn.hidden))
+		return [];
+
+	// In order to recognize a colour trash finesse, either
+	// 1. The connecting plays before the target don't connect to the target, or
+	let lastPlayer = action.giver;
+	let ci = 0;
+	let ourMaxRank = 0;
+	for (const id of focus_thoughts.possible) {
+		if (id.suitIndex === suitIndex && id.rank > ourMaxRank)
+			ourMaxRank = id.rank;
+	}
+	while (ci < connections.length) {
+		if (!inBetween(state.numPlayers, connections[ci].reacting, lastPlayer, action.target))
+			break;
+		// We can't rely on this player playing a new card if they're already blind playing
+		if (state.hands[connections[ci].reacting].some(o => common.thoughts[o].blind_playing))
+			break;
+		lastPlayer = connections[ci].reacting;
+		ci++;
+	}
+	const no_connecting_play = ci > 0 && connections[ci-1].identities.every(id => id.suitIndex !== suitIndex || id.rank >= ourMaxRank);
+
+	// Can only reverse trash finesse before end game.
+	const connected_reverse_finesses = state.inEndgame() ? [] : connections.filter((conn, conn_i) => conn_i >= ci && conn.type === 'finesse');
+	const possible_trash = focus_thoughts.possible.filter(id =>
+		state.isBasicTrash(id) ||
+		connected_reverse_finesses.some(cf => cf.identities.some(cid => cid.suitIndex === id.suitIndex && cid.rank === id.rank)));
+	const tf_connections = connections.slice();
+	// The connection is only a bluff if we didn't find the expected rank playable.
+	tf_connections[0].possibly_bluff = tf_connections[0].bluff;
+
+	// 2. The target knows their card must either be trash or match a reverse finesse play.
+	const card_matches_last_play = focus_thoughts.possible.every(id =>
+		possible_trash.includes(id)
+	);
+
+	if (!no_connecting_play && !card_matches_last_play)
+		return [];
+
+	logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
+	return possible_trash.map(id => {
+		return {
+			...id,
+			save: false,
+			connections: tf_connections,
+			interp: CLUE_INTERP.TRASH_FINESSE
+		};
+	});
 }
 
 /**
@@ -174,6 +257,9 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 	/** @type {(conns: Connection[], playerIndex: number) => number} */
 	const blind_plays = (conns, playerIndex) => conns.filter(conn => conn.type === 'finesse' && conn.reacting === playerIndex).length;
 
+	if (focusResult.focus_interp === FOCUS_INTERP.TRASH_PUSH)
+		return find_trash_push(game, action, focusResult, new Set());
+
 	for (const id of focused_card.inferred) {
 		// Receiver won't consider trash possibilities or ones that are subsumed by real possibilities
 		if (isTrash(state, common, id, focus, { infer: true }) || inf_possibilities.some(fp => fp.suitIndex === id.suitIndex && fp.rank >= id.rank))
@@ -211,7 +297,7 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 			// Fake connection - we need to blind play too many times
 			const fake = blind_plays(connections, state.ourPlayerIndex) > ownBlindPlays;
 
-			if (connections.find(conn => conn.type !== 'known' && conn.type !== 'playable')?.reacting === target)
+			if (connections.length === 0 || connections.find(conn => conn.type !== 'known' && conn.type !== 'playable')?.reacting === target)
 				self_connections.push({ ...id.raw(), connections, fake });
 			else
 				non_self_connections.push({ ...id.raw(), connections, fake });
