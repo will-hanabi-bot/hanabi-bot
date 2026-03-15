@@ -229,6 +229,8 @@ export function interpret_discard(game, action) {
 			game.interpretMove(PLAY_INTERP.CM_ORDER);
 		}
 	}
+	// Need to check for TOCM before the discard is processed.
+	const tocm_orders = game.level >= LEVEL.TRASH_MOVES ? check_tocm(game, action) : [];
 
 	const newGame = Basics.onDiscard(game, action);
 	Basics.mutate(game, newGame);
@@ -323,8 +325,12 @@ export function interpret_discard(game, action) {
 
 			if (interp === DISCARD_INTERP.SCREAM || interp === DISCARD_INTERP.SHOUT) {
 				state.discard_state = interp;
-
-				if (chop === undefined) {
+				if (interp === DISCARD_INTERP.SHOUT && tocm_orders.length > 0) {
+					logger.info(`intepreting sdocm`);
+					game.interpretMove(DISCARD_INTERP.TOCM_ORDER);
+					for (const ocm_order of tocm_orders)
+						common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
+				} else if (chop === undefined) {
 					logger.warn(`${state.playerNames[nextPlayerIndex]} has no chop!`);
 					interp = DISCARD_INTERP.NONE;
 				}
@@ -342,16 +348,10 @@ export function interpret_discard(game, action) {
 				resolve_discard(game, action, interp);
 				return game;
 			}
-		} else {
-			if (game.level >= LEVEL.TRASH_MOVES && !failed) {
-				const ocm_orders = check_tocm(game, action);
-
-				if (ocm_orders.length > 0) {
-					game.interpretMove(DISCARD_INTERP.TOCM_ORDER);
-					for (const ocm_order of ocm_orders)
-						common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
-				}
-			}
+		} else if (tocm_orders.length > 0) {
+			game.interpretMove(DISCARD_INTERP.TOCM_ORDER);
+			for (const ocm_order of tocm_orders)
+				common.updateThoughts(ocm_order, (draft) => { draft.updateStatus(CARD_STATUS.CM); });
 		}
 	}
 
