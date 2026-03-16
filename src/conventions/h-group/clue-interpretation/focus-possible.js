@@ -39,6 +39,10 @@ export function colour_save(game, identity, action, focus, loaded) {
 	if (!cardTouched(identity, state.variant, clue) || !focus_thoughts.possible.has(identity))
 		return false;
 
+	// Skip if in Critical-Xs
+	if (state.variant.criticalRank == rank)
+		return false;
+
 	// Skip 5 possibility if the focused card does not include a brownish variant. (ex. No Variant games or a negative Brown card)
 	// OR if the clue given is not black.
 	if (rank === 5 && suit !== 'Black' && !/Brown|Muddy|Cocoa/.test(suit))

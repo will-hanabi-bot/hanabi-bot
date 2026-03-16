@@ -298,8 +298,13 @@ export class State {
 	allValidClues(target) {
 		const clues = /** @type {Clue[]} */ ([]);
 
-		for (let rank = 1; rank <= 5; rank++)
-			clues.push({ type: CLUE.RANK, value: rank, target });
+		for (let rank = 1; rank <= 5; rank++) {
+			const uncluable = this.variant.specialRank == rank &&
+				(this.variant.specialRankNoClueRanks || this.variant.specialRankAllClueRanks || this.variant.specialRankDeceptive);
+
+			if (!uncluable)
+				clues.push({ type: CLUE.RANK, value: rank, target });
+		}
 
 		for (let suitIndex = 0; suitIndex < colourableSuits(this.variant).length; suitIndex++)
 			clues.push({ type: CLUE.COLOUR, value: suitIndex, target });
