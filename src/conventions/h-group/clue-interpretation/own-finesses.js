@@ -368,7 +368,6 @@ export function find_own_trash_finesses(game, action, focus, identity) {
 	const connections = /** @type {Connection[]} */ ([]);
 	const already_connected = [focus];
 
-	let finesses = 0;
 	const direct = common.thoughts[focus].possible.some(id => state.isPlayable(id));
 
 	for (let next_rank = hypo_state.play_stacks[suitIndex] + 1; next_rank <= rank; next_rank++) {
@@ -376,7 +375,8 @@ export function find_own_trash_finesses(game, action, focus, identity) {
 		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
 
 		const options = { assumeTruth: true, bluffed: false };
-		const curr_connections = connect(hypo_game, action, next_identity, direct, already_connected, ignoreOrders, target, [], finesses, options);
+		// # of finesses is only used at level 1, since we are necessarily at level 14+ to be finding trash finesses we pass 0.
+		const curr_connections = connect(hypo_game, action, next_identity, direct, already_connected, ignoreOrders, target, [], /*finesses=*/ 0, options);
 
 		if (curr_connections.length === 0)
 			break;
@@ -385,10 +385,7 @@ export function find_own_trash_finesses(game, action, focus, identity) {
 		for (const connection of curr_connections) {
 			connections.push(connection);
 
-			const { order, hidden, type } = connection;
-
-			if (type === 'finesse')
-				finesses++;
+			const { order, hidden } = connection;
 
 			if (hidden) {
 				const id = state.deck[order].identity();

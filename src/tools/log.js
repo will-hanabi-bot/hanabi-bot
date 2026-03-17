@@ -238,7 +238,7 @@ export function logConnections(connections, nextIdentity) {
 	else if (nextIdentity.rank <= 5)
 		identities = logCard(nextIdentity);
 
-	return `[${connections.map(conn => logConnection(conn)).join(' -> ')} ${identities}]`;
+	return `[${connections.map(conn => logConnection(conn)).join(' -> ')} ${identities ? `-> ${identities}?` : ''}]`;
 }
 
 /**

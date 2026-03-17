@@ -171,7 +171,7 @@ export function check_tocm(game, action) {
 	const { order, playerIndex } = action;
 
 	const ordered_trash = order_trash(game, playerIndex);
-	let offset = ordered_trash.findIndex(o => o === order);
+	let offset = ordered_trash.indexOf(order);
 
 	if (offset === -1)
 		return [];

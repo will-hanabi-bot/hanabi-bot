@@ -40,8 +40,8 @@ export function is_trash_clue(game, giver, clue, target, focus_order, oldCommon)
 		return false;
 	// There's exactly one playable card. Check if the target might be able to see it.
 	const id = playable_ids[0];
-	const could_be_in_our_hand = giver !== state.ourPlayerIndex && target !== state.ourPlayerIndex && state.hands[state.ourPlayerIndex].some(o => game.players[state.ourPlayerIndex].thoughts[o].possible.some(pid => pid.matches(id)));
-	return !game.players[target].thoughts[focus_order].possible.some(pid => pid.matches(id)) || could_be_in_our_hand;
+	const could_be_in_our_hand = giver !== state.ourPlayerIndex && target !== state.ourPlayerIndex && state.ourHand.some(o => game.me.thoughts[o].possible.has(id));
+	return !game.players[target].thoughts[focus_order].possible.has(id) || could_be_in_our_hand;
 }
 
 /**
