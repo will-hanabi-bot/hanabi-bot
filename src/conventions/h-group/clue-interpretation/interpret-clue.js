@@ -143,10 +143,6 @@ function resolve_clue(game, old_game, action, focusResult, simplest_poss, all_po
 	// TODO: Maybe we should not rule them out in the first place?
 	const trash_fps = simplest_poss.filter(sp => sp.interp == CLUE_INTERP.TRASH_FINESSE);
 	if (trash_fps.length > 0) {
-		old_game.common.updateThoughts(focus, (draft) => {
-			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
-			draft.trash = true;
-		});
 		common.updateThoughts(focus, (draft) => {
 			draft.inferred = common.thoughts[focus].inferred.union(trash_fps);
 			draft.trash = true;
@@ -715,11 +711,13 @@ export function interpret_clue(game, action) {
 
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
-	const trash_finesses = focus_possible.filter(p => p.interp === CLUE_INTERP.TRASH_FINESSE);
-	if (trash_finesses.length > 0 && (target === state.ourPlayerIndex || !focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) &&focused_card.matches(p)))) {
+	const consider_trash = focus_possible.some(p => p.interp === CLUE_INTERP.TRASH_FINESSE) &&
+		(target === state.ourPlayerIndex ||
+			!focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) && focused_card.matches(p)));
+	if (consider_trash) {
+		const trash_finesses = focus_possible.filter(p => p.interp === CLUE_INTERP.TRASH_FINESSE);
 		// If a trash finesse is possible, we must assume one
 		// if possible unless / until the finessed card is not playable.
-		// Trash chop move
 		const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
 		perform_cm(state, common, tcm_orders);
 
@@ -732,7 +730,9 @@ export function interpret_clue(game, action) {
 		}
 	}
 
-	const matched_inferences = focus_possible.filter(p => !p.illegal && (common.thoughts[focus].inferred.has(p) || p.interp === CLUE_INTERP.TRASH_FINESSE));
+	const matched_inferences = focus_possible.filter(p => !p.illegal && (
+		common.thoughts[focus].inferred.has(p) ||
+		consider_trash && common.thoughts[focus].possible.has(p) && p.interp === CLUE_INTERP.TRASH_FINESSE));
 	const old_game = game.minimalCopy();
 
 	// Card matches an inference and not a save/stall
