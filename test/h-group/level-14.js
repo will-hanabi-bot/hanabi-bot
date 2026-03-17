@@ -756,6 +756,28 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CM);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CM);
 	});
+
+	it('will interpret receiving a direct play on a known good card', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['b3', 'p4', 'p2', 'b5'],
+			['y5', 'b4', 'r1', 'g2'],
+			['g1', 'b4', 'p1', 'g4']
+		], {
+			level: { min: 14 },
+			play_stacks: [5, 4, 5, 1, 4],
+			starting: PLAYER.BOB,
+			discarded: ['r2', 'y2']		// We can see all 2s except both copies of b2.
+		});
+		takeTurn(game, 'Bob clues 2 to Alice (slot 3)');
+
+		// Cathy is never trash finessed/bluffed here, but that isn't common knowledge.
+
+		takeTurn(game, 'Cathy discards g2', 'p3');
+
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['b2']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
+	});
 });
 
 describe('giving trash finesses', () => {
