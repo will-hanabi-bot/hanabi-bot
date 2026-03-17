@@ -719,18 +719,9 @@ export function interpret_clue(game, action) {
 	if (trash_finesses.length > 0 && (target === state.ourPlayerIndex || !focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) &&focused_card.matches(p)))) {
 		// If a trash finesse is possible, we must assume one
 		// if possible unless / until the finessed card is not playable.
-		const { possible } = common.thoughts[focus];
-		const new_inferred = possible.intersect(trash_finesses);
-		if (new_inferred.length > 0) {
-			common.updateThoughts(focus, (draft) => {
-				draft.inferred = new_inferred;
-				draft.info_lock = new_inferred;
-				draft.trash = true;
-			});
-			// Trash chop move
-			const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
-			perform_cm(state, common, tcm_orders);
-		}
+		// Trash chop move
+		const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
+		perform_cm(state, common, tcm_orders);
 
 		// Further, any play identites are illegal if they could also be trash finesse identites:
 		for (const fp of focus_possible.filter(p => p.interp === CLUE_INTERP.PLAY)) {
@@ -741,7 +732,7 @@ export function interpret_clue(game, action) {
 		}
 	}
 
-	const matched_inferences = focus_possible.filter(p => !p.illegal && common.thoughts[focus].inferred.has(p));
+	const matched_inferences = focus_possible.filter(p => !p.illegal && (common.thoughts[focus].inferred.has(p) || p.interp === CLUE_INTERP.TRASH_FINESSE));
 	const old_game = game.minimalCopy();
 
 	// Card matches an inference and not a save/stall

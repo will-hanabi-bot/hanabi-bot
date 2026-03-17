@@ -147,14 +147,12 @@ export function find_trash_finesses(game, action, focus, connections, suitIndex)
 		return [];
 
 	logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));
-	return possible_trash.map(id => {
-		return {
-			...id,
-			save: false,
-			connections: tf_connections,
-			interp: CLUE_INTERP.TRASH_FINESSE
-		};
-	});
+	return possible_trash.map(id => ({
+		...id,
+		save: false,
+		connections: tf_connections,
+		interp: CLUE_INTERP.TRASH_FINESSE
+	}));
 }
 
 /**
@@ -297,7 +295,7 @@ export function find_symmetric_connections(game, action, focusResult, inf_possib
 			// Fake connection - we need to blind play too many times
 			const fake = blind_plays(connections, state.ourPlayerIndex) > ownBlindPlays;
 
-			if (connections.length === 0 || connections.find(conn => conn.type !== 'known' && conn.type !== 'playable')?.reacting === target)
+			if (connections.find(conn => conn.type !== 'known' && conn.type !== 'playable')?.reacting === target)
 				self_connections.push({ ...id.raw(), connections, fake });
 			else
 				non_self_connections.push({ ...id.raw(), connections, fake });

@@ -193,8 +193,25 @@ describe('interpreting trash push', () => {
 		});
 		takeTurn(game, 'Bob clues 1 to Alice (slots 3,4,5)');
 
-		// Bob's slot 4 should be finessed.
+		// Alice's slot 4 should be finessed.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
+	});
+
+	it('will interpret a receiving a trash push finesse', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b4', 'g3', 'b5', 'r4', 'y1'],
+			['r2', 'g5', 'p5', 'p2', 'y3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [2, 1, 3, 2, 1],
+			starting: PLAYER.CATHY
+		});
+		takeTurn(game, 'Cathy clues 1 to Bob (slot 5)');
+
+		// Alice's slot 1 should be finessed as r3.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
 	});
 });
 
@@ -635,7 +652,7 @@ describe('interpreting trash finesse', () => {
 
 		// Alice's slot 1 should be r1 blind playing.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r1', 'y2', 'g2', 'b2', 'p2']);
-		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['y1', 'g1', 'b1', 'p1']);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.BOB][3]], ['r1', 'y1', 'g1', 'b1', 'p1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].blind_playing, true);
 
 		// Bob's slots 5 is chop moved.

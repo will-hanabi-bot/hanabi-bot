@@ -153,8 +153,8 @@ function find_colour_focus(game, suitIndex, action, focusResult, thinks_stall, l
 			if (bluff)
 				bluffed = true;
 
-			// Even if a finesse is possible, it might not be a finesse (unless the card is critical on chop)
-			if (!chop || !state.isCritical(identity))
+			// Even if a finesse is possible, it might not be a finesse (unless the card is critical)
+			if (!state.isCritical(identity))
 				focus_possible.push({ suitIndex, rank: next_rank, save: false, connections: connections.slice(), interp: CLUE_INTERP.PLAY });
 		}
 		else if (type === 'playable' && layered && !state.isCritical(identity)) {
@@ -287,14 +287,13 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 			focus_possible.some(fp => fp.suitIndex === suitIndex && fp.rank === rank))
 			continue;
 
-		let certain_trash_finesse = false;
 		if (rank === next_rank) {
 			focus_possible.push({ suitIndex, rank, save: false, connections: [], interp: CLUE_INTERP.PLAY });
 
 			if (!possible_trash_finesse_target)
 				continue;
-			certain_trash_finesse = true;
 		}
+		const certain_trash_finesse = rank === next_rank && possible_trash_finesse_target;
 
 		/** @type {Connection[]} */
 		let connections = [];
@@ -429,7 +428,6 @@ export function find_trash_push(game, action, focusResult, thinks_stall) {
 		if (state.isBasicTrash(id))
 			continue;
 		const { suitIndex, rank } = id;
-		const wrong_prompts = new Set();
 		let next_rank = rank - 1;
 
 		if (!focus_thoughts.possible.some(id => id.suitIndex === suitIndex && id.rank >= next_rank))
@@ -437,7 +435,6 @@ export function find_trash_push(game, action, focusResult, thinks_stall) {
 
 		/** @type {Connection[]} */
 		let connections = [];
-		let finesses = 0;
 		let already_connected = [focus];
 		const bluffed = false;
 
@@ -464,26 +461,13 @@ export function find_trash_push(game, action, focusResult, thinks_stall) {
 			const { type, order } = connecting.at(-1);
 			const card = state.deck[order];
 
-			if (type === 'terminate') {
-				// Trying to look for the same identity as the focused card and being "wrong prompted"
-				if (!focus_thoughts.inferred.has(identity)) {
-					for (const { reacting } of connecting)
-						wrong_prompts.add(reacting);
-				}
+			if (type === 'terminate')
 				break;
-			}
 
 			if (card.newly_clued && common.thoughts[order].possible.length > 1 && focus_thoughts.inferred.has(identity)) {
 				// Trying to use a newly known/playable connecting card, but the focused card could be that
 				// e.g. If two 4s are clued (all other 4s visible), the other 4 should not connect and render this card with only one inference
 				logger.warn(`blocked connection - focused card could be ${logCard(identity)}`);
-				break;
-			}
-
-			finesses += connecting.filter(conn => conn.type === 'finesse').length;
-			// Unnecessary check since trash push is level 14.
-			if (game.level === 1 && finesses === 2) {
-				logger.warn('blocked double finesse at level 1');
 				break;
 			}
 
