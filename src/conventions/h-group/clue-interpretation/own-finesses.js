@@ -65,7 +65,7 @@ function own_prompt(game, finesses, prompt, identity) {
  * @param {number} ignorePlayer
  * @param {number[]} selfRanks
  * @param {number} finesses
- * @param {{ assumeTruth?: boolean, bluffed?: boolean }} [options]
+ * @param {{ assumeTruth?: boolean, bluffed?: boolean, immediate?: boolean }} [options]
  * @returns {Connection[]}
  */
 function connect(game, action, identity, looksDirect, connected, ignoreOrders, ignorePlayer, selfRanks, finesses, options = {}) {
@@ -369,12 +369,14 @@ export function find_own_trash_finesses(game, action, focus, identity) {
 	const already_connected = [focus];
 
 	const direct = common.thoughts[focus].possible.some(id => state.isPlayable(id));
+	// We require an immediate play if the target can't know they the matching play.
+	const immediate = common.thoughts[focus].inferred.length > 1;
 
 	for (let next_rank = hypo_state.play_stacks[suitIndex] + 1; next_rank <= rank; next_rank++) {
 		const next_identity = { suitIndex, rank: next_rank };
 		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
 
-		const options = { assumeTruth: true, bluffed: false };
+		const options = { assumeTruth: true, bluffed: false, immediate };
 		// # of finesses is only used at level 1, since we are necessarily at level 14+ to be finding trash finesses we pass 0.
 		const curr_connections = connect(hypo_game, action, next_identity, direct, already_connected, ignoreOrders, target, [], /*finesses=*/ 0, options);
 

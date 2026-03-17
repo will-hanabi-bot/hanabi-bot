@@ -739,7 +739,7 @@ describe('interpreting trash finesse', () => {
 			['xx', 'xx', 'xx', 'xx'],
 			['b3', 'b4', 'p5', 'r5'],
 			['r2', 'p2', 'p1', 'y3'],
-			['r1', 'y2', 'y5', 'r3'],
+			['r1', 'y4', 'y5', 'r3'],
 		], {
 			level: { min: 14 },
 			play_stacks: [0, 3, 4, 4, 3],

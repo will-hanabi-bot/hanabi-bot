@@ -421,8 +421,8 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 			continue;
 		}
 
-		// If we need an immediate play, the connection cannot be hidden.
-		if (connecting?.hidden && options.immediate)
+		// If we need an immediate play, the connection cannot be hidden or behind other finesses.
+		if (options.immediate && (state.hands[playerIndex].some(o => common.thoughts[o].blind_playing) || connecting?.hidden))
 			continue;
 
 		// If the connection is hidden, that player must have the actual card playable in order for the layer to work.
