@@ -2,12 +2,12 @@ import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { BasicCard, CARD_STATUS } from '../../../basics/Card.js';
 import { IdentitySet } from '../../../basics/IdentitySet.js';
-import { interpret_tcm, interpret_5cm, interpret_tccm, perform_cm } from './interpret-cm.js';
+import { interpret_tcm, interpret_5cm, interpret_tccm, perform_cm, is_trash_clue } from './interpret-cm.js';
 import { stalling_situation } from './interpret-stall.js';
 import { determine_focus, getRealConnects, rankLooksPlayable, unknown_1 } from '../hanabi-logic.js';
 import { find_focus_possible } from './focus-possible.js';
 import { IllegalInterpretation, find_own_finesses, find_own_trash_finesses } from './own-finesses.js';
-import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids, is_trash_finesse_target, find_trash_finesses } from './connection-helper.js';
+import { assign_all_connections, inference_rank, find_symmetric_connections, generate_symmetric_connections, occams_razor, connection_score, is_intermediate_bluff_target, get_bluffable_ids, find_trash_finesses } from './connection-helper.js';
 import { variantRegexes } from '../../../variants.js';
 import { remove_finesse } from '../update-wcs.js';
 import { order_1s } from '../action-helper.js';
@@ -892,7 +892,7 @@ export function interpret_clue(game, action) {
 		// Someone else is the clue target, and might think it's playable.
 		// Consider possible trash bluffs or finesses on us.
 		} else if (game.level >= LEVEL.TRASH_MOVES && giver !== state.ourPlayerIndex && state.isBasicTrash(focused_card) && common.thoughts[focus].possible.some(id => !state.isBasicTrash(id))) {
-			if (is_trash_finesse_target(game, focus)) {
+			if (!is_trash_clue(game, giver, clue, target, focus, oldCommon)) {
 				const own_finesse = common.find_finesse(state, state.ourPlayerIndex, [], []);
 				if (own_finesse !== undefined) {
 					const trash_ids = common.thoughts[focus].possible.filter(id => state.isBasicTrash(id));

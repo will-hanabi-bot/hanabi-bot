@@ -10,6 +10,7 @@ import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { variantRegexes } from '../../../variants.js';
 import { colour_save, find_trash_push, rank_save } from './focus-possible.js';
 import { inBetween } from '../hanabi-logic.js';
+import { is_trash_clue } from './interpret-cm.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -77,22 +78,6 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
 }
 
 /**
- * Returns whether the given identity is a valid playable identity for a trash finesse.
- * @param {Game} game
- * @param {number} focus
- */
-export function is_trash_finesse_target(game, focus) {
-	const { state } = game;
-	// If there is only one missing promised card, the receiver would be
-	// able to tell if it is trash by that single card being in our hand.
-	// Only allow trash finesses with other possible identities.
-	const playable_ids = game.common.thoughts[focus].possible.filter(id => !state.isBasicTrash(id));
-	const playable_count = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
-	return game.level >= LEVEL.TRASH_MOVES &&
-		playable_count > 1;
-}
-
-/**
  * Returns a list of possible trash finesse connections.
  * @param {Game} game
  * @param {ClueAction} action
@@ -102,10 +87,11 @@ export function is_trash_finesse_target(game, focus) {
  * @returns {FocusPossibility[]}
  */
 export function find_trash_finesses(game, action, focus, connections, suitIndex) {
+	const { giver, clue, target } = action;
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus];
 
-	if (game.level < LEVEL.TRASH_MOVES || !is_trash_finesse_target(game, focus) ||
+	if (game.level < LEVEL.TRASH_MOVES || is_trash_clue(game, giver, clue, target, focus, common) ||
 		!connections.some(conn => conn.type === 'finesse' && !conn.hidden))
 		return [];
 

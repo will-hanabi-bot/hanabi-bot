@@ -2,7 +2,7 @@ import { CLUE } from '../../../constants.js';
 import { CLUE_INTERP, FOCUS_INTERP, LEVEL } from '../h-constants.js';
 import { getIgnoreOrders } from '../../../basics/hanabi-util.js';
 import { playersBetween, rankLooksPlayable } from '../hanabi-logic.js';
-import { find_trash_finesses, is_intermediate_bluff_target, is_trash_finesse_target } from './connection-helper.js';
+import { find_trash_finesses, is_intermediate_bluff_target } from './connection-helper.js';
 import { find_connecting } from './connecting-cards.js';
 import { cardTouched, colourableSuits, variantRegexes } from '../../../variants.js';
 import { finalize_connections } from './interpret-clue.js';
@@ -10,6 +10,7 @@ import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnections } from '../../../tools/log.js';
+import { is_trash_clue } from './interpret-cm.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -256,7 +257,7 @@ export function rank_save(game, identity, action, focus, loaded) {
  */
 function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) {
 	const { common, state } = game;
-	const { giver, target } = action;
+	const { giver, target, clue } = action;
 	const { focus, chop, positional } = focusResult;
 	const focus_thoughts = common.thoughts[focus];
 
@@ -275,7 +276,7 @@ function find_rank_focus(game, rank, action, focusResult, thinks_stall, loaded) 
 	}
 
 	const old_play_stacks = state.play_stacks;
-	const possible_trash_finesse_target = game.level >= LEVEL.TRASH_MOVES && is_trash_finesse_target(game, focus);
+	const possible_trash_finesse_target = game.level >= LEVEL.TRASH_MOVES && !is_trash_clue(game, giver, clue, target, focus, common);
 
 	// Play clue
 	for (let suitIndex = 0; suitIndex < state.variant.suits.length; suitIndex++) {
