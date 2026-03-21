@@ -83,10 +83,10 @@ export function valid_bluff(game, action, blind, truth, reacting, connected, sym
  * @param {ClueAction} action
  * @param {number} focus
  * @param {Connection[]} connections
- * @param {number} suitIndex
+ * @param {Identity} identity
  * @returns {FocusPossibility[]}
  */
-export function find_trash_finesses(game, action, focus, connections, suitIndex) {
+export function find_trash_finesses(game, action, focus, connections, identity) {
 	const { giver, clue, target } = action;
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus];
@@ -101,7 +101,7 @@ export function find_trash_finesses(game, action, focus, connections, suitIndex)
 	let ci = 0;
 	let ourMaxRank = 0;
 	for (const id of focus_thoughts.possible) {
-		if (id.suitIndex === suitIndex && id.rank > ourMaxRank)
+		if (id.suitIndex === identity.suitIndex && id.rank > ourMaxRank)
 			ourMaxRank = id.rank;
 	}
 	while (ci < connections.length) {
@@ -113,7 +113,18 @@ export function find_trash_finesses(game, action, focus, connections, suitIndex)
 		lastPlayer = connections[ci].reacting;
 		ci++;
 	}
-	const no_connecting_play = ci > 0 && connections[ci-1].identities.every(id => id.suitIndex !== suitIndex || id.rank >= ourMaxRank);
+	// If there are plays before the target, check if the play would prove it trash.
+	let playables_remaining = focus_thoughts.possible.filter(id => !state.isBasicTrash(id));
+	if (ci > 0) {
+		if (connections[0].bluff) {
+			// If we have a bluff connection, we can only eliminate immediate playables or connecting matching ranks.
+			playables_remaining = playables_remaining.filter(id => !state.isPlayable(id) && !connections[ci-1].identities.every(cid => cid.suitIndex === id.suitIndex && cid.rank >= id.rank));
+		} else {
+			// Otherwise, we can rule out anything that doesn't follow the connection.
+			playables_remaining = playables_remaining.filter(id => !connections[ci-1].identities.every(cid => cid.suitIndex !== id.suitIndex || cid.rank >= id.rank));
+		}
+	}
+	const no_connecting_play = playables_remaining.length === 0;
 
 	// Can only reverse trash finesse before end game.
 	const connected_reverse_finesses = state.inEndgame() ? [] : connections.filter((conn, conn_i) => conn_i >= ci && conn.type === 'finesse');
@@ -124,12 +135,17 @@ export function find_trash_finesses(game, action, focus, connections, suitIndex)
 	// The connection is only a bluff if we didn't find the expected rank playable.
 	tf_connections[0].possibly_bluff = tf_connections[0].bluff;
 
-	// 2. The target knows their card must either be trash or match a reverse finesse play.
+	// 2. The target knows their card must either be trash or match a reverse finesse play, or
 	const card_matches_last_play = focus_thoughts.possible.every(id =>
 		possible_trash.includes(id)
 	);
 
-	if (!no_connecting_play && !card_matches_last_play)
+	// 3. There is only one playable card and we might have it in our hand.
+	const playable_ids = focus_thoughts.inferred.filter(id => !possible_trash.includes(id) && !connections.some(conn => conn.identities.length == 1 && conn.identities[0].rank == id.rank && conn.identities[0].suitIndex == id.suitIndex));
+	const cardCount = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
+	const maybeInOurHand = cardCount === 1 && giver != state.ourPlayerIndex && target !== state.ourPlayerIndex && state.ourHand.some(o => game.me.thoughts[o].possible.has(playable_ids[0]));
+
+	if (!no_connecting_play && !card_matches_last_play && !maybeInOurHand)
 		return [];
 
 	logger.info('found possible trash finesse:', logConnections(tf_connections, possible_trash));

@@ -674,7 +674,7 @@ describe('interpreting trash finesse', () => {
 			['g4', 'y3', 'b3', 'p4'],
 		], {
 			level: { min: 14 },
-			play_stacks: [1, 2, 2, 0, 5],
+			play_stacks: [1, 2, 2, 3, 5],
 			starting: PLAYER.BOB,
 			init: (game) => {
 				game.state.early_game = false;
@@ -751,7 +751,7 @@ describe('interpreting trash finesse', () => {
 		// Trash finesse on b4.
 		takeTurn(game, 'Cathy clues 4 to Bob');
 
-		// Since Alice was already going to play, this cannot be an r4 trash finesse and should instead be interpreted as an immediate y4, p4.
+		// Since Donald was already going to play, this cannot be an trash finesse on Donald and should instead be on us.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y4', 'p4']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CM);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CM);
@@ -778,6 +778,51 @@ describe('interpreting trash finesse', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['b2']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, undefined);
 	});
+
+	it(`doesn't keep playing after a trash finesse`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['y4', 'p3', 'b4', 'g2', 'b3'],
+			['y5', 'g3', 'g4', 'r1', 'b3']
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 0, 0, 0, 0],
+			discarded: ['r4'],
+			starting: PLAYER.BOB
+		});
+
+		takeTurn(game, 'Bob clues red to Cathy');
+		takeTurn(game, 'Cathy discards r1', 'p1');
+		takeTurn(game, 'Alice plays r4 (slot 1)');
+
+		// Alice shouldn't keep playing for r5.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, undefined);
+	});
+
+	it(`understands a trash finesse where we may have the last playable identity`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y4', 'p3', 'b4', 'g2'],
+			['y5', 'g3', 'g4', 'r1'],
+			['r4', 'b3', 'b3', 'y4']
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 0, 0, 0, 0],
+			discarded: ['r4'],
+			starting: PLAYER.BOB
+		});
+
+		takeTurn(game, 'Bob clues red to Cathy');
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.CATHY][3]].trash, true);
+
+		takeTurn(game, 'Cathy discards r1', 'p1');
+		takeTurn(game, 'Donald plays r4', 'g5');
+
+		// Alice shouldn't keep playing for r5.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
+	});
+
 });
 
 describe('giving trash finesses', () => {

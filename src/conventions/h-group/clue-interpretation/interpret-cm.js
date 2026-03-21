@@ -14,6 +14,7 @@ import { LEVEL } from '../h-constants.js';
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../../basics/Card.js').Card} Card
  * @typedef {import('../../../types.js').BaseClue} BaseClue
+ * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  */
 

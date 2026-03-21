@@ -916,22 +916,31 @@ export function interpret_clue(game, action) {
 					} else {
 						const suits = action.clue.type === CLUE.COLOUR ? [action.clue.value] : state.variant.suits.map((_, i) => i);
 						for (const suitIndex of suits) {
-							// We need to play up to the highest playable rank the target might think they have.
+							// We need to play at least until there is only one possibility left (through trash touch elimination)
 							let max_rank = 0;
 							if (action.clue.type === CLUE.RANK) {
 								max_rank = action.clue.value;
 							} else {
+								// 6 "rank" array to ensure we always find a rank with no playables
+								const playables_at_rank_or_higher = [0, 0, 0, 0, 0, 0];
 								for (const id of common.thoughts[focus].possible.filter(id => id.suitIndex === suitIndex && !state.isBasicTrash(id))) {
-									if (id.rank > max_rank)
-										max_rank = id.rank;
+									max_rank = Math.max(id.rank, max_rank);
+									const remaining = state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1];
+									for (let r = 1; r <= id.rank; ++r)
+										playables_at_rank_or_higher[r - 1] += remaining;
 								}
+								// We need to play at least 1 card, but can stop when there is one or fewer
+								// playable instances of the identity left as we may have it visible in our hand.
+								max_rank = Math.min(max_rank,
+									Math.max(state.play_stacks[suitIndex] + 1, playables_at_rank_or_higher.findIndex(count => count <= 1)));
 							}
 							if (state.play_stacks[suitIndex] >= max_rank)
 								continue;
-							const connections = find_own_trash_finesses(game, action, focus, new BasicCard(suitIndex, max_rank));
+							const max_id = new BasicCard(suitIndex, max_rank);
+							const connections = find_own_trash_finesses(game, action, focus, max_id);
 							if (connections === undefined)
 								continue;
-							const trash_connections = find_trash_finesses(game, action, focus, connections, suitIndex);
+							const trash_connections = find_trash_finesses(game, action, focus, connections, max_id);
 							if (trash_connections.length === 0)
 								continue;
 
