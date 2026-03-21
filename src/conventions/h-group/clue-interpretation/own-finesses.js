@@ -374,7 +374,7 @@ export function find_own_trash_finesses(game, action, focus, identity) {
 
 	for (let next_rank = hypo_state.play_stacks[suitIndex] + 1; next_rank <= rank; next_rank++) {
 		const next_identity = { suitIndex, rank: next_rank };
-		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
+		const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex, true);
 
 		const options = { assumeTruth: true, bluffed: false, immediate };
 		// # of finesses is only used at level 1, since we are necessarily at level 14+ to be finding trash finesses we pass 0.

@@ -823,6 +823,23 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 	});
 
+	it(`plays into an ambiguous trash finesse`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y4', 'g1', 'r1', 'b3'],
+			['p4', 'p3', 'p5', 'p3'],
+			['b1', 'g5', 'r1', 'y1']
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 3, 3, 0, 0],
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 1 to Bob');
+		takeTurn(game, 'Donald discards y1', 'b4');
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
+	});
 });
 
 describe('giving trash finesses', () => {
