@@ -232,6 +232,9 @@ export class Player {
 			if (card.trash && !card.possible.every(p => !state.isBasicTrash(p)))
 				return false;
 
+			if (card.assume_playable && card.possible.some(p => state.isPlayable(p)))
+				return true;
+
 			const unsafe_linked = linked_orders.has(o) &&
 				(state.strikes === 2 ||
 					state.endgameTurns !== -1 ||

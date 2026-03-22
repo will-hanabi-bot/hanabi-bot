@@ -2,10 +2,10 @@ import { CLUE } from '../../../constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { isTrash, knownAs } from '../../../basics/hanabi-util.js';
 import { variantRegexes } from '../../../variants.js';
-import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard } from '../../../tools/log.js';
+import { LEVEL } from '../h-constants.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -14,8 +14,36 @@ import { logCard } from '../../../tools/log.js';
  * @typedef {import('../../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../../basics/Card.js').Card} Card
  * @typedef {import('../../../types.js').BaseClue} BaseClue
+ * @typedef {import('../../../types.js').Connection} Connection
  * @typedef {import('../../../basics/Action.ts').ClueAction} ClueAction
  */
+
+/**
+ * Checks whether a clue focus is trash.
+ * @param {Game} game
+ * @param {number} giver
+ * @param {BaseClue} clue
+ * @param {number} target
+ * @param {number} focus_order
+ * @param {Player} oldCommon
+ * @returns Whether the clued card is considered trash.
+ */
+export function is_trash_clue(game, giver, clue, target, focus_order, oldCommon) {
+	const { state, common } = game;
+	const focus_thoughts = common.thoughts[focus_order];
+	const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
+	const playable_ids = possible.filter(i => !isTrash(state, oldCommon, i, focus_order, { infer: true }));
+	if (playable_ids.length === 0)
+		return true;
+	// Check how many playable cards the focus could be.
+	const playable_cards = playable_ids.map(id => state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1]).reduce((a, b) => a + b, 0);
+	if (game.level < LEVEL.TRASH_MOVES || playable_cards > 1)
+		return false;
+	// There's exactly one playable card. Check if the target might be able to see it.
+	const id = playable_ids[0];
+	const could_be_in_our_hand = giver !== state.ourPlayerIndex && target !== state.ourPlayerIndex && state.ourHand.some(o => game.me.thoughts[o].possible.has(id));
+	return !game.players[target].thoughts[focus_order].possible.has(id) || could_be_in_our_hand;
+}
 
 /**
  * Checks whether a Trash Chop Move was performed on the target. The clue must have already been registered.
@@ -23,27 +51,19 @@ import { logCard } from '../../../tools/log.js';
  * @param {ClueAction} action
  * @param {number} focus_order
  * @param {Player} oldCommon
+ * @param {boolean} assume - If true, will assume any card that could be trash is trash. Used for trash finesses.
  * @returns The orders of any chop moved cards.
  */
-export function interpret_tcm(game, action, focus_order, oldCommon) {
+export function interpret_tcm(game, action, focus_order, oldCommon, assume = false) {
 	const { common, state } = game;
-	const { clue, target } = action;
+	const { giver, target, clue } = action;
 	const focused_card = state.deck[focus_order];
-	const focus_thoughts = common.thoughts[focus_order];
 
 	if (!focused_card.newly_clued)
 		return [];
 
-	if (clue.type === CLUE.RANK) {
-		const promised_ids = Utils.range(0, state.variant.suits.length).map(suitIndex => ({ suitIndex, rank: clue.value }));
-
-		if (focus_thoughts.possible.intersect(promised_ids).some(i => !isTrash(state, oldCommon, i, focus_order, { infer: true })))
-			return [];
-	}
-	else if (focus_thoughts.possible.some(c => !isTrash(state, oldCommon, c, focus_order, { infer: true })) ||
-		focus_thoughts.inferred.every(i => state.isPlayable(i) && !isTrash(state, oldCommon, i, focus_order, { infer: true }))) {
+	if (!assume && !is_trash_clue(game, giver, clue, target, focus_order, oldCommon))
 		return [];
-	}
 
 	const oldest_trash_index = state.hands[target].findLastIndex(o => state.deck[o].newly_clued);
 

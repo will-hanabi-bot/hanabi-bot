@@ -282,7 +282,7 @@ export function resolve_card_retained(game, waiting_connection) {
 		logger.warn(`${state.playerNames[reacting]} didn't play into ${type}, removing inference ${logCard(inference)}`);
 
 		// Don't rewind if this is a symmetric connection that doesn't involve us
-		if (reacting !== state.ourPlayerIndex && !(symmetric && connections.every((conn, i) => i < conn_index || conn.reacting !== state.ourPlayerIndex))) {
+		if (reacting !== state.ourPlayerIndex && (target === state.ourPlayerIndex || !(symmetric && connections.every((conn, i) => i < conn_index || conn.reacting !== state.ourPlayerIndex)))) {
 			const real_connects = getRealConnects(connections, conn_index);
 			const new_game = game.rewind(action_index, [{ type: 'ignore', conn_index: real_connects, order, inference }]);
 			if (new_game) {

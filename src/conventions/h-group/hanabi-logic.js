@@ -5,7 +5,10 @@ import { knownAs, visibleFind } from '../../basics/hanabi-util.js';
 import { order_1s } from './action-helper.js';
 import * as Utils from '../../tools/util.js';
 
-import { logClue } from '../../tools/log.js';
+import { logCard, logClue } from '../../tools/log.js';
+import { FOCUS_INTERP, LEVEL } from './h-constants.js';
+import logger from '../../tools/logger.js';
+import { is_trash_clue } from './clue-interpretation/interpret-cm.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -22,6 +25,45 @@ import { logClue } from '../../tools/log.js';
  */
 
 /**
+ * Checks whether a Trash Push was performed on the target. The list must include the chop position.
+ * @param {Game} game
+ * @param {number[]} hand
+ * @param {Player} player
+ * @param {number[]} list 	The orders of all cards that were just clued.
+ * @param {number} giver
+ * @param {number} target
+ * @param {BaseClue} clue
+ * @returns The order of the trash pushed card or -1 if no card is trash pushed.
+ */
+export function interpret_tp(game, hand, player, list, giver, target, clue) {
+	const chopIndex = player.chopIndex(hand);
+	if (chopIndex === -1)
+		return -1;
+	const chop = hand[chopIndex];
+	if (!list.includes(chop))
+		return -1;
+
+	// If this is a trash push, find the focused card which is the new chop after the clue.
+	let tp_focus = -1;
+	for (let i = chopIndex - 1; i >= 0; i--) {
+		if (player.thoughts[hand[i]].status !== undefined)
+			continue;
+		if (list.includes(hand[i]))
+			continue;
+		tp_focus = hand[i];
+		break;
+	}
+	if (tp_focus === -1)
+		return -1;
+
+	// Check if the clued card is a trash clue.
+	if (!is_trash_clue(game, giver, clue, target, chop, player))
+		return -1;
+
+	return tp_focus;
+}
+
+/**
  * Finds the focused card and whether it was on chop before the clue.
  * 
  * This function must be called before the clue has been given.
@@ -29,16 +71,29 @@ import { logClue } from '../../tools/log.js';
  * @param {number[]} hand
  * @param {Player} player
  * @param {number[]} list 	The orders of all cards that were just clued.
+ * @param {number} giver
+ * @param {number} target
  * @param {BaseClue} clue
  * @returns {FocusResult}
  */
-export function determine_focus(game, hand, player, list, clue) {
+export function determine_focus(game, hand, player, list, giver, target, clue) {
 	const { common, state } = game;
 	const chop = player.chop(hand);
 
 	// Chop card exists, check for chop focus
-	if (chop !== undefined && list.includes(chop))
-		return { focus: chop, chop: true, positional: false };
+	if (chop !== undefined && list.includes(chop)) {
+		// Check for trash push which focuses new chop.
+		if (game.level >= LEVEL.TRASH_MOVES) {
+			const tp = interpret_tp(game, hand, player, list, giver, target, clue);
+
+			if (tp != -1) {
+				logger.highlight('cyan', `trash push on ${logCard(state.deck[tp])} ${tp}`);
+				return { focus: tp, chop: true, positional: false, focus_interp: FOCUS_INTERP.TRASH_PUSH };
+			}
+		}
+
+		return { focus: chop, chop: true, positional: false, focus_interp: FOCUS_INTERP.NORMAL };
+	}
 
 	const pink_choice_tempo = clue.type === CLUE.RANK && state.includesVariant(variantRegexes.pinkish) &&
 		list.every(o => state.deck[o].clued) &&
@@ -49,20 +104,20 @@ export function determine_focus(game, hand, player, list, clue) {
 			(cl.type === CLUE.RANK && cl.value !== clue.value)));
 
 	if (pink_choice_tempo)
-		return { focus: hand[clue.value - 1], chop: false, positional: true };
+		return { focus: hand[clue.value - 1], chop: false, positional: true, focus_interp: FOCUS_INTERP.NORMAL };
 
 	const brown_tempo = clue.type === CLUE.COLOUR && /Brown/.test(colourableSuits(state.variant)[clue.value]) &&
 		list.every(o => state.deck[o].clued);
 
 	if (brown_tempo)
-		return { focus: hand.findLast(o => list.includes(o)), chop: false, positional: true };
+		return { focus: hand.findLast(o => list.includes(o)), chop: false, positional: true, focus_interp: FOCUS_INTERP.NORMAL };
 
 	if (clue.type === CLUE.RANK && clue.value === 1) {
 		const unknown_1s = list.filter(o => unknown_1(state.deck[o], true));
 		const ordered_1s = order_1s(state, common, unknown_1s, { no_filter: true });
 
 		if (ordered_1s.length > 0)
-			return { focus: ordered_1s[0], chop: false, positional: false };
+			return { focus: ordered_1s[0], chop: false, positional: false, focus_interp: FOCUS_INTERP.NORMAL };
 	}
 
 	const sorted_list = list.toSorted((a, b) => b - a);
@@ -78,7 +133,7 @@ export function determine_focus(game, hand, player, list, clue) {
 		if (card_amt > 0) {
 			const colors_available_amt = colourableSuits(state.variant).length;
 			const focus_index = (clue.value - colors_available_amt + colors_available_amt*card_amt) % card_amt;
-			return { focus: possible_muddy_cards[focus_index], chop: false, positional: true };
+			return { focus: possible_muddy_cards[focus_index], chop: false, positional: true, focus_interp: FOCUS_INTERP.NORMAL };
 		}
 		// if there are 0 possible muddy cards, all the muddy code does nothing and it just finds the normal tempo clue focus.
 	}
@@ -103,7 +158,7 @@ export function determine_focus(game, hand, player, list, clue) {
 		throw new Error('No focus found!');
 	}
 
-	return { focus, chop: false, positional: false };
+	return { focus, chop: false, positional: false, focus_interp: FOCUS_INTERP.NORMAL };
 }
 
 /**
