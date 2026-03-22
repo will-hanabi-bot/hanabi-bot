@@ -465,6 +465,9 @@ export function interpret_clue(game, action) {
 	if (rewinded)
 		return game;
 
+	if (focus_interp === FOCUS_INTERP.TRASH_PUSH)
+		common.updateThoughts(focus, (draft) => { draft.assume_playable = true; });
+
 	if (focus_interp !== FOCUS_INTERP.TRASH_PUSH && chop && !action.noRecurse) {
 		common.updateThoughts(focus, (draft) => { draft.chop_when_first_clued = true; });
 		action.important = !loaded && urgent_save(game, action, focus, oldCommon, prev_game);

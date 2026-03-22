@@ -215,7 +215,7 @@ describe('interpreting trash push', () => {
 	});
 
 	it('understands a trash push must be playable by its turn', () => {
-		// Based on https://hanab.live/replay/1797088#26
+		// Based on https://hanab.live/replay/1797088#52
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['y3', 'p1', 'g1', 'y2'],
@@ -246,6 +246,75 @@ describe('interpreting trash push', () => {
 		// Alice's slot 3 should be finessed as r5,b3, but not y4 as that cannot be playable on time.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.FINESSED);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r5', 'b3']);
+	});
+
+	it(`understands others must make trash push playable by our turn`, async () => {
+		// Based on https://hanab.live/replay/1797088#52
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p1', 'r2', 'g4', 'g1', 'p1'],
+			['b2', 'r1', 'p3', 'y3', 'g1'],
+		], {
+			level: { min: 14 },
+			play_stacks: [4, 2, 5, 1, 5],
+			starting: PLAYER.BOB,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Cathy's b2 is known.
+				preClue(game, game.state.hands[PLAYER.CATHY][0], [
+					{ type: CLUE.RANK, value: 2, giver: PLAYER.ALICE }
+				]);
+				// Cathy's y3 is known.
+				preClue(game, game.state.hands[PLAYER.CATHY][3], [
+					{ type: CLUE.COLOUR, value: COLOUR.YELLOW, giver: PLAYER.BOB }
+				]);
+			}
+		});
+		takeTurn(game, 'Bob clues 1 to Alice (slot 5)');
+		// Alice's slot 4 should be finessed as r5,b3,y4.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.FINESSED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['r5', 'y4', 'b3']);
+
+		takeTurn(game, 'Cathy plays y3', 'y5');
+
+		// Alice should play her pushed card.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
+		takeTurn(game, 'Alice plays y4 (slot 3)');
+	});
+
+	it(`understands it must make trash push playable by target's turn`, async () => {
+		// Based on https://hanab.live/replay/1797088#52
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['b4', 'b5', 'r5', 'y4', 'p1'],
+			['r1', 'r2', 'g4', 'g1', 'p1'],
+		], {
+			level: { min: 14 },
+			play_stacks: [4, 2, 5, 1, 5],
+			starting: PLAYER.CATHY,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Alice has a 2.
+				preClue(game, game.state.hands[PLAYER.ALICE][0], [
+					{ type: CLUE.RANK, value: 2, giver: PLAYER.BOB }
+				]);
+				// Alice has a 3.
+				preClue(game, game.state.hands[PLAYER.ALICE][3], [
+					{ type: CLUE.RANK, value: 3, giver: PLAYER.BOB }
+				]);
+			}
+		});
+		takeTurn(game, 'Cathy clues 1 to Bob');
+		// Bob's slot 4 should be finessed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.FINESSED);
+
+		// Alice should play the connecting card.
+		const action = await game.take_action();
+		ExAsserts.objHasProperties(action, { type: ACTION.PLAY, target: game.state.hands[PLAYER.ALICE][3] });
+		takeTurn(game, 'Alice plays y3 (slot 3)');
 	});
 });
 
