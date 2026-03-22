@@ -1,7 +1,7 @@
 import { CLUE } from '../../../constants.js';
 import { CARD_STATUS } from '../../../basics/Card.js';
 import { isTrash, knownAs } from '../../../basics/hanabi-util.js';
-import { variantRegexes } from '../../../variants.js';
+import { cardTouched, variantRegexes } from '../../../variants.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard } from '../../../tools/log.js';
@@ -31,7 +31,8 @@ import { LEVEL } from '../h-constants.js';
 export function is_trash_clue(game, giver, clue, target, focus_order, oldCommon) {
 	const { state, common } = game;
 	const focus_thoughts = common.thoughts[focus_order];
-	const possible = clue.type == CLUE.RANK ? focus_thoughts.possible.filter(i => i.rank == clue.value) : focus_thoughts.possible;
+	const possible =
+		focus_thoughts.possible.filter(i => (clue.type !== CLUE.RANK || i.rank == clue.value) && cardTouched(i, state.variant, clue));
 	const playable_ids = possible.filter(i => !isTrash(state, oldCommon, i, focus_order, { infer: true }));
 	if (playable_ids.length === 0)
 		return true;

@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { COLOUR, PLAYER, preClue, setup, takeTurn } from '../test-utils.js';
+import { COLOUR, PLAYER, preClue, setup, takeTurn, VARIANTS } from '../test-utils.js';
 import * as ExAsserts from '../extra-asserts.js';
 import HGroup from '../../src/conventions/h-group.js';
 import { CARD_STATUS } from '../../src/basics/Card.js';
@@ -195,6 +195,22 @@ describe('interpreting trash push', () => {
 
 		// Alice's slot 4 should be finessed.
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]].status, CARD_STATUS.FINESSED);
+	});
+
+	it('will interpret a receiving a trash push by colour in rainbow', () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r4', 'g3', 'b5', 'b4', 'y3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [5, 0, 0, 0, 5],
+			starting: PLAYER.BOB,
+			variant: VARIANTS.RAINBOW,
+		});
+		takeTurn(game, 'Bob clues red to Alice (slot 5)');
+
+		// Alice's slot 4 should be finessed.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.FINESSED);
 	});
 
 	it('will interpret a receiving a trash push finesse', () => {
