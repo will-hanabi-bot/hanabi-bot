@@ -213,6 +213,40 @@ describe('interpreting trash push', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.F_MAYBE_BLUFF);
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['r3']);
 	});
+
+	it('understands a trash push must be playable by its turn', () => {
+		// Based on https://hanab.live/replay/1797088#26
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['y3', 'p1', 'g1', 'y2'],
+			['p1', 'r2', 'g4', 'g1'],
+			['b2', 'r1', 'p3', 'y3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [4, 1, 5, 1, 5],
+			starting: PLAYER.CATHY,
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Donald's b2 is known.
+				preClue(game, game.state.hands[PLAYER.DONALD][0], [
+					{ type: CLUE.RANK, value: 2, giver: PLAYER.ALICE }
+				]);
+				// Donald's y3 is known.
+				preClue(game, game.state.hands[PLAYER.DONALD][3], [
+					{ type: CLUE.COLOUR, value: COLOUR.YELLOW, giver: PLAYER.BOB }
+				]);
+				// Bob's y2 is known.
+				preClue(game, game.state.hands[PLAYER.BOB][3], [
+					{ type: CLUE.RANK, value: 2, giver: PLAYER.ALICE }
+				]);
+			}
+		});
+		takeTurn(game, 'Cathy clues 1 to Alice (slot 4)');
+		// Alice's slot 3 should be finessed as r5,b3, but not y4 as that cannot be playable on time.
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].status, CARD_STATUS.FINESSED);
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]], ['r5', 'b3']);
+	});
 });
 
 describe('interpreting trash finesse', () => {
@@ -855,6 +889,34 @@ describe('interpreting trash finesse', () => {
 		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 2));
 	});
 
+	it(`understands a trash finesse where giver knows they have the last id`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx'],
+			['r4', 'g1', 'r1', 'b3'],
+			['p4', 'p3', 'p5', 'p3'],
+			['b1', 'g5', 'r1', 'r5']
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 3, 3, 0, 0],
+			init: (game) => {
+				game.state.early_game = false;
+
+				// Donald knows they have r5.
+				preClue(game, game.state.hands[PLAYER.DONALD][3], [
+					{ type: CLUE.RANK, value: 5, giver: PLAYER.BOB },
+					{ type: CLUE.COLOUR, value: COLOUR.RED, giver: PLAYER.CATHY }
+				]);
+			},
+			starting: PLAYER.DONALD
+		});
+
+		// Donald knows they have r5, so Alice should still recognize this as a trash finesse.
+		takeTurn(game, 'Donald clues red to Alice (slot 3)');
+
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][0]].blind_playing, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].trash, true);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
+	});
 });
 
 describe('giving trash finesses', () => {

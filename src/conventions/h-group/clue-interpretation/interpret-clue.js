@@ -777,60 +777,62 @@ export function interpret_clue(game, action) {
 		if (target === state.ourPlayerIndex) {
 			all_connections = focus_possible.filter(fp =>
 				fp.interp === CLUE_INTERP.TRASH_FINESSE || !isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
+			// For a trash push, we must assume the focus is playable by our turn - no need to look for self connections.
+			if (focus_interp !== FOCUS_INTERP.TRASH_PUSH) {
+				for (const id of common.thoughts[focus].inferred) {
+					if (isTrash(state, game.players[giver], id, focus, { infer: true, ignoreCM: true }) ||
+						(clue.type === CLUE.RANK && state.includesVariant(variantRegexes.pinkish) && id.rank !== clue.value) ||		// Pink promise
+						all_connections.some(fp => id.matches(fp)))					// Focus possibility, skip
+						continue;
 
-			for (const id of common.thoughts[focus].inferred) {
-				if (isTrash(state, game.players[giver], id, focus, { infer: true, ignoreCM: true }) ||
-					(clue.type === CLUE.RANK && state.includesVariant(variantRegexes.pinkish) && id.rank !== clue.value) ||		// Pink promise
-					all_connections.some(fp => id.matches(fp)))					// Focus possibility, skip
-					continue;
+					try {
+						const connections = find_own_finesses(game, action, focus, id, looksDirect);
+						logger.info('found connections:', logConnections(connections, id));
 
-				try {
-					const connections = find_own_finesses(game, action, focus, id, looksDirect);
-					logger.info('found connections:', logConnections(connections, id));
+						const rank = inference_rank(state, id.suitIndex, connections);
 
-					const rank = inference_rank(state, id.suitIndex, connections);
+						let same_match = false;
 
-					let same_match = false;
+						for (const fp of all_connections) {
+							for (const conn of connections) {
+								if (conn.type !== 'known' || conn.reacting !== giver || !conn.identities.every(i => i.rank === fp.rank && i.suitIndex === fp.suitIndex))
+									continue;
 
-					for (const fp of all_connections) {
-						for (const conn of connections) {
-							if (conn.type !== 'known' || conn.reacting !== giver || !conn.identities.every(i => i.rank === fp.rank && i.suitIndex === fp.suitIndex))
-								continue;
+								same_match = true;
 
-							same_match = true;
-
-							// Valid asymmetric clue (or we at least have to entertain it)
-							if (game.players[giver].thoughts[conn.order].inferred.every(i =>
-								i.matches(fp) || (state.isCritical(i) && i.matches({ suitIndex: id.suitIndex, rank })))) {
-								same_match = false;
-								conn.asymmetric = false;
-								break;
+								// Valid asymmetric clue (or we at least have to entertain it)
+								if (game.players[giver].thoughts[conn.order].inferred.every(i =>
+									i.matches(fp) || (state.isCritical(i) && i.matches({ suitIndex: id.suitIndex, rank })))) {
+									same_match = false;
+									conn.asymmetric = false;
+									break;
+								}
 							}
 						}
-					}
 
-					if (same_match) {
-						logger.warn(`attempted to use giver's known connecting when focus could be it!`);
-						continue;
-					}
+						if (same_match) {
+							logger.warn(`attempted to use giver's known connecting when focus could be it!`);
+							continue;
+						}
 
-					all_connections.push({ connections, suitIndex: id.suitIndex, rank, interp: CLUE_INTERP.PLAY });
+						all_connections.push({ connections, suitIndex: id.suitIndex, rank, interp: CLUE_INTERP.PLAY });
 
-					// Consider possible intermediate bluff connections.
-					if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length > 0 && connections[0].type === 'finesse' && (connections[0].possibly_bluff || connections[0].bluff) && is_intermediate_bluff_target(game, action, id, focus)) {
-						const order = connections[0].order;
-						all_connections.push({
-							connections: [{...connections[0], bluff: true, possibly_bluff: false,
-								identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, [focus], connections[0].reacting)}],
-							suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
-						logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, id));
+						// Consider possible intermediate bluff connections.
+						if (game.level >= LEVEL.INTERMEDIATE_BLUFFS && connections.length > 0 && connections[0].type === 'finesse' && (connections[0].possibly_bluff || connections[0].bluff) && is_intermediate_bluff_target(game, action, id, focus)) {
+							const order = connections[0].order;
+							all_connections.push({
+								connections: [{...connections[0], bluff: true, possibly_bluff: false,
+									identities: get_bluffable_ids(game, action, game.common.thoughts[order].inferred, [focus], connections[0].reacting)}],
+								suitIndex: id.suitIndex, rank: id.rank, interp: CLUE_INTERP.PLAY });
+							logger.info('found bluff connections:', logConnections(all_connections.at(-1).connections, id));
+						}
 					}
-				}
-				catch (error) {
-					if (error instanceof IllegalInterpretation)
-						logger.warn(error.message);
-					else
-						throw error;
+					catch (error) {
+						if (error instanceof IllegalInterpretation)
+							logger.warn(error.message);
+						else
+							throw error;
+					}
 				}
 			}
 

@@ -447,7 +447,7 @@ export function find_trash_push(game, action, focusResult, thinks_stall) {
 		// one card each. We search backwards from the target to find the
 		// last possible player as earlier players will see a later player's
 		// potential play.
-		const before_player = target;
+		let before_player = target;
 
 		let looksDirect = true;
 
@@ -480,9 +480,9 @@ export function find_trash_push(game, action, focusResult, thinks_stall) {
 				looksDirect = focus_thoughts.identity() === undefined;
 			}
 
+			before_player = connecting[0].reacting;
 			connections = connecting.concat(connections);
 			already_connected = already_connected.concat(connecting.map(conn => conn.order));
-
 			next_rank--;
 		}
 

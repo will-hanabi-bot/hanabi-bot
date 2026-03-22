@@ -26,7 +26,7 @@ import { visibleFind } from '../../../basics/hanabi-util.js';
  * @param {number} giver 		The player index that gave the clue. They cannot deduce unknown information about their own hand.
  * @param {Identity} identity
  * @param {number[]} [ignoreOrders]		The orders of cards to ignore when searching.
- * @param {{knownOnly?: number[]}} options
+ * @param {{knownOnly?: number[], playerOrder?: number[]}} options
  * @returns {Connection | undefined}
  */
 export function find_known_connecting(game, giver, identity, ignoreOrders = [], options = {}) {
@@ -42,9 +42,8 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	});
 
 	// Globally known
-	for (let i = 0; i < state.numPlayers; i++) {
-		const playerIndex = (giver + i) % state.numPlayers;
-
+	const known_play_order = options.playerOrder ?? Utils.range(0, state.numPlayers).map(i => (state.numPlayers + giver + i) % state.numPlayers);
+	for (const playerIndex of known_play_order) {
 		const globally_known = state.hands[playerIndex].find(order => {
 			const ineligible = ignoreOrders.includes(order) ||
 				!common.thoughts[order].touched ||
@@ -107,8 +106,8 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	}
 
 	// Visible and already going to be played (excluding giver)
-	for (let i = 1; i < state.numPlayers; i++) {
-		const playerIndex = (giver + i) % state.numPlayers;
+	const visible_play_order = (options.playerOrder ?? Utils.range(1, state.numPlayers).map(i => (state.numPlayers + giver + i) % state.numPlayers)).filter(p => p != giver);
+	for (const playerIndex of visible_play_order) {
 
 		if (options.knownOnly?.includes(playerIndex))
 			continue;
@@ -171,7 +170,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 		}
 	});
 
-	if (giver_asymmetric !== undefined)
+	if ((options.playerOrder === undefined || options.playerOrder.includes(giver)) && giver_asymmetric !== undefined)
 		return { type: 'known', reacting: giver, order: giver_asymmetric, identities: [identity] };
 }
 
@@ -394,7 +393,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 	const wrong_prompts = [];
 	const old_play_stacks = state.play_stacks;
 
-	const conn_player_order = options.playerOrder || [target, ...Utils.range(0, state.numPlayers).map(i => (state.numPlayers + giver - i - 1) % state.numPlayers).filter(i => i !== target), target];
+	const conn_player_order = options.playerOrder ?? [target, ...Utils.range(0, state.numPlayers).map(i => (state.numPlayers + giver - i - 1) % state.numPlayers).filter(i => i !== target), target];
 
 	// Only consider prompts/finesses if no connecting cards found
 	for (let i = 0; i < conn_player_order.length; i++) {
@@ -413,7 +412,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 		const already_connected = connected.slice();
 		state.play_stacks = old_play_stacks.slice();
 
-		const unk_options = { assumeTruth: options.assumeTruth, noLayer: i === 0, bluffed: options.bluffed };
+		const unk_options = { assumeTruth: options.assumeTruth, noLayer: options.playerOrder !== undefined || i === 0, bluffed: options.bluffed };
 		let connecting = find_unknown_connecting(game, action, playerIndex, identity, already_connected, ignoreOrders, unk_options);
 
 		if (connecting?.type === 'terminate') {
@@ -462,7 +461,7 @@ export function find_connecting(game, action, identity, looksDirect, thinks_stal
 	state.play_stacks = old_play_stacks;
 
 	// Unknown playable(s) in our hand (obviously, we can't use them in our clues)
-	if (giver !== state.ourPlayerIndex && !options.knownOnly?.includes(state.ourPlayerIndex) && (!options.playerOrder || options.playerOrder.includes(state.ourPlayerIndex))) {
+	if (giver !== state.ourPlayerIndex && !options.knownOnly?.includes(state.ourPlayerIndex) && (options.playerOrder === undefined || options.playerOrder.includes(state.ourPlayerIndex))) {
 		let layered = false;
 		/** @type {number[]} */
 		const playable_conns = [];
