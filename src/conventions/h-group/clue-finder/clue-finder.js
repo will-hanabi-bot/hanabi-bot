@@ -291,6 +291,11 @@ export function get_clue_interp(game, clue, giver, options) {
 				return;
 			}
 
+			if (chop_moved.length > 0 && !chop_moved.some(o => !state.isBasicTrash(state.deck[o]))) {
+				logger.warn('did not chop move any valuable cards');
+				return;
+			}
+
 			if (playables.length === 0) {
 				logger.warn('play clue with no playables!');
 				new_interp = new_touched.length > 0 || elim > 0 ? CLUE_INTERP.STALL_FILLIN : CLUE_INTERP.STALL_BURN;

@@ -840,6 +840,21 @@ describe('interpreting trash finesse', () => {
 
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
+
+	it(`won't chop move trash`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p2', 'p2', 'g1', 'r1', 'r1'],
+			['p4', 'y5', 'b4', 'r2', 'y1']
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 3, 3, 3, 1]
+		});
+
+		const { play_clues } = find_clues(game);
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 2));
+	});
+
 });
 
 describe('giving trash finesses', () => {
