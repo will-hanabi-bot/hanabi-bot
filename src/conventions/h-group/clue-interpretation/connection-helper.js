@@ -95,6 +95,10 @@ export function find_trash_finesses(game, action, focus, connections, identity) 
 		!connections.some(conn => conn.type === 'finesse' && !conn.hidden))
 		return [];
 
+	// The first unknown play come from another player.
+	if (connections.find(conn => conn.type === 'finesse' || conn.type === 'prompt').reacting === target)
+		return [];
+
 	// In order to recognize a colour trash finesse, either
 	// 1. The connecting plays before the target don't connect to the target, or
 	let lastPlayer = action.giver;

@@ -960,20 +960,6 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, CARD_STATUS.FINESSED);
 	});
 
-	it(`won't chop move trash`, async () => {
-		const game = setup(HGroup, [
-			['xx', 'xx', 'xx', 'xx', 'xx'],
-			['p2', 'p2', 'g1', 'r1', 'r1'],
-			['p4', 'y5', 'b4', 'r2', 'y1']
-		], {
-			level: { min: 14 },
-			play_stacks: [3, 3, 3, 3, 1]
-		});
-
-		const { play_clues } = find_clues(game);
-		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 2));
-	});
-
 	it(`understands a trash finesse where giver knows they have the last id`, async () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
@@ -1017,5 +1003,38 @@ describe('giving trash finesses', () => {
 		const { play_clues } = find_clues(game);
 		// Red to Cathy is not a valid clue as Cathy will think it is r5.
 		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.COLOUR && clue.value === COLOUR.RED));
+	});
+
+	it(`won't chop move trash`, async () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['p2', 'p2', 'g1', 'r1', 'r1'],
+			['p4', 'y5', 'b4', 'r2', 'y1']
+		], {
+			level: { min: 14 },
+			play_stacks: [3, 3, 3, 3, 1]
+		});
+
+		const { play_clues } = find_clues(game);
+		assert.ok(!play_clues[PLAYER.CATHY].some(clue => clue.type === CLUE.RANK && clue.value === 2));
+	});
+
+	it(`won't give a trash finesse starting with target`, () => {
+		// Based on https://hanab.live/replay/1797812#29
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['r1', 'b4', 'y4', 'b2', 'y2'],
+			['r2', 'g4', 'g5', 'p2', 'p3'],
+		], {
+			level: { min: 14 },
+			play_stacks: [0, 1, 2, 2, 2],
+			starting: PLAYER.CATHY
+		});
+		// Bob knows about his 2's
+		takeTurn(game, 'Cathy clues 2 to Bob');
+
+		// Alice should not clue 2 to Bob - cluing an already clued card is not a trash push.
+		const { play_clues } = find_clues(game);
+		assert.ok(!play_clues[PLAYER.BOB].some(clue => clue.type === CLUE.RANK && clue.value === 2));
 	});
 });
