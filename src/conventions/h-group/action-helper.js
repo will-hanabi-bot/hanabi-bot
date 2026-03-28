@@ -5,7 +5,7 @@ import { unknown_1 } from './hanabi-logic.js';
 import * as Utils from '../../tools/util.js';
 
 import logger from '../../tools/logger.js';
-import { logClue } from '../../tools/log.js';
+import { logCard, logClue } from '../../tools/log.js';
 
 /**
  * @typedef {import('../h-group.js').default} Game
@@ -15,6 +15,7 @@ import { logClue } from '../../tools/log.js';
  * @typedef {import('../../basics/Card.js').ActualCard} ActualCard
  * @typedef {import('../../types.js').ClueResult} ClueResult
  * @typedef {import('../../types.js').Clue} Clue
+ * @typedef {import('../../types.js').Identity} Identity
  * @typedef {import('../../types.js').WaitingConnection} WaitingConnection
  */
 
@@ -116,6 +117,51 @@ export function order_1s(state, player, orders, options = { no_filter: false }) 
 
 		return 1;
 	});
+}
+
+/**
+ * Returns the trash cards in the order that they should be discarded.
+ * @param {Game} game
+ * @param {number} playerIndex
+ */
+export function order_trash(game, playerIndex) {
+	const { state, common } = game;
+
+	/** @type {(identity: Identity, order: number) => boolean} */
+	const visible_self = (identity, order) =>
+		state.hands[playerIndex].some(o => {
+			const card = common.thoughts[o];
+
+			return card.matches(identity, { infer: true }) &&
+				state.deck[o].matches(identity, { assume: true }) &&
+				(state.deck[o].clued || (card.blind_playing && !card.uncertain)) &&
+				o !== order &&
+				!common.links.some(link => link.orders.includes(order));
+		});
+
+
+	const trash = state.hands[playerIndex].filter(o => {
+		if (common.thoughts[o].trash)
+			return true;
+
+		const poss = common.thoughts[o].uncertain ? common.thoughts[o].possible : common.thoughts[o].possibilities;
+
+		// Every possibility is trash or duplicated in our hand
+		const trash = poss.every(p => state.isBasicTrash(p) || visible_self(p, o));
+
+		if (trash)
+			logger.debug(`order ${o} is known trash, poss ${poss.map(logCard).join()}, ${poss.map(p => state.isBasicTrash(p)).join()}`);
+
+		return trash;
+	});
+	if (trash.length === 0)
+		return [];
+
+	// The card on chop is the last expected discard with known trash.
+	const chop = game.players[playerIndex].chop(state.hands[playerIndex]);
+	if (chop !== undefined)
+		trash.push(chop);
+	return trash;
 }
 
 /**
