@@ -92,7 +92,7 @@ export function find_trash_finesses(game, action, focus, connections, identity) 
 	const focus_thoughts = common.thoughts[focus];
 
 	if (game.level < LEVEL.TRASH_MOVES || is_trash_clue(game, giver, clue, target, focus, common) ||
-		!connections.some(conn => conn.type === 'finesse' && !conn.hidden))
+		!connections.some(conn => conn.type === 'finesse'))
 		return [];
 
 	// The first unknown play come from another player.

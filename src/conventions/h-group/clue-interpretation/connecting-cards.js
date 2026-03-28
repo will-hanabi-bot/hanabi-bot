@@ -106,7 +106,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 	}
 
 	// Visible and already going to be played (excluding giver)
-	const visible_play_order = (options.playerOrder ?? Utils.range(1, state.numPlayers).map(i => (state.numPlayers + giver + i) % state.numPlayers)).filter(p => p != giver);
+	const visible_play_order = (options.playerOrder ?? Utils.range(1, state.numPlayers).map(i => (giver + i) % state.numPlayers));
 	for (const playerIndex of visible_play_order) {
 
 		if (options.knownOnly?.includes(playerIndex))
@@ -144,7 +144,7 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 		}
 	}
 
-	const giver_asymmetric = state.hands[giver].find(o => {
+	const giver_asymmetric = (options.playerOrder === undefined || options.playerOrder.includes(giver)) ? state.hands[giver].find(o => {
 		if (ignoreOrders.includes(o) || !state.deck[o].matches(identity))
 			return false;
 
@@ -168,9 +168,9 @@ export function find_known_connecting(game, giver, identity, ignoreOrders = [], 
 			logger.highlight('cyan', `connecting using giver's asymmetric knowledge of ${logCard(identity)}! we could have missing ${logCard(missing_ids[0])}`);
 			return true;
 		}
-	});
+	}) : undefined;
 
-	if ((options.playerOrder === undefined || options.playerOrder.includes(giver)) && giver_asymmetric !== undefined)
+	if (giver_asymmetric !== undefined)
 		return { type: 'known', reacting: giver, order: giver_asymmetric, identities: [identity] };
 }
 

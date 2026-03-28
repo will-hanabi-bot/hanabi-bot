@@ -401,7 +401,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 			const new_chop_value = me.simulateCM([chop]).chopValue(state, target);
 
 			// Make sure the old chop is equal or better than the new one
-			if (old_chop_value >= new_chop_value) {
+			if (old_chop_value > 0 && old_chop_value >= new_chop_value) {
 				return {
 					urgency: PRIORITY.ONLY_SAVE + nextPriority,
 					action: { type: ACTION.PLAY, target: ordered_1s[distance] }
@@ -423,7 +423,7 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 			const new_chop_value = me.simulateCM([chop]).chopValue(state, target);
 
 			// Make sure the old chop is equal or better than the new one
-			if (old_chop_value >= new_chop_value) {
+			if (old_chop_value > 0 && old_chop_value >= new_chop_value) {
 				return {
 					urgency: PRIORITY.ONLY_SAVE + nextPriority,
 					action: { type: ACTION.DISCARD, target: ordered_trash[distance] }

@@ -6,11 +6,11 @@ import { find_trash_finesses, is_intermediate_bluff_target } from './connection-
 import { find_connecting } from './connecting-cards.js';
 import { cardTouched, colourableSuits, variantRegexes } from '../../../variants.js';
 import { finalize_connections } from './interpret-clue.js';
+import { is_trash_clue } from './interpret-cm.js';
 import * as Utils from '../../../tools/util.js';
 
 import logger from '../../../tools/logger.js';
 import { logCard, logConnections } from '../../../tools/log.js';
-import { is_trash_clue } from './interpret-cm.js';
 
 /**
  * @typedef {import('../../h-group.js').default} Game
@@ -449,36 +449,21 @@ export function find_trash_push(game, action, focusResult, thinks_stall) {
 		// potential play.
 		let before_player = target;
 
-		let looksDirect = true;
-
 		// Try looking for all connecting cards
 		while (next_rank > state.play_stacks[suitIndex]) {
 			const identity = { suitIndex, rank: next_rank };
 			const ignoreOrders = getIgnoreOrders(game, next_rank - state.play_stacks[suitIndex] - 1, suitIndex);
 			const conn_player_order = playersBetween(state.numPlayers, giver, before_player).reverse();
 			const connect_options = { knownOnly: action.hypothetical ? [state.ourPlayerIndex] : [], bluffed, playerOrder: conn_player_order, assumeTruth: true, immediate: true };
-			const connecting = find_connecting(game, action, identity, looksDirect, thinks_stall, already_connected, ignoreOrders, connect_options);
+			const connecting = find_connecting(game, action, identity, /*looksDirect=*/true, thinks_stall, already_connected, ignoreOrders, connect_options);
 
 			if (connecting.length === 0)
 				break;
 
-			const { type, order } = connecting.at(-1);
-			const card = state.deck[order];
+			const { type } = connecting.at(-1);
 
 			if (type === 'terminate')
 				break;
-
-			if (card.newly_clued && common.thoughts[order].possible.length > 1 && focus_thoughts.inferred.has(identity)) {
-				// Trying to use a newly known/playable connecting card, but the focused card could be that
-				// e.g. If two 4s are clued (all other 4s visible), the other 4 should not connect and render this card with only one inference
-				logger.warn(`blocked connection - focused card could be ${logCard(identity)}`);
-				break;
-			}
-
-			if (type === 'finesse') {
-				// A finesse proves that this is not direct
-				looksDirect = focus_thoughts.identity() === undefined;
-			}
 
 			before_player = connecting[0].reacting;
 			connections = connecting.concat(connections);
