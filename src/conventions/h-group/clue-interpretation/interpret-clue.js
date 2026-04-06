@@ -935,18 +935,18 @@ export function interpret_clue(game, action) {
 							if (action.clue.type === CLUE.RANK) {
 								max_rank = action.clue.value;
 							} else {
-								// 6 "rank" array to ensure we always find a rank with no playables
-								const playables_at_rank_or_higher = [0, 0, 0, 0, 0, 0];
+								// 6 "rank" array to ensure we always find a rank with no useful cards left.
+								const useful_at_rank_or_higher = [0, 0, 0, 0, 0, 0];
 								for (const id of common.thoughts[focus].possible.filter(id => id.suitIndex === suitIndex && !state.isBasicTrash(id))) {
 									max_rank = Math.max(id.rank, max_rank);
 									const remaining = state.cardCount(id) - state.discard_stacks[id.suitIndex][id.rank - 1];
 									for (let r = 1; r <= id.rank; ++r)
-										playables_at_rank_or_higher[r - 1] += remaining;
+										useful_at_rank_or_higher[r - 1] += remaining;
 								}
-								// We need to play at least 1 card, but can stop when there is one or fewer
-								// playable instances of the identity left as we may have it visible in our hand.
+								// We need to play at least 1 card, but can stop when there is one or zero
+								// instances of useful identity left as we may have it visible in our hand.
 								max_rank = Math.min(max_rank,
-									Math.max(state.play_stacks[suitIndex] + 1, playables_at_rank_or_higher.findIndex(count => count <= 1)));
+									Math.max(state.play_stacks[suitIndex] + 1, useful_at_rank_or_higher.findIndex(count => count <= 1)));
 							}
 							if (state.play_stacks[suitIndex] >= max_rank)
 								continue;
