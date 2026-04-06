@@ -945,8 +945,7 @@ export function interpret_clue(game, action) {
 								}
 								// We need to play at least 1 card, but can stop when there is one or zero
 								// instances of useful identity left as we may have it visible in our hand.
-								max_rank = Math.min(max_rank,
-									Math.max(state.play_stacks[suitIndex] + 1, useful_at_rank_or_higher.findIndex(count => count <= 1)));
+								max_rank = Math.min(max_rank, useful_at_rank_or_higher.findIndex(count => count <= 1));
 							}
 							if (state.play_stacks[suitIndex] >= max_rank)
 								continue;
