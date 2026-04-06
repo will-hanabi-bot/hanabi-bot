@@ -713,8 +713,16 @@ export function interpret_clue(game, action) {
 	}
 
 	const focus_possible = find_focus_possible(game, action, focusResult, thinks_stall, loaded, focus_interp);
+	const possible_bluff = focus_possible.filter(fp => fp.interp === CLUE_INTERP.PLAY && fp.connections[0]?.bluff);
+	if (possible_bluff.length > 0) {
+		focus_possible.forEach(fp => {
+			if (fp.interp !== CLUE_INTERP.TRASH_FINESSE || fp.connections[0].type !== 'finesse' || fp.connections[0].reacting !== state.nextPlayerIndex(giver))
+				return;
+			fp.illegal = true;
+		});
+	}
 	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
-	const consider_trash = focus_possible.some(p => p.interp === CLUE_INTERP.TRASH_FINESSE) &&
+	const consider_trash = focus_possible.some(p => !p.illegal && p.interp === CLUE_INTERP.TRASH_FINESSE) &&
 		(target === state.ourPlayerIndex ||
 			!focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) && focused_card.matches(p)));
 	if (consider_trash) {
@@ -724,7 +732,7 @@ export function interpret_clue(game, action) {
 		const tcm_orders = interpret_tcm(game, action, focus, oldCommon, true);
 		perform_cm(state, common, tcm_orders);
 
-		// Further, any play identites are illegal if they could also be trash finesse identites:
+		// Further, any play identities are illegal if they could also be trash finesse identities:
 		for (const fp of focus_possible.filter(p => p.interp === CLUE_INTERP.PLAY)) {
 			if (trash_finesses.some(tf => tf.suitIndex === fp.suitIndex && tf.rank === fp.rank)) {
 				fp.illegal = true;
@@ -779,7 +787,8 @@ export function interpret_clue(game, action) {
 		// We are the clue target, so we need to consider all the (sensible) possibilities of the card
 		if (target === state.ourPlayerIndex) {
 			all_connections = focus_possible.filter(fp =>
-				fp.interp === CLUE_INTERP.TRASH_FINESSE || !isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true }));
+				!fp.illegal && (
+					fp.interp === CLUE_INTERP.TRASH_FINESSE || !isTrash(prev_game.state, prev_game.players[giver], fp, focus, { infer: true, ignoreCM: true })));
 			// For a trash push, we must assume the focus is playable by our turn - no need to look for self connections.
 			if (focus_interp !== FOCUS_INTERP.TRASH_PUSH) {
 				for (const id of common.thoughts[focus].inferred) {

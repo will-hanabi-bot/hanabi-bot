@@ -798,7 +798,7 @@ describe('interpreting trash finesse', () => {
 			init: (game) => {
 				game.state.early_game = false;
 
-				// Cathy's r1 is known.
+				// Cathy's r2 is known.
 				preClue(game, game.state.hands[PLAYER.CATHY][1], [
 					{ type: CLUE.RANK, value: 2, giver: PLAYER.ALICE }
 				]);
@@ -988,6 +988,26 @@ describe('interpreting trash finesse', () => {
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][2]].trash, true);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]].status, CARD_STATUS.CM);
 	});
+
+	it(`prefers a bluff over a trash bluff`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g2', 'b3', 'r4', 'p3', 'r1'],
+			['r4', 'p2', 'g4', 'y5', 'y1']
+		], {
+			play_stacks: [3, 4, 2, 2, 2],
+			level: { min: 14 },
+			clue_tokens: 4,
+			starting: PLAYER.BOB
+		});
+
+		takeTurn(game, 'Bob clues 4 to Alice (slot 4)');
+		takeTurn(game, 'Cathy plays r4', 'y2');
+
+		// Cathy would need to discharge to prove trash.
+		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][3]], ['g4', 'b4', 'p4']);
+		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][4]].status, undefined);
+	});
 });
 
 describe('giving trash finesses', () => {
@@ -1033,7 +1053,8 @@ describe('giving trash finesses', () => {
 		// Bob knows about his 2's
 		takeTurn(game, 'Cathy clues 2 to Bob');
 
-		// Alice should not clue 2 to Bob - cluing an already clued card is not a trash push.
+		// Alice should not clue 2 to Bob - Bob needs to play to allow Cathy's play but would
+		// need to see if Cathy plays to know if it is in fact a trash finesse.
 		const { play_clues } = find_clues(game);
 		assert.ok(!play_clues[PLAYER.BOB].some(clue => clue.type === CLUE.RANK && clue.value === 2));
 	});
