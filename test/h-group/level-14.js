@@ -66,6 +66,52 @@ describe('giving trash order chop move', () => {
 		ExAsserts.objHasProperties(urgent_actions[ACTION_PRIORITY.ONLY_SAVE + Object.keys(ACTION_PRIORITY).length][0], { type: ACTION.DISCARD, target: our_hand[3] });
 	});
 
+	it(`doesn't do a bad sdcm`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g3', 'r3', 'y3', 'y4', 'y1'],
+			['r4', 'r4', 'g4', 'r3', 'r5']
+		], {
+			play_stacks: [1, 1, 1, 1, 1],
+			level: { min: 14 },
+			clue_tokens: 1,
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 1 to Alice (slots 3,4)');
+
+		const { state } = game;
+		const our_hand = state.hands[PLAYER.ALICE];
+		const playable_priorities = determine_playable_card(game, [our_hand[1], our_hand[2], our_hand[3]]);
+		const { play_clues, save_clues, fix_clues, stall_clues } = find_clues(game);
+		const urgent_actions = find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities);
+		// Alice tries discarding slot 2 to save Cathy's r5, even though this is both illegal and game-risking.
+		assert.equal(urgent_actions[ACTION_PRIORITY.ONLY_SAVE + Object.keys(ACTION_PRIORITY).length].length, 0);
+	});
+
+	it(`can still discard chop as a scream to the next player`, () => {
+		const game = setup(HGroup, [
+			['xx', 'xx', 'xx', 'xx', 'xx'],
+			['g3', 'r3', 'y3', 'y4', 'r5'],
+			['r4', 'r4', 'g4', 'r3', 'y1']
+		], {
+			play_stacks: [1, 1, 1, 1, 1],
+			level: { min: 14 },
+			clue_tokens: 1,
+			starting: PLAYER.CATHY
+		});
+
+		takeTurn(game, 'Cathy clues 1 to Alice (slot 4)');
+
+		const { state } = game;
+		const our_hand = state.hands[PLAYER.ALICE];
+		const playable_priorities = determine_playable_card(game, [our_hand[1], our_hand[2], our_hand[3]]);
+		const { play_clues, save_clues, fix_clues, stall_clues } = find_clues(game);
+		const urgent_actions = find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities);
+		// Alice has known trash, but should signal to Bob that he cannot discard his chop.
+		ExAsserts.objHasProperties(urgent_actions[ACTION_PRIORITY.ONLY_SAVE][0], { type: ACTION.DISCARD, target: our_hand[2] });
+	});
+
 });
 
 describe('interpreting trash order chop move', () => {

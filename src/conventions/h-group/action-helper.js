@@ -158,8 +158,10 @@ export function order_trash(game, playerIndex) {
 		return [];
 
 	// The card on chop is the last expected discard with known trash.
+	// It should only be discarded if we have no other known trash or
+	// to save the immediately next player on 0 clues as a scream.
 	const chop = game.players[playerIndex].chop(state.hands[playerIndex]);
-	if (chop !== undefined)
+	if (chop !== undefined && (trash.length === 0 || (trash.length === 1 && state.clue_tokens <= 1)))
 		trash.push(chop);
 	return trash;
 }
