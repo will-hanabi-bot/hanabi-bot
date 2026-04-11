@@ -721,7 +721,6 @@ export function interpret_clue(game, action) {
 			fp.illegal = true;
 		});
 	}
-	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
 	const consider_trash = focus_possible.some(p => !p.illegal && p.interp === CLUE_INTERP.TRASH_FINESSE) &&
 		(target === state.ourPlayerIndex ||
 			!focus_possible.some(p => !p.illegal && common.thoughts[focus].inferred.has(p) && focused_card.matches(p)));
@@ -740,6 +739,7 @@ export function interpret_clue(game, action) {
 			}
 		}
 	}
+	logger.info('focus possible:', focus_possible.map(({ suitIndex, rank, save, illegal }) => logCard({suitIndex, rank}) + (save ? ' (save)' : ''  + (illegal ? ' (illegal)' : ''))));
 
 	const matched_inferences = focus_possible.filter(p => !p.illegal && (
 		common.thoughts[focus].inferred.has(p) ||
