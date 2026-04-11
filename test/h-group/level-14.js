@@ -934,7 +934,7 @@ describe('interpreting trash finesse', () => {
 		// Trash finesse on b4.
 		takeTurn(game, 'Cathy clues 4 to Bob');
 
-		// Since Donald was already going to play, this cannot be an trash finesse on Donald and should instead be on us.
+		// Since Donald already has a blind play, this cannot be a trash bluff and Alice must play [y4,p4] as a trash finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]], ['y4', 'p4']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][2]].status, CARD_STATUS.CM);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.BOB][3]].status, CARD_STATUS.CM);
