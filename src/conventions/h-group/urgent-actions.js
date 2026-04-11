@@ -432,19 +432,25 @@ function save_urgency(game, save, nextPriority, potential_cluers, early_expected
 		}
 	}
 
+	const has_playables = common.thinksPlayables(state, state.ourPlayerIndex).length > 0;
+	const has_known_trash = common.thinksTrash(state, state.ourPlayerIndex).length > 0;
 	const scream_available = !finessed_card &&
 		!state.inEndgame() &&
 		game.level >= LEVEL.LAST_RESORTS &&
-		common.thinksPlayables(state, state.ourPlayerIndex).length > 0 &&
+		(has_playables || (game.level >= LEVEL.TRASH_MOVES && has_known_trash)) &&
 		target === state.nextPlayerIndex(state.ourPlayerIndex) &&
 		!me.thinksLoaded(state, target);
 
 	if (scream_available) {
-		const trash = me.thinksTrash(state, state.ourPlayerIndex).filter(o =>
-			state.deck[o].clued && me.thoughts[o].inferred.every(i => state.isBasicTrash(i)));
+		// If we have a playable, we can scream by discarding trash instead. At level 14
+		// this is interpreted as a shout discard order chop move instead.
+		if (has_playables && game.level < LEVEL.TRASH_MOVES) {
+			const trash = me.thinksTrash(state, state.ourPlayerIndex).filter(o =>
+				state.deck[o].clued && me.thoughts[o].inferred.every(i => state.isBasicTrash(i)));
 
-		if (trash.length > 0)
-			return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { type: ACTION.DISCARD, target: trash[0] } };
+			if (trash.length > 0)
+				return { urgency: PRIORITY.PLAY_OVER_SAVE + nextPriority, action: { type: ACTION.DISCARD, target: trash[0] } };
+		}
 
 		// As a last resort, only scream discard if it is playable or critical.
 		const save_card = state.deck[game.players[target].chop(state.hands[target])];

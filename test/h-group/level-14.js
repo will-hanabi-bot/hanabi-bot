@@ -109,7 +109,7 @@ describe('giving trash order chop move', () => {
 		const { play_clues, save_clues, fix_clues, stall_clues } = find_clues(game);
 		const urgent_actions = find_urgent_actions(game, play_clues, save_clues, fix_clues, stall_clues, playable_priorities);
 		// Alice has known trash, but should signal to Bob that he cannot discard his chop.
-		ExAsserts.objHasProperties(urgent_actions[ACTION_PRIORITY.ONLY_SAVE][0], { type: ACTION.DISCARD, target: our_hand[2] });
+		ExAsserts.objHasProperties(urgent_actions[ACTION_PRIORITY.PLAY_OVER_SAVE][0], { type: ACTION.DISCARD, target: our_hand[2] });
 	});
 
 });
