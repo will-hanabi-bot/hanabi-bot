@@ -163,7 +163,7 @@ export function get_clue_interp(game, clue, giver, options) {
 	const giver_player = game.players[giver];
 
 	const list = state.clueTouched(hand, clue);
-	const { focus, chop } = determine_focus(game, hand, common, list, clue);
+	const { focus, chop } = determine_focus(game, hand, common, list, giver, target, clue);
 	const focused_card = state.deck[focus];
 
 	const in_finesse = common.waiting_connections.find(w_conn => {
@@ -288,6 +288,11 @@ export function get_clue_interp(game, clue, giver, options) {
 
 			if (finesses.some(f => list.some(o => f.card.order !== o && state.deck[f.card.order].matches(state.deck[o])))) {
 				logger.warn('looks like out-of-order play clue, not giving');
+				return;
+			}
+
+			if (chop_moved.length > 0 && !chop_moved.some(o => !state.isBasicTrash(state.deck[o]))) {
+				logger.warn('did not chop move any valuable cards');
 				return;
 			}
 
