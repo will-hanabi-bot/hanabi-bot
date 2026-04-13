@@ -181,7 +181,7 @@ describe('bad bluffs', () => {
 
 		const { play_clues } = find_clues(game);
 
-		// With g1, r2 already queued, we cannot bluff the y1 with (2/blue/purple to Cathy).
+		// With g1 already queued, we cannot bluff the y1 with (2/blue/purple to Cathy).
 		assert.ok(!play_clues[PLAYER.CATHY].some(clue =>
 			(clue.type == CLUE.RANK && clue.value == 2) ||
 			(clue.type == CLUE.COLOUR && clue.value == COLOUR.BLUE)));
@@ -336,7 +336,7 @@ describe('bad bluffs', () => {
 		assert.ok(!play_clues[PLAYER.DONALD].some(clue => clue.type === CLUE.COLOUR && clue.value === COLOUR.BLUE));
 	});
 
-	it(`doesn't bluff symmetrically finessed cards`, () => {
+	it(`doesn't bluff symmetrically finessed cards 1`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
 			['r2', 'y3', 'p4', 'y4'],

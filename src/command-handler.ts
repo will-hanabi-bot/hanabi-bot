@@ -413,9 +413,9 @@ export class Bot {
 			}
 
 			if (level > 11) {
-				reply(`This bot can currently only play up to level 11 (+ level 13). There is no support for level 12.`);
+				reply(`This bot can currently only play up to level 14, with no support for level 12.`);
 
-				if (level < 13)
+				if (level === 12)
 					level = 11;
 			}
 

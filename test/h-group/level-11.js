@@ -128,7 +128,7 @@ describe('bluff clues', () => {
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.CATHY][0]], ['r2', 'y1', 'g1', 'b1', 'p1']);
 		assert.equal(game.common.thoughts[game.state.hands[PLAYER.ALICE][0]].status, undefined);
 
-		// Donald's slot 4 must be r2,g3.
+		// Donald's slot 4 must be r2,r3.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.DONALD][3]], ['r2', 'r3']);
 
 		takeTurn(game, 'Cathy plays y1', 'p5');
@@ -476,7 +476,7 @@ describe('bluff clues', () => {
 	it(`doesn't confuse a bluff as a layered finesse`, () => {
 		const game = setup(HGroup, [
 			['xx', 'xx', 'xx', 'xx'],
-			['g1', 'b1', 'y4', 'y3'], // After play b1, y2, r1, r2
+			['g1', 'b1', 'y4', 'y3'],
 			['g4', 'r5', 'b2', 'p4'],
 			['r1', 'r1', 'r3', 'y1']
 		], { level: { min: 11 } });
@@ -531,7 +531,7 @@ describe('bluff clues', () => {
 
 		takeTurn(game, 'Cathy clues 3 to Alice (slot 1)');
 		takeTurn(game, 'Alice plays p1 (slot 2)');
-		takeTurn(game, 'Bob plays p2 (slot 1)', 'r5');
+		takeTurn(game, 'Bob plays p2', 'r5');
 
 		// Slot 2 (was slot 1) is known to be p3 as a double finesse.
 		ExAsserts.cardHasInferences(game.common.thoughts[game.state.hands[PLAYER.ALICE][1]], ['p3']);

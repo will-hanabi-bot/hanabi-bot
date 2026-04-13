@@ -106,7 +106,7 @@ describe('ambiguous finesse', () => {
 	// 	takeTurn(game, 'Bob clues 5 to Cathy');				// Bob can't play because he might have 1 of the wrong colour. Alice now knows she has 13 matching.
 
 	// 	takeTurn(game, 'Cathy plays b1', 'y1');
-	// 	takeTurn(game, 'Alice clues yellow to Cathy');		// Alice can't play because her 13 might be red. Bob now knows he can fulfill the entire finesse.
+	// 	takeTurn(game, 'Alice clues yellow to Cathy');		// Alice can't play because her 3 might be red. Bob now knows he can fulfill the entire finesse.
 	// 	takeTurn(game, 'Bob discards p4', 'p1');			// Bob can't play because he might have the finesse of the wrong colour (the actual situation).
 
 	// 	// Alice now knows that she has to play into it.
